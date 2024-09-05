@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: PyEXR
+Version: 0.3.10
+Summary: One line EXR manipulation library
+Home-page: https://github.com/tvogels/pyexr
+Author: Thijs Vogels
+Author-email: t.vogels@me.com
+Requires-Dist: OpenEXR
+Requires-Dist: numpy
+Requires-Dist: future
+

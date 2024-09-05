@@ -1,0 +1,12 @@
+pyexr-0.4.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+pyexr-0.4.0.dist-info/LICENSE.md,sha256=qxXkX-H0EikZgj28Z63-38ky6ua9M2PYpVr4YfVRzzo,1068
+pyexr-0.4.0.dist-info/METADATA,sha256=3WC1oxQ8ouZHWA3PhuxsJV061o9E9yvPd0dxXBM6_Yg,4463
+pyexr-0.4.0.dist-info/RECORD,,
+pyexr-0.4.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+pyexr-0.4.0.dist-info/WHEEL,sha256=sP946D7jFCHeNz5Iq4fL4Lu-PrWrFsgfLXbbkciIZwg,88
+pyexr-0.4.0.dist-info/entry_points.txt,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+pyexr/__init__.py,sha256=j5jTkA73WP2wpCX4sc2rY1Ma_ixY_lhjDMw9ZPM8Or8,621
+pyexr/__pycache__/__init__.cpython-311.pyc,,
+pyexr/__pycache__/exr.cpython-311.pyc,,
+pyexr/exr.py,sha256=zMrx2WWu30dA7U-w7Az_gxX45ECW3qzxBnyFr71mNac,11108
+pyexr/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
