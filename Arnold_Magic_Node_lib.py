@@ -26,7 +26,7 @@ import time  # 处理时间相关操作
 from datetime import datetime
 
 import webbrowser   # 快速打开web网页
-
+import keyboard
 
 # 获取脚本路径
 Script_path = os.path.join(os.path.dirname(__file__))

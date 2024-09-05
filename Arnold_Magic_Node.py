@@ -48,9 +48,6 @@ Script_path = os.path.join(os.path.dirname(__file__))
 Icon_path = Script_path + "\icon"
 # ------------------------------------------
 
-
-
-
 # 导入自定义库 Arnold_Magic_Node_lib
 import Arnold_Magic_Node_lib
 importlib.reload(Arnold_Magic_Node_lib)  # 在开发阶段，重新加载模块以反映对库的更改
@@ -66,6 +63,19 @@ LicenseV_public_password = None
 LicenseV_remaining_time = None
 
 ##############################################################################################
+
+# --------------------初始变量开始
+SoftwareState = "Beta"
+SoftwareVersion = "0.5.1"
+
+
+pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
+pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
+
+
+# --------------------初始变量结束
+
+# ----------------------------------------------------初始配置变量 开始
 
 TEX_PROCESSING_DATA = {
     "TexFirstFilter": [
@@ -306,6 +316,8 @@ TM_FindAndReplace_config_dict = {
 TextureManagerWin_config_dict = {
     'listwidget_data' : 50 ,
 }
+
+# ----------------------------------------------------初始配置变量 结束
 
 # 获取Maya主窗口
 def MayaMainWindows():
@@ -2577,7 +2589,8 @@ class TM_RepathFiles(QtWidgets.QDialog):
     def initial_widgets_settings(self):
         pass
 
-
+    def test(self):
+        pass
 # 设置不可编辑
 class NonEditableColumnsModel(QtGui.QStandardItemModel):
     def __init__(self, rows, columns, non_editable_columns, parent=None):
