@@ -1061,6 +1061,8 @@ class TextureManagerWin(QtWidgets.QDialog):
                 box-shadow: 2px 2px 5px rgba(0, 0, 0, 100);
             }
         """)
+
+
     def create_widgets(self):
         # MaterialListSearch 搜索框
         self.MaterialListSearch = QtWidgets.QLineEdit()
@@ -1169,6 +1171,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 找回所有确实路径
         self.TexturelList_Replace_Data_Button = QtWidgets.QPushButton('找回路径')
         self.TexturelList_Replace_Data_Button.setFixedHeight(40)
+        self.TexturelList_Replace_Data_Button.clicked.connect(lambda : self.find_path_re_Win())
 
         # 压缩贴图
         self.TexturelList_Processed_Image_Button = QtWidgets.QPushButton('处理图像')
@@ -1894,9 +1897,15 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 实例化数据替换窗口
         tm_FindAndReplaceWin = TM_FindAndReplace(self.WINDOWS_NAME, parent=self)
         tm_FindAndReplaceWin.show()
+
         # 连接信号和槽
         tm_FindAndReplaceWin.base_data_signal.connect(self.replace_base_data_and_refresh_ui)
         tm_FindAndReplaceWin.base_data_bundle_signal.connect(self.replace_path_data_and_refresh_ui)
+
+    def find_path_re_Win(self):
+        tm_RepathFiles = TM_RepathFiles(self.WINDOWS_NAME, parent=self)
+        tm_RepathFiles.show()
+
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
         # 遍历模型中的每一行
@@ -2574,8 +2583,18 @@ class TM_RepathFiles(QtWidgets.QDialog):
     def __init__(self, WinName = '', parent = None):
         super(TM_RepathFiles, self).__init__(parent)
 
-    def initialize_window_config(self):
-        pass
+
+        self.initialize_window_config(WinName)
+
+    def initialize_window_config(self, WinName):
+        # 命名常量命名
+        WINDOWS_NAME =  "寻找路径-" + WinName #Win名称
+
+        if cmds.window(WINDOWS_NAME, exists=True):
+            cmds.deleteUI(WINDOWS_NAME)
+
+        self.setObjectName(WINDOWS_NAME)
+        self.setWindowTitle(WINDOWS_NAME)
 
     def initial_global_config(self):
         pass
@@ -2591,6 +2610,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
     def test(self):
         pass
+
 # 设置不可编辑
 class NonEditableColumnsModel(QtGui.QStandardItemModel):
     def __init__(self, rows, columns, non_editable_columns, parent=None):
@@ -3607,5 +3627,5 @@ def Main_program():
     #   save_data(os.path.join(Script_path,'RENDERING_WRITE_OPTION_DATA.json'),RENDERING_WRITE_OPTION_DATA)
 
     # 创建窗口
-    # indowInstance = Arnold_Magic_Node_UI()
-    TextureManagerWinInstance()
+    indowInstance = Arnold_Magic_Node_UI()
+    # TextureManagerWinInstance()
