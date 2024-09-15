@@ -987,8 +987,6 @@ class  Arnold_Magic_Node_Settings_Panel(object):
 class TextureManagerWin(QtWidgets.QDialog):
 
     def __init__(self,parent = MayaMainWindows()):
-
-        self.WINDOWS_NAME = "Texture_Manager  Beta:1.0    许可证剩余时间 : {}天".format(str(LicenseV_remaining_time))
         super(TextureManagerWin, self).__init__(parent)
 
         # 初始操作
@@ -997,8 +995,17 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.getnodedata = GetNodeData() # 提取数据模块
         self.dataM = DataManager() # 储存模块
         self.dataP = DataProcessor() # 数据处理模块
+
         self.TextureManager_texture_table_data_temp_path = Script_path + "\\Temp\\TM_texture_table_data.bin"
         self.TextureManager_config_path = Script_path + "\\Datas\\texture_manager\\TM_config_data.bin"
+
+
+        language = self.dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
+        # 建语言文件路径
+        language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
+        # 加载语言文件
+        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_WIN']
+
 
         # 如果有这个TM_texture_table_data文件删除并新创建一个空数据文件
         if os.path.exists(self.TextureManager_texture_table_data_temp_path):
@@ -1010,14 +1017,6 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 如果没有TM_config_data文件创建一个TM_config_data的配置文件
         if not os.path.exists(self.TextureManager_config_path):
             self.dataM.bin_save_data(self.TextureManager_config_path, TextureManagerWin_config_dict)
-
-
-        # 判断窗口是否存在，如果存在则删除
-        if cmds.window(self.WINDOWS_NAME, exists=True):
-            cmds.deleteUI(self.WINDOWS_NAME)
-
-
-
 
         # 初始化获取材质节点的所有信息
         self.MterialNodeAllInfoDict = self.getnodedata.GetMterialNodeAllInfo()
@@ -1034,12 +1033,29 @@ class TextureManagerWin(QtWidgets.QDialog):
 
 
         #...窗口名字
+
+        self.WINDOWS_NAME = f"{self.DataPLT['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.DataPLT['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}{self.DataPLT['__init__']['day']}"
+
+        # 判断窗口是否存在，如果存在则删除
+        if cmds.window(self.WINDOWS_NAME, exists=True):
+            cmds.deleteUI(self.WINDOWS_NAME)
+
+
+
         self.setObjectName(self.WINDOWS_NAME)
         self.setWindowTitle(self.WINDOWS_NAME)
         self.setWindowIcon(QtGui.QIcon(Icon_path + "\\TXManagerShelf_200.png"))
         #...窗口长宽
         self.setMinimumHeight(1050)
         self.setMinimumWidth(2500)
+
+
+
+
+
+
+
+
 
         # 添加隐藏 放大/缩小 几个按钮
         self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowMaximizeButtonHint | QtCore.Qt.WindowCloseButtonHint)
@@ -1064,18 +1080,20 @@ class TextureManagerWin(QtWidgets.QDialog):
 
 
     def create_widgets(self):
+        lang = self.DataPLT['create_widgets']
+
         # MaterialListSearch 搜索框
         self.MaterialListSearch = QtWidgets.QLineEdit()
         self.MaterialListSearch.textChanged.connect(lambda item: self.material_list_search())
         self.MaterialListSearch.setFixedWidth(350)
         self.MaterialListSearch.setFixedHeight(40)
-        self.MaterialListSearch.setPlaceholderText("输入要搜索的材质球名称....")
+        self.MaterialListSearch.setPlaceholderText(lang['MaterialListSearch_placeholder']) # 输入要搜索的材质球名称
         # MaterialListSearch 搜索框一些控件
 
         # 材质列表刷新
         self.MaterialList_Refresh_Button = QtWidgets.QPushButton()
         self.MaterialList_Refresh_Button.setIcon(QtGui.QIcon(Icon_path + "\\ResetMode_200.png"))
-        self.MaterialList_Refresh_Button.clicked.connect(lambda *args : (self.refresh_scene_node_info(),
+        self.MaterialList_Refresh_Button.clicked.connect(lambda *args: (self.refresh_scene_node_info(),
                                                                         self.refresh_material_list()))
         self.MaterialList_Refresh_Button.setFixedWidth(40)
         self.MaterialList_Refresh_Button.setFixedHeight(40)
@@ -1085,10 +1103,10 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.MaterialList = QtWidgets.QListWidget()
         self.MaterialList.setSelectionMode(QtWidgets.QAbstractItemView.ContiguousSelection)
         self.MaterialList.currentItemChanged.connect(lambda item: self.material_list_clicked())
-        self.MaterialList.itemChanged.connect(lambda item:self.material_list_material_rename())
+        self.MaterialList.itemChanged.connect(lambda item: self.material_list_material_rename())
         self.MaterialList.setFixedWidth(400)
         self.MaterialList.setIconSize(QtCore.QSize(32, 32))
-        self.refresh_material_list() # 初始化刷新材质列表
+        self.refresh_material_list()  # 初始化刷新材质列表
 
         # 材质列表的一些控制器
         self.MaterialList_Display_Slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -1100,16 +1118,15 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.MaterialList_Display_Slider.setMinimum(1)
         self.MaterialList_Display_Slider.setMaximum(MaterialList_Slider_default_font + MaterialList_Slider_default_font)
         # 并设置成材质列表的默认大小到滑杆上
-        self.MaterialList_Display_Slider.setValue(MaterialList_Slider_default_font-8)
+        self.MaterialList_Display_Slider.setValue(MaterialList_Slider_default_font - 8)
         # 滑杆绑定函数
         self.MaterialList_Display_Slider.valueChanged.connect(lambda *args: self.updateMaterialListSlider())
-
 
         # TexturelListSearch 搜索框
         self.TexturelListSearch = QtWidgets.QLineEdit()
         self.TexturelListSearch.textChanged.connect(lambda item: self.texture_list_search())
         self.TexturelListSearch.setFixedHeight(40)
-        self.TexturelListSearch.setPlaceholderText("输入要搜索的贴图球名称....")
+        self.TexturelListSearch.setPlaceholderText(lang['TexturelListSearch_placeholder']) # 输入要搜索的贴图球名称
         # TexturelListSearch 搜索框一些控件
 
         # 贴图列表的刷新
@@ -1118,39 +1135,40 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_Refresh_Button.setFixedWidth(40)
         self.TexturelList_Refresh_Button.setFixedHeight(40)
         self.TexturelList_Refresh_Button.setIconSize(QtCore.QSize(32, 32))
-        self.TexturelList_Refresh_Button.clicked.connect(lambda : self.refresh_texture_table())
-        self.TexturelList_Refresh_Button.setToolTip("根据缓存进行重新刷新")
+        self.TexturelList_Refresh_Button.clicked.connect(lambda: self.refresh_texture_table())
+        self.TexturelList_Refresh_Button.setToolTip(lang['TexturelList_Refresh_Button_ToolTip']) # 根据缓存进行重新刷新
 
         # 全选材质节点
         self.MaterialList_SelectAll_Button = QtWidgets.QPushButton()
         self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(Icon_path + "\\render_aiStandardSurface_Select.png"))
         self.MaterialList_SelectAll_Button.setFixedWidth(40)
         self.MaterialList_SelectAll_Button.setFixedHeight(40)
-        self.MaterialList_SelectAll_Button.clicked.connect(lambda : self.all_selected_materials())
+        self.MaterialList_SelectAll_Button.clicked.connect(lambda: self.all_selected_materials())
         self.MaterialList_SelectAll_Button.setIconSize(QtCore.QSize(32, 32))
 
         # 取消所有选择
-        self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton("取消全选")
+        self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton(lang['TexturelList_Unselect_All_Button']) # 取消全选
         self.TexturelList_Unselect_All_Button.clicked.connect(lambda: (
-                                                                        self.MaterialList.clearSelection(),
-                                                                        self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
-                                                                        ))
+            self.MaterialList.clearSelection(),
+            self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
+        ))
         self.TexturelList_Unselect_All_Button.setFixedHeight(40)
 
         # 反选
-        self.TexturelList_reverse_selection = QtWidgets.QPushButton('反选')
-        # self.TexturelList_reverse_selection.setFixedWidth(40)
+        self.TexturelList_reverse_selection = QtWidgets.QPushButton(lang['TexturelList_reverse_selection']) # 反选
         self.TexturelList_reverse_selection.setFixedHeight(40)
         self.TexturelList_reverse_selection.clicked.connect(lambda: self.texture_list_reverse_selection())
 
         # 一键选出所有缺失贴图
-        self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton("选出缺失")
-        self.TexturelList_Find_Missing_Textures_Button.clicked.connect(lambda: self.texture_list_find_missing_textures())
+        self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton(lang['TexturelList_Find_Missing_Textures_Button']) # 选出缺失
+        self.TexturelList_Find_Missing_Textures_Button.clicked.connect(
+            lambda: self.texture_list_find_missing_textures())
         self.TexturelList_Find_Missing_Textures_Button.setFixedHeight(40)
 
         # 选出最大贴图的按钮
-        self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton("选出大贴图")
-        self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(lambda: self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
+        self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton(lang['TexturelList_Intelligent_Find_Max_Size_Button']) # 选出大贴图
+        self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(
+                                                                            lambda: self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedHeight(40)
 
         # 选出最大贴图的容错率值
@@ -1161,30 +1179,31 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.tolerance_doubleSpinBox.setSingleStep(0.1)  # 设置步长
         self.tolerance_doubleSpinBox.setDecimals(2)  # 设置小数点后的位数
         self.tolerance_doubleSpinBox.setFixedHeight(40)
-        self.tolerance_doubleSpinBox.valueChanged.connect(lambda: self.TM_modify_config('listwidget_data', self.tolerance_doubleSpinBox.value()))
+        self.tolerance_doubleSpinBox.valueChanged.connect(
+            lambda: self.TM_modify_config('listwidget_data', self.tolerance_doubleSpinBox.value()))
 
         # 替换名称
-        self.TexturelList_Search_And_Replace_Date_Button = QtWidgets.QPushButton('寻找替换')
+        self.TexturelList_Search_And_Replace_Date_Button = QtWidgets.QPushButton(
+            lang['TexturelList_Search_And_Replace_Date_Button'])
         self.TexturelList_Search_And_Replace_Date_Button.setFixedHeight(40)
         self.TexturelList_Search_And_Replace_Date_Button.clicked.connect(lambda: self.batch_replace_data_Win())
 
-        # 找回所有确实路径
-        self.TexturelList_Replace_Data_Button = QtWidgets.QPushButton('找回路径')
+        # 找回所有缺失路径
+        self.TexturelList_Replace_Data_Button = QtWidgets.QPushButton(lang['TexturelList_Replace_Data_Button']) # 找回路径
         self.TexturelList_Replace_Data_Button.setFixedHeight(40)
-        self.TexturelList_Replace_Data_Button.clicked.connect(lambda : self.find_path_re_Win())
+        self.TexturelList_Replace_Data_Button.clicked.connect(lambda: self.find_path_re_Win())
 
         # 压缩贴图
-        self.TexturelList_Processed_Image_Button = QtWidgets.QPushButton('处理图像')
+        self.TexturelList_Processed_Image_Button = QtWidgets.QPushButton(lang['TexturelList_Processed_Image_Button']) # 处理图像
         self.TexturelList_Processed_Image_Button.setFixedHeight(40)
         self.TexturelList_Processed_Image_Button.clicked.connect(lambda: self.test())
 
-
         # TexturelList 贴图列表
         self.TexturelList = QtWidgets.QTableView()
-        TexturelList_Headers = ["贴图节点名称", "材质球", "大小", "像素大小", "格式",  "引用次数", "状态", "路径"]
+        TexturelList_Headers = lang['TexturelList_Headers'] # "贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"
 
         # 创建自定义的模型，设置第2到6列不可编辑
-        self.TEXTURELIST_MODEL = NonEditableColumnsModel(0, 8, non_editable_columns=[ 2, 3, 4, 5, 6])
+        self.TEXTURELIST_MODEL = NonEditableColumnsModel(0, 8, non_editable_columns=[2, 3, 4, 5, 6])
         self.TEXTURELIST_MODEL.setHorizontalHeaderLabels(TexturelList_Headers)
 
         self.TexturelList.setModel(self.TEXTURELIST_MODEL)
@@ -1199,7 +1218,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 让第7列根据窗口大小自动伸缩
         self.TexturelList.horizontalHeader().setSectionResizeMode(7, QtWidgets.QHeaderView.Stretch)
 
-        self.TexturelList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection) # 更改成多选模式
+        self.TexturelList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)  # 更改成多选模式
         self.TexturelList.clicked.connect(lambda *args: self.selection_texture_sl_node_delay_selection_signal())
 
         # 启用自动换行
@@ -1207,12 +1226,11 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 启用排序功能
         self.TexturelList.setSortingEnabled(True)
 
-
         # 让TexturelList表格中的数据居中
         delegate = CenterDelegate(self.TexturelList)
         self.TexturelList.setItemDelegate(delegate)
 
-        # 单独设置第六列左对齐代理（列索引为5）
+        # 单独设置第七列左对齐代理（列索引为6）
         left_align_delegate = LeftAlignDelegate(self.TexturelList)
         self.TexturelList.setItemDelegateForColumn(7, left_align_delegate)
 
@@ -2105,10 +2123,10 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         # 建语言文件路径
         language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
         # 加载语言文件
-        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_WIN']
+        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_FAR_WIN']
 
         # 命名常量命名
-        WINDOWS_NAME =  "搜索并替换-" + WinName #Win名称
+        WINDOWS_NAME =  self.DataPLT['__init__']['WINDOWS_NAME'] + WinName #Win名称
 
         # 判断窗口是否存在，如果存在则删除
         if cmds.window(WINDOWS_NAME, exists=True):
@@ -2130,44 +2148,46 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.initial_settings()
 
     def create_widgets(self):
-
+        lang = self.DataPLT['create_widgets']  # 获取当前语言的数据
 
         # 设置字体大小
         font_20x = QtGui.QFont()
         font_20x.setPointSize(20)  # 设置字体大小为20
 
         font_15x = QtGui.QFont()
-        font_15x.setPointSize(15)  # 设置字体大小为20
+        font_15x.setPointSize(15)  # 设置字体大小为15
 
         font_10x = QtGui.QFont()
-        font_10x.setPointSize(10)  # 设置字体大小为20
+        font_10x.setPointSize(10)  # 设置字体大小为10
 
         # 第一行 两个文字内容
-        self.label_data_to_edit_options = QtWidgets.QLabel("修改内容")
+        self.label_data_to_edit_options = QtWidgets.QLabel(lang['label_data_to_edit_options'])  # 修改内容
         self.label_data_to_edit_options.setFont(font_20x)
-        self.label_data_to_edit_options.setAlignment(QtCore.Qt.AlignCenter)# 居中文字
+        self.label_data_to_edit_options.setAlignment(QtCore.Qt.AlignCenter)  # 居中文字
         self.label_data_to_edit_options.setStyleSheet("letter-spacing: 5px;")
 
-        self.label_data_to_edit_options_02 = QtWidgets.QLabel("你需要根据你要修改的内容选择")
-        self.label_data_to_edit_options_02.setAlignment(QtCore.Qt.AlignCenter)# 居中文字
+        self.label_data_to_edit_options_02 = QtWidgets.QLabel(lang['label_data_to_edit_options_02'])  # 你需要根据你要修改的内容选择
+        self.label_data_to_edit_options_02.setAlignment(QtCore.Qt.AlignCenter)  # 居中文字
         self.label_data_to_edit_options_02.setStyleSheet("""
                                                             letter-spacing: 8px;
                                                             color: rgb(128, 128, 128);
                                                         """)
         # 选择修改内容的选项
         self.select_group = QtWidgets.QButtonGroup(self)
-        self.sl_material = QtWidgets.QRadioButton("材质")
-        self.sl_texture = QtWidgets.QRadioButton("贴图")
-        self.sl_texture_path = QtWidgets.QRadioButton("贴图路径")
+        self.sl_material = QtWidgets.QRadioButton(lang['sl_material'])  # 材质
+        self.sl_texture = QtWidgets.QRadioButton(lang['sl_texture'])  # 贴图
+        self.sl_texture_path = QtWidgets.QRadioButton(lang['sl_texture_path'])  # 贴图路径
         self.select_group.addButton(self.sl_material, 1)
         self.select_group.addButton(self.sl_texture, 2)
         self.select_group.addButton(self.sl_texture_path, 3)
-        self.select_group.buttonClicked.connect(lambda button: (self.modify_config('modify_content_options', self.select_group.id(button)),
-                                                                self.select_group_logic(self.select_group.id(button))))
+        self.select_group.buttonClicked.connect(lambda button: (
+            self.modify_config('modify_content_options', self.select_group.id(button)),
+            self.select_group_logic(self.select_group.id(button))
+        ))
         # 使用编号选中按钮（这里选中ID为1的按钮）
         # self.select_button_by_id(self.group1, 1)
 
-        self.label_modify_options = QtWidgets.QLabel("修改内容的范围")
+        self.label_modify_options = QtWidgets.QLabel(lang['label_modify_options'])  # 修改内容的范围
         self.label_modify_options.setAlignment(QtCore.Qt.AlignCenter)  # 居中文字
         self.label_modify_options.setStyleSheet("""
                                                     letter-spacing: 8px;
@@ -2175,44 +2195,47 @@ class TM_FindAndReplace(QtWidgets.QDialog):
                                                 """)
         # 选择修改范围的选项
         self.modify_group = QtWidgets.QButtonGroup(self)
-        self.radio_all = QtWidgets.QRadioButton("全部")
-        self.radio_table = QtWidgets.QRadioButton("表格内")
-        self.radio_selection = QtWidgets.QRadioButton("选择中")
+        self.radio_all = QtWidgets.QRadioButton(lang['radio_all'])  # 全部
+        self.radio_table = QtWidgets.QRadioButton(lang['radio_table'])  # 表格内
+        self.radio_selection = QtWidgets.QRadioButton(lang['radio_selection'])  # 选择中
         self.modify_group.addButton(self.radio_all, 1)
         self.modify_group.addButton(self.radio_table, 2)
         self.modify_group.addButton(self.radio_selection, 3)
-        self.modify_group.buttonClicked.connect(lambda button: self.modify_config('modify_scope_options', self.modify_group.id(button)))
-
+        self.modify_group.buttonClicked.connect(
+            lambda button: self.modify_config('modify_scope_options', self.modify_group.id(button)))
 
         # 创建第二行的控件（标签和输入框）
-        self.label_find = QtWidgets.QLabel("查找内容")
-
+        self.label_find = QtWidgets.QLabel(lang['label_find'])  # 查找内容
         self.label_find.setFont(font_10x)
         self.label_find.setAlignment(QtCore.Qt.AlignCenter)  # 居中文字
 
         self.line_edit_find = QtWidgets.QLineEdit()
         self.line_edit_find.setFixedHeight(40)
-        self.line_edit_find.setPlaceholderText("请输入查找内容...")
-        self.line_edit_find.textChanged.connect(lambda *args:self.modify_config('search_content', self.line_edit_find.text()))
+        self.line_edit_find.setPlaceholderText(lang['line_edit_find_placeholder'])  # 请输入查找内容...
+        self.line_edit_find.textChanged.connect(
+            lambda *args: self.modify_config('search_content', self.line_edit_find.text()))
 
-
-        self.label_replace = QtWidgets.QLabel("↓ ↓ ↓ ↓ ↓ ↓")
+        self.label_replace = QtWidgets.QLabel(lang['label_replace'])  # ↓ ↓ ↓ ↓ ↓ ↓
         self.label_replace.setFont(font_10x)
         self.label_replace.setAlignment(QtCore.Qt.AlignCenter)  # 居中文字
 
         self.line_edit_replace = QtWidgets.QLineEdit()
         self.line_edit_replace.setFixedHeight(40)
-        self.line_edit_replace.setPlaceholderText("请输入替换内容...")
-        self.line_edit_replace.textChanged.connect(lambda *args: self.modify_config('replace_content', self.line_edit_replace.text()))
+        self.line_edit_replace.setPlaceholderText(lang['line_edit_replace_placeholder'])  # 请输入替换内容...
+        self.line_edit_replace.textChanged.connect(
+            lambda *args: self.modify_config('replace_content', self.line_edit_replace.text()))
 
         # 创建第三行的控件（复选框）
-        self.checkbox_case_sensitive = QtWidgets.QCheckBox("大小写忽略")
-        self.checkbox_case_sensitive.stateChanged.connect(lambda *args: self.modify_config('case_sensitive', self.checkbox_case_sensitive.isChecked()))
+        self.checkbox_case_sensitive = QtWidgets.QCheckBox(lang['checkbox_case_sensitive'])  # 大小写忽略
+        self.checkbox_case_sensitive.stateChanged.connect(
+            lambda *args: self.modify_config('case_sensitive', self.checkbox_case_sensitive.isChecked()))
 
-        self.checkbox_regex = QtWidgets.QCheckBox("使用正则表达式")
-        self.checkbox_regex.stateChanged.connect(lambda *args: self.modify_config('use_regex', self.checkbox_regex.isChecked()))
+        self.checkbox_regex = QtWidgets.QCheckBox(lang['checkbox_regex'])  # 使用正则表达式
+        self.checkbox_regex.stateChanged.connect(
+            lambda *args: self.modify_config('use_regex', self.checkbox_regex.isChecked()))
+
         # 创建第四行的控件（替换按钮）
-        self.button_replace = QtWidgets.QPushButton("替换")
+        self.button_replace = QtWidgets.QPushButton(lang['button_replace'])  # 替换
         self.button_replace.clicked.connect(lambda *args: self.replace_button())
 
     def create_layouts(self):
@@ -2582,13 +2605,21 @@ class TM_FindAndReplace(QtWidgets.QDialog):
 class TM_RepathFiles(QtWidgets.QDialog):
     def __init__(self, WinName = '', parent = None):
         super(TM_RepathFiles, self).__init__(parent)
+        # 0. 初始化全局配置
+        self.initial_global_config()
 
-
+        # 1. 初始化窗口配置
         self.initialize_window_config(WinName)
 
+        # 2. 创建控件
+        self.create_widgets()
+
+        # 3. 创建布局
+        self.create_layouts()
+    # 初始化窗口配置
     def initialize_window_config(self, WinName):
         # 命名常量命名
-        WINDOWS_NAME =  "寻找路径-" + WinName #Win名称
+        WINDOWS_NAME =  self.DataPLT['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
 
         if cmds.window(WINDOWS_NAME, exists=True):
             cmds.deleteUI(WINDOWS_NAME)
@@ -2596,14 +2627,55 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.setObjectName(WINDOWS_NAME)
         self.setWindowTitle(WINDOWS_NAME)
 
+        #...窗口长宽
+        self.setMinimumHeight(400)
+        self.setMinimumWidth(630)
+
     def initial_global_config(self):
-        pass
+        # 实例数据管理器
+        self.dataM = DataManager()
+
+
+        language = self.dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
+        # 建语言文件路径
+        language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
+        # 加载语言文件
+        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_RF_WIN']
 
     def create_widgets(self):
-        pass
+        self.path_list_edit = QtWidgets.QTextEdit()
+
+        self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
+        self.multiple_subfolder_search_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['multiple_subfolder_search_checkbox']) # 多个子文件夹搜索
+        self.ignore_case_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['ignore_case_checkbox']) # 忽略大小写
+
+        self.fix_path_button = QtWidgets.QPushButton(self.DataPLT['create_widgets']['fix_path_button'])
 
     def create_layouts(self):
-        pass
+
+        # 路径输入的窗口文件夹
+        path_list_layout = QtWidgets.QHBoxLayout()
+        path_list_layout.addWidget(self.path_list_edit)
+
+        # 配置选项输入
+        config_checkbox_01 = QtWidgets.QHBoxLayout()
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addWidget(self.search_subfolders_checkbox)
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addWidget(self.multiple_subfolder_search_checkbox)
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addWidget(self.ignore_case_checkbox)
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        # 按钮
+        button_01 = QtWidgets.QHBoxLayout()
+        button_01.addWidget(self.fix_path_button)
+
+        MainLayout = QtWidgets.QVBoxLayout(self)
+        MainLayout.addLayout(path_list_layout)
+        MainLayout.addLayout(config_checkbox_01)
+        MainLayout.addLayout(button_01)
+
 
     def initial_widgets_settings(self):
         pass

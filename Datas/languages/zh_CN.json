@@ -1,107 +1,108 @@
 {
-  "language" : "zh_CN",
-  "version" : "Beta",
+  "language": "zh_CN",
+  "version": "Beta",
+  "ArnoldMagicNode": {
 
 
 
-
-
-  "ArnoldMagicNode" : {
-
-
-
-
-    "TM_WIN" : {
-
-      "WIDGETS": {
-          "TexturelList_Unselect_All_Button": "取消全选",
-          "TexturelList_Find_Missing_Textures_Button": "选出缺失",
-          "TexturelList_Intelligent_Find_Max_Size_Button": "智能选出最大贴图",
-          "TexturelList_Search_And_Replace_Date_Button": "修改数据",
-          "TexturelList_Replace_Data_Button": "找回路径",
-          "TexturelList_Processed_Image_Button": "处理图像",
-          "TexturelList_Headers": ["贴图节点名称 (Map Node Name)", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"]
+    "TM_WIN": {
+      "__init__": {
+        "WINDOWS_NAME": "贴图管理器",
+        "remaining_time": "许可证剩余时间",
+        "day": "天"
+      },
+      "create_widgets": {
+        "MaterialListSearch_placeholder": "输入要搜索的材质球名称....",
+        "TexturelListSearch_placeholder": "输入要搜索的贴图球名称....",
+        "TexturelList_Unselect_All_Button": "取消全选",
+        "TexturelList_reverse_selection": "反选",
+        "TexturelList_Find_Missing_Textures_Button": "选出缺失",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "选出大贴图",
+        "TexturelList_Search_And_Replace_Date_Button": "寻找替换",
+        "TexturelList_Replace_Data_Button": "自动修复路径",
+        "TexturelList_Processed_Image_Button": "处理图像",
+        "TexturelList_Refresh_Button_ToolTip": "根据缓存进行重新刷新",
+        "TexturelList_Headers": ["贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"]
       }
-
-
     },
+
 
     "TM_FAR_WIN": {
-      "INIT" : {
-        "WINDOWS_NAME" : "搜索并替换-"
+      "__init__": {
+        "WINDOWS_NAME": "搜索并替换-"
       },
-      "WIDGETS": {
-          "label_data_to_edit_options": "修改内容的范围",
-          "label_data_to_edit_options_02": "请选择需要修改的内容范围",
-          "sl_material": "材质",
-          "sl_texture": "贴图",
-          "sl_texture_path": "贴图路径",
-          "radio_all": "全部",
-          "radio_table": "表格内",
-          "radio_selection": "表格选择",
-          "label_find": "查找内容",
-          "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-          "checkbox_case_sensitive": "大小写忽略",
-          "checkbox_regex": "使用正则表达式",
-          "button_replace": "替换"
-    }
+      "create_widgets": {
+        "label_data_to_edit_options": "修改内容",
+        "label_data_to_edit_options_02": "你需要根据你要修改的内容选择",
+        "sl_material": "材质",
+        "sl_texture": "贴图",
+        "sl_texture_path": "贴图路径",
+        "label_modify_options": "修改内容的范围",
+        "radio_all": "全部",
+        "radio_table": "表格内",
+        "radio_selection": "选择中",
+        "label_find": "查找内容",
+        "line_edit_find_placeholder": "请输入查找内容...",
+        "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
+        "line_edit_replace_placeholder": "请输入替换内容...",
+        "checkbox_case_sensitive": "大小写忽略",
+        "checkbox_regex": "使用正则表达式",
+        "button_replace": "替换"
+      }
+    },
 
 
 
-    }
-
-
-
-  },
-
-  "ArnoldMagicNodeLibs" : {
-
-
-    "DataP": {
-      "SSARD" : {
-        "01"  : "你传入数据不是字符串类型",
-        "02"  : "正则表达式错误 :"
+    "TM_RF_WIN": {
+      "initialize_window_config": {
+        "WINDOWS_NAME": "自动修复路径-"
+      },
+      "create_widgets": {
+        "search_subfolders_checkbox": "搜索子文件夹",
+        "multiple_subfolder_search_checkbox": "多个子文件夹搜索",
+        "ignore_case_checkbox": "忽略大小写",
+        "fix_path_button": "开始修复路径"
       }
     }
-
-
   },
 
-  "LicenseV" : {
-    "GMI" : {
-      "01" : "无法获取到主板ID 请检查一下权限"
+
+
+  "ArnoldMagicNodeLibs": {
+    "DataP": {
+      "SSARD": {
+        "01": "你传入数据不是字符串类型",
+        "02": "正则表达式错误 :"
+      }
+    }
+  },
+  "LicenseV": {
+    "GMI": {
+      "01": "无法获取到主板ID 请检查一下权限"
     },
-
-    "GWTS" : {
-      "01" : "无法获取淘宝时间戳",
-      "02" : "获取link时间失败:"
+    "GWTS": {
+      "01": "无法获取淘宝时间戳",
+      "02": "获取link时间失败:"
     },
-
-    "GNTS" : {
-      "01" : "获取 NTP 时间失败:"
+    "GNTS": {
+      "01": "获取 NTP 时间失败:"
     },
-
-     "VL"  : {
-       "01" : "许可证格式无效",
-       "02" : "设备识别码不匹配",
-       "03" : "许可证已过期！",
-       "04" : "签名验证失败，许可证可能被篡改",
-       "05" : "许可证格式错误",
-       "06" : "验证过程中发生未知错误，请联系开发者"
-
+    "VL": {
+      "01": "许可证格式无效",
+      "02": "设备识别码不匹配",
+      "03": "许可证已过期！",
+      "04": "签名验证失败，许可证可能被篡改",
+      "05": "许可证格式错误",
+      "06": "验证过程中发生未知错误，请联系开发者"
     },
-
-    "LW" : {
-      "DIL" : "设备识别码（需要提供给开发者）",
-      "SUL" : "输入序列号",
-      "SNT" : "请输入序列号",
-      "VB" : "验证许可"
-      },
-    "MP" : {
-      "01" : "无法获取在线时间"
+    "LW": {
+      "DIL": "设备识别码（需要提供给开发者）",
+      "SUL": "输入序列号",
+      "SNT": "请输入序列号",
+      "VB": "验证许可"
+    },
+    "MP": {
+      "01": "无法获取在线时间"
     }
   }
-
-
-
 }
