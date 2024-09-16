@@ -1275,6 +1275,42 @@ class GetNodeData():
 
         return update_dict
 
+    # 获取指定路径下的内容
+    def GetDirectoryContentsWithOptions(self, path, search_subfolders=False, multiple_subfolder_search=None):
+        """
+        获取指定路径下的内容，返回一个字典，key是内容名称，value是路径。
+
+        参数：
+        - path: 字符串，要搜索的路径。
+        - search_subfolders: 布尔值，是否搜索所有子文件夹。
+        - multiple_subfolder_search: 列表，指定要搜索的多个子文件夹名称。
+        """
+
+        result = {}
+
+        if multiple_subfolder_search:
+            # 搜索指定的多个子文件夹
+            for subfolder in multiple_subfolder_search:
+                subfolder_path = os.path.join(path, subfolder)
+                if os.path.exists(subfolder_path):
+                    for item in os.listdir(subfolder_path):
+                        item_path = os.path.join(subfolder_path, item)
+                        result[item] = item_path
+                else:
+                    print(f"子文件夹 '{subfolder}' 不存在")
+        elif search_subfolders:
+            # 搜索所有子文件夹
+            for root, dirs, files in os.walk(path):
+                for name in files:
+                    item_path = os.path.join(root, name)
+                    result[name] = item_path
+        else:
+            # 仅搜索当前目录
+            for item in os.listdir(path):
+                item_path = os.path.join(path, item)
+                result[item] = item_path
+
+        return result
 #   专门负责各种数据的处理
 class DataProcessor():
     def __init__(self):

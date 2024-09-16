@@ -313,6 +313,13 @@ TM_FindAndReplace_config_dict = {
     "use_regex" : False
 }
 
+TM_RepathFiles_config_dict = {
+    "path_edit" : "",
+    "search_subfolders_checkbox" : False,
+    "multiple_subfolder_search_checkbox" : False,
+    "ignore_case_checkbox" : False
+}
+
 TextureManagerWin_config_dict = {
     'listwidget_data' : 50 ,
 }
@@ -2605,6 +2612,9 @@ class TM_FindAndReplace(QtWidgets.QDialog):
 class TM_RepathFiles(QtWidgets.QDialog):
     def __init__(self, WinName = '', parent = None):
         super(TM_RepathFiles, self).__init__(parent)
+
+        self.TextureManagerWin = parent  # 保存主窗口的引用
+
         # 0. 初始化全局配置
         self.initial_global_config()
 
@@ -2616,6 +2626,9 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
         # 3. 创建布局
         self.create_layouts()
+
+        # 4. 初始化控件
+        self.initial_widgets_settings()
     # 初始化窗口配置
     def initialize_window_config(self, WinName):
         # 命名常量命名
@@ -2628,13 +2641,15 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.setWindowTitle(WINDOWS_NAME)
 
         #...窗口长宽
-        self.setMinimumHeight(400)
-        self.setMinimumWidth(630)
+        #self.setMinimumHeight(400)
+        self.setMinimumWidth(650)
 
+    # 初始化全局设置
     def initial_global_config(self):
         # 实例数据管理器
         self.dataM = DataManager()
-
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.getnodedata = GetNodeData() # 获取节点数据模块
 
         language = self.dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
         # 建语言文件路径
@@ -2642,21 +2657,45 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 加载语言文件
         self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_RF_WIN']
 
+        self.TM_repath_files_config_FilePath = os.path.join(Script_path, "Datas", "texture_manager", "TM_repath_files_config.bin")
+
+        # 如果TM_repath_files_config配置文件不存在会重新创建一次
+        if not os.path.exists(self.TM_repath_files_config_FilePath):
+            self.dataM.bin_save_data(self.TM_repath_files_config_FilePath, TM_RepathFiles_config_dict)
+
+    # 创建控件
     def create_widgets(self):
-        self.path_list_edit = QtWidgets.QTextEdit()
+        self.path_edit = QtWidgets.QLineEdit()
+        self.path_edit.setFixedHeight(40)
+        self.path_edit.textChanged.connect(lambda text: self.modify_config('path_edit', text))
+
+        self.select_folder_button = QtWidgets.QPushButton('. . .')
+        self.select_folder_button.setFixedHeight(38)
+        self.select_folder_button.setFixedWidth(35)
+        self.select_folder_button.clicked.connect(lambda *args:self.select_folder())
 
         self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
+        self.search_subfolders_checkbox.stateChanged.connect(
+            lambda *args: self.modify_config('search_subfolders_checkbox', self.search_subfolders_checkbox.isChecked()))
+
         self.multiple_subfolder_search_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['multiple_subfolder_search_checkbox']) # 多个子文件夹搜索
+        self.multiple_subfolder_search_checkbox.stateChanged.connect(
+            lambda *args: self.modify_config('multiple_subfolder_search_checkbox', self.multiple_subfolder_search_checkbox.isChecked()))
+
         self.ignore_case_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['ignore_case_checkbox']) # 忽略大小写
+        self.ignore_case_checkbox.stateChanged.connect(
+            lambda *args: self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
 
         self.fix_path_button = QtWidgets.QPushButton(self.DataPLT['create_widgets']['fix_path_button'])
+        self.fix_path_button.clicked.connect(lambda *args: self.fix_path())
 
+    # 创建布局
     def create_layouts(self):
 
         # 路径输入的窗口文件夹
         path_list_layout = QtWidgets.QHBoxLayout()
-        path_list_layout.addWidget(self.path_list_edit)
-
+        path_list_layout.addWidget(self.path_edit)
+        path_list_layout.addWidget(self.select_folder_button)
         # 配置选项输入
         config_checkbox_01 = QtWidgets.QHBoxLayout()
         config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
@@ -2676,12 +2715,57 @@ class TM_RepathFiles(QtWidgets.QDialog):
         MainLayout.addLayout(config_checkbox_01)
         MainLayout.addLayout(button_01)
 
-
+    # 初始化控件设置
     def initial_widgets_settings(self):
-        pass
+        self.path_edit.setText(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['path_edit'])
+
+        self.search_subfolders_checkbox.setChecked(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'])
+        self.multiple_subfolder_search_checkbox.setChecked(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
+        self.ignore_case_checkbox.setChecked(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
+
+    # 选择文件夹
+    def select_folder(self):
+        folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "选择文件夹", "")
+
+        # 判断是防止没有选择并执行了写入到控件的命令。如果空内容写入会导致使用不适
+        if not folder_path == '':
+            self.path_edit.setText(folder_path)
+
+    # 寻找文件夹并修复确实文件夹
+    def fix_path(self):
+        # 获取输入的路径
+        path = self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['path_edit']
+
+        # 判断输入路径是否存在
+        if not os.path.exists(path):
+            return self.feedback.CP('输入的路径不存在')
+
+        path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
+            path,
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
+
+        print(path_contenes)
+        # print(self.TextureManagerWin.MterialNodeAllInfoDict)
+
+
 
     def test(self):
         pass
+
+
+
+    # --------------------保存设置内容的函数
+    def modify_config(self, key, cont):
+        config = self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)
+
+        config[key] = cont
+
+        self.dataM.bin_save_data(self.TM_repath_files_config_FilePath, config)
+    # --------------------保存设置内容的函数
+
+
+
 
 # 设置不可编辑
 class NonEditableColumnsModel(QtGui.QStandardItemModel):
@@ -2715,7 +2799,6 @@ class NonEditableColumnsModel(QtGui.QStandardItemModel):
             return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
         # 否则，调用父类的 flags 方法，返回默认的标志，保持单元格的可编辑性
         return super().flags(index)
-
 
 # 设置文本对齐方式为居中对齐
 class CenterDelegate(QtWidgets.QStyledItemDelegate):
