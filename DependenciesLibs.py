@@ -37,6 +37,7 @@ LibsFilesDict = {
     'requests' : 'requests',
     'ntplib.py' : 'ntplib',
     'aiohttp' : 'aiohttp',
+    'ahocorapy' : 'ahocorapy'
 }
 
 class FeedbackPrompt():

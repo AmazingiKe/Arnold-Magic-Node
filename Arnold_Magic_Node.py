@@ -2648,6 +2648,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
     def initial_global_config(self):
         # 实例数据管理器
         self.dataM = DataManager()
+        self.dataP = DataProcessor()
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.getnodedata = GetNodeData() # 获取节点数据模块
 
@@ -2733,6 +2734,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
     # 寻找文件夹并修复确实文件夹
     def fix_path(self):
+        # -----------------------------初始化 获取基本数据
         # 获取输入的路径
         path = self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['path_edit']
 
@@ -2740,15 +2742,30 @@ class TM_RepathFiles(QtWidgets.QDialog):
         if not os.path.exists(path):
             return self.feedback.CP('输入的路径不存在')
 
+        # 从主窗口获取的材质所有数据
+        old_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
+
+
+        loaded_failed_tex_dict = {} # 连接失败的贴图字典
+
+        # 获取材质详细数据中连接失败的贴图
+        for MatName in old_MterialNodeAllInfoDict:
+            for TexName, Contents in old_MterialNodeAllInfoDict[MatName].items():
+                if Contents['isLoaded'] == False:
+                    loaded_failed_tex_dict[os.path.basename(Contents['Path'])] = [TexName, MatName]
+
+        # 判断输入路径是否存在
+        if not loaded_failed_tex_dict:
+            return self.feedback.CP('没有连接失败的贴图')
+
+
+
         path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
             path,
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
 
-        print(path_contenes)
-        # print(self.TextureManagerWin.MterialNodeAllInfoDict)
-
-
+        self.dataP.searchKeysInDictUsingAhoCorapy(loaded_failed_tex_dict, path_contenes)
 
     def test(self):
         pass

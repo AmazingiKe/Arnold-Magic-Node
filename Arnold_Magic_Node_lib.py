@@ -13,6 +13,8 @@ import pathlib
 import json  # 处理 JSON 数据
 import ast  # 解析和操作 Python 代码的抽象语法树
 import msgpack
+from ahocorapy.keywordtree import KeywordTree
+
 # 字符串处理
 import re  # 正则表达式操作
 import difflib  # 比较文本差异
@@ -1276,41 +1278,53 @@ class GetNodeData():
         return update_dict
 
     # 获取指定路径下的内容
-    def GetDirectoryContentsWithOptions(self, path, search_subfolders=False, multiple_subfolder_search=None):
+    def GetDirectoryContentsWithOptions(self, Path, SearchSubfolders=True, MultipleSubfolderSearch=True):
         """
-        获取指定路径下的内容，返回一个字典，key是内容名称，value是路径。
+        获取指定路径下的内容，并根据选项决定是否搜索子文件夹。
 
         参数：
-        - path: 字符串，要搜索的路径。
-        - search_subfolders: 布尔值，是否搜索所有子文件夹。
-        - multiple_subfolder_search: 列表，指定要搜索的多个子文件夹名称。
+        - Path: 要搜索的目录路径。
+        - SearchSubfolders (bool): 是否搜索子文件夹，默认值为True。
+        - MultipleSubfolderSearch (bool): 是否搜索多层子文件夹，默认值为True。
+            - 注意：只有当SearchSubfolders为True时，此参数才有效。
+
+        返回：
+        - ContentsDict (dict): 包含目录内容的字典，键为内容名称，值为其完整路径。
         """
 
-        result = {}
+        ContentsDict = {}
 
-        if multiple_subfolder_search:
-            # 搜索指定的多个子文件夹
-            for subfolder in multiple_subfolder_search:
-                subfolder_path = os.path.join(path, subfolder)
-                if os.path.exists(subfolder_path):
-                    for item in os.listdir(subfolder_path):
-                        item_path = os.path.join(subfolder_path, item)
-                        result[item] = item_path
-                else:
-                    print(f"子文件夹 '{subfolder}' 不存在")
-        elif search_subfolders:
-            # 搜索所有子文件夹
-            for root, dirs, files in os.walk(path):
-                for name in files:
-                    item_path = os.path.join(root, name)
-                    result[name] = item_path
+        # 如果MultipleSubfolderSearch开启，确保SearchSubfolders也开启
+        if MultipleSubfolderSearch and not SearchSubfolders:
+            # 如果未开启搜索子文件夹，但开启了多层子文件夹搜索，则关闭多层搜索
+            MultipleSubfolderSearch = False
+
+        if SearchSubfolders:
+            if MultipleSubfolderSearch:
+                # 搜索所有子文件夹（多层级）
+                for Root, Dirs, Files in os.walk(Path):
+                    # 遍历当前目录下的所有目录和文件
+                    for Name in Dirs + Files:
+                        FullPath = os.path.join(Root, Name)
+                        ContentsDict[Name] = FullPath
+            else:
+                # 只搜索一层子文件夹
+                for Item in os.listdir(Path):
+                    ItemPath = os.path.join(Path, Item)
+                    ContentsDict[Item] = ItemPath  # 添加当前目录下的文件和文件夹
+                    if os.path.isdir(ItemPath):
+                        # 如果是目录，获取其下一级内容
+                        for SubItem in os.listdir(ItemPath):
+                            SubItemPath = os.path.join(ItemPath, SubItem)
+                            ContentsDict[SubItem] = SubItemPath  # 添加子目录下的文件和文件夹
         else:
-            # 仅搜索当前目录
-            for item in os.listdir(path):
-                item_path = os.path.join(path, item)
-                result[item] = item_path
+            # 不搜索子文件夹，只获取当前目录内容
+            for Item in os.listdir(Path):
+                ItemPath = os.path.join(Path, Item)
+                ContentsDict[Item] = ItemPath  # 添加当前目录下的文件和文件夹
 
-        return result
+        return ContentsDict  # 返回包含内容名称和路径的字典
+
 #   专门负责各种数据的处理
 class DataProcessor():
     def __init__(self):
@@ -1410,9 +1424,31 @@ class DataProcessor():
         # 返回处理后的字典，重复键已被移除
         return data
 
+    def searchKeysInDictUsingAhoCorapy(self, target_dict, search_content, ignore_case=False):
+        """
+        使用Aho-Corasick算法在search_content的键中搜索target_dict的键。
+        如果找到匹配项，打印出search_content中的匹配键。
 
+        参数：
+        - target_dict: dict，包含要搜索的键
+        - search_content: dict，其键将被用于搜索匹配
+        - ignore_case: bool，默认为False，是否忽略大小写
+        """
+        # 根据ignore_case参数设置是否区分大小写
+        kwtree = KeywordTree(case_insensitive=ignore_case)
 
+        # 将target_dict的键添加到关键字树中
+        for key in target_dict.keys():
+            kwtree.add(key)
+        kwtree.finalize()
 
+        # 在search_content的键中进行搜索
+        for content_key in search_content.keys():
+            matches = kwtree.search_all(content_key)
+            for match in matches:
+                # 打印出search_content中的匹配键
+                print(f"找到匹配项: {content_key}")
+                break  # 找到第一个匹配项后停止对该键的搜索
 
 
 
