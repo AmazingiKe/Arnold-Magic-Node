@@ -2726,7 +2726,14 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
     # 选择文件夹
     def select_folder(self):
-        folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "选择文件夹", "")
+
+        default_url = self.path_edit.text()
+
+        if os.path.exists(default_url):
+
+            folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "选择文件夹", default_url)
+        else:
+            folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "选择文件夹", '')
 
         # 判断是防止没有选择并执行了写入到控件的命令。如果空内容写入会导致使用不适
         if not folder_path == '':
@@ -2752,20 +2759,39 @@ class TM_RepathFiles(QtWidgets.QDialog):
         for MatName in old_MterialNodeAllInfoDict:
             for TexName, Contents in old_MterialNodeAllInfoDict[MatName].items():
                 if Contents['isLoaded'] == False:
-                    loaded_failed_tex_dict[os.path.basename(Contents['Path'])] = [TexName, MatName]
+                    loaded_failed_tex_dict[os.path.basename(Contents['Path'])] = [TexName, MatName, Contents['Path']]
 
         # 判断输入路径是否存在
         if not loaded_failed_tex_dict:
             return self.feedback.CP('没有连接失败的贴图')
 
 
-
+        start_time = time.time()
         path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
             path,
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
 
-        self.dataP.searchKeysInDictUsingAhoCorapy(loaded_failed_tex_dict, path_contenes)
+        get_path_contenes_time = time.time() - start_time
+
+
+
+
+        correct_path_dictionary = self.dataP.searchKeysInDictUsingAhoCorapy(loaded_failed_tex_dict,
+                                                                            path_contenes,
+                                                                            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
+        if correct_path_dictionary == {}:
+            return self.feedback.CP("没有寻找到对应的贴图文件")
+
+
+        find_time = time.time() - start_time - get_path_contenes_time
+
+        self.feedback.CP('查询文件夹过程时间：'+ format(get_path_contenes_time, '.2f'))
+        self.feedback.CP('寻找对比过程时间：' + format(find_time, '.2f'))
+
+
+
+
 
     def test(self):
         pass

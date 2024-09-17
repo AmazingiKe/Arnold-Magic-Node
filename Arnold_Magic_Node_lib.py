@@ -1278,7 +1278,7 @@ class GetNodeData():
         return update_dict
 
     # 获取指定路径下的内容
-    def GetDirectoryContentsWithOptions(self, Path, SearchSubfolders=True, MultipleSubfolderSearch=True):
+    def GetDirectoryContentsWithOptions(self, Path, SearchSubfolders=True, MultipleSubfolderSearch=True, Extensions=None):
         """
         获取指定路径下的内容，并根据选项决定是否搜索子文件夹。
 
@@ -1287,43 +1287,50 @@ class GetNodeData():
         - SearchSubfolders (bool): 是否搜索子文件夹，默认值为True。
         - MultipleSubfolderSearch (bool): 是否搜索多层子文件夹，默认值为True。
             - 注意：只有当SearchSubfolders为True时，此参数才有效。
+        - Extensions (list): 要包含的文件扩展名列表，例如 ['.txt', '.jpg']，默认值为None，表示不进行扩展名过滤。
 
         返回：
-        - ContentsDict (dict): 包含目录内容的字典，键为内容名称，值为其完整路径。
+        - ContentsDict (dict): 包含目录内容的字典，键为文件的完整路径，值为其名称。
         """
 
         ContentsDict = {}
+
+        if Extensions:
+            # 将扩展名转换为小写集合，便于快速查找
+            Extensions = set(ext.lower() for ext in Extensions)
+        else:
+            Extensions = None
 
         # 如果MultipleSubfolderSearch开启，确保SearchSubfolders也开启
         if MultipleSubfolderSearch and not SearchSubfolders:
             # 如果未开启搜索子文件夹，但开启了多层子文件夹搜索，则关闭多层搜索
             MultipleSubfolderSearch = False
 
-        if SearchSubfolders:
-            if MultipleSubfolderSearch:
-                # 搜索所有子文件夹（多层级）
-                for Root, Dirs, Files in os.walk(Path):
-                    # 遍历当前目录下的所有目录和文件
-                    for Name in Dirs + Files:
-                        FullPath = os.path.join(Root, Name)
-                        ContentsDict[Name] = FullPath
-            else:
-                # 只搜索一层子文件夹
-                for Item in os.listdir(Path):
-                    ItemPath = os.path.join(Path, Item)
-                    ContentsDict[Item] = ItemPath  # 添加当前目录下的文件和文件夹
-                    if os.path.isdir(ItemPath):
-                        # 如果是目录，获取其下一级内容
-                        for SubItem in os.listdir(ItemPath):
-                            SubItemPath = os.path.join(ItemPath, SubItem)
-                            ContentsDict[SubItem] = SubItemPath  # 添加子目录下的文件和文件夹
-        else:
-            # 不搜索子文件夹，只获取当前目录内容
-            for Item in os.listdir(Path):
-                ItemPath = os.path.join(Path, Item)
-                ContentsDict[Item] = ItemPath  # 添加当前目录下的文件和文件夹
+        def scan_directory(path, level):
+            try:
+                with os.scandir(path) as it:
+                    for entry in it:
+                        if entry.is_file():
+                            if Extensions:
+                                # 获取文件的扩展名并转换为小写
+                                ext = os.path.splitext(entry.name)[1].lower()
+                                if ext not in Extensions:
+                                    continue  # 跳过不符合扩展名的文件
+                            ContentsDict[entry.name] = entry.path
+                        elif entry.is_dir():
+                            ContentsDict[entry.name] = entry.path
+                            if SearchSubfolders:
+                                if MultipleSubfolderSearch or level == 0:
+                                    # 递归扫描子目录
+                                    scan_directory(entry.path, level + 1)
+            except PermissionError:
+                pass  # 忽略没有权限的文件夹
 
-        return ContentsDict  # 返回包含内容名称和路径的字典
+        # 标准化初始路径
+        Path = os.path.normpath(Path)
+        scan_directory(Path, level=0)
+
+        return ContentsDict  # 返回包含内容路径和名称的字典
 
 #   专门负责各种数据的处理
 class DataProcessor():
@@ -1424,7 +1431,8 @@ class DataProcessor():
         # 返回处理后的字典，重复键已被移除
         return data
 
-    def searchKeysInDictUsingAhoCorapy(self, target_dict, search_content, ignore_case=False):
+    # 使用Aho-Corasick算法在search_content的键中搜索target_dict的键
+    def searchKeysInDictUsingAhoCorapy(self, target_dict, search_content, ignore_case = False):
         """
         使用Aho-Corasick算法在search_content的键中搜索target_dict的键。
         如果找到匹配项，打印出search_content中的匹配键。
@@ -1437,6 +1445,9 @@ class DataProcessor():
         # 根据ignore_case参数设置是否区分大小写
         kwtree = KeywordTree(case_insensitive=ignore_case)
 
+        # 匹配完后正确的路径 字典
+        correct_path_dictionary = {}
+
         # 将target_dict的键添加到关键字树中
         for key in target_dict.keys():
             kwtree.add(key)
@@ -1446,11 +1457,13 @@ class DataProcessor():
         for content_key in search_content.keys():
             matches = kwtree.search_all(content_key)
             for match in matches:
-                # 打印出search_content中的匹配键
-                print(f"找到匹配项: {content_key}")
+                self.feedback.CP(f'{content_key}成功匹配 -> {search_content[content_key]}')
+
+                correct_path_dictionary[content_key] = search_content[content_key] # 路径
+
                 break  # 找到第一个匹配项后停止对该键的搜索
 
-
+        return correct_path_dictionary
 
 
 
