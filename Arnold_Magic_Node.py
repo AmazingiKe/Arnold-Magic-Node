@@ -27,6 +27,7 @@ from datetime import datetime
 
 import webbrowser   # 快速打开web网页
 
+
 # 导入PySide
 try:
     from PySide2 import QtCore
@@ -2752,25 +2753,56 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 从主窗口获取的材质所有数据
         old_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
 
+        # 初始化两个字典：
+        # loaded_failed_tex_dict 用于存储连接失败的贴图信息，键为贴图的文件名（basename），值为贴图相关信息的列表
+        loaded_failed_tex_dict = {}  # 连接失败的贴图字典
 
-        loaded_failed_tex_dict = {} # 连接失败的贴图字典
+        # same_path_dict 用于存储具有相同文件名但不同路径的贴图信息，键为贴图的文件名，值为使用该文件名的纹理名称列表
+        same_path_dict = {}  # 相同路径的字典
 
-        # 获取材质详细数据中连接失败的贴图
+        # 遍历所有材质及其对应的贴图信息
         for MatName in old_MterialNodeAllInfoDict:
             for TexName, Contents in old_MterialNodeAllInfoDict[MatName].items():
-                if Contents['isLoaded'] == False:
-                    loaded_failed_tex_dict[os.path.basename(Contents['Path'])] = [TexName, MatName, Contents['Path']]
+                # 检查当前贴图是否未成功加载
+                if not Contents['isLoaded'] == True:
+                    # 获取贴图文件的基本名称（不含路径）
+                    tex_file_name = os.path.basename(Contents['Path'])
+
+                    # 判断该文件名是否已经存在于连接失败的贴图字典中
+                    if tex_file_name in loaded_failed_tex_dict:
+                        # 如果存在，说明有重复的贴图文件名，需要记录这些具有相同文件名的贴图
+                        # 首先检查 same_path_dict 是否已经有该文件名的记录
+                        if tex_file_name not in same_path_dict:
+                            # 如果还没有记录，初始化一个空列表用于存储使用该文件名的纹理名称
+                            same_path_dict[tex_file_name] = []
+                        # 将当前纹理名称添加到对应文件名的列表中
+                        same_path_dict[tex_file_name].append(TexName)
+                    else:
+                        # 如果该文件名尚未存在于连接失败的贴图字典中，添加新的条目
+                        # 值列表包含纹理名称、材质名称以及原始路径
+                        loaded_failed_tex_dict[tex_file_name] = [TexName, MatName, Contents['Path']]
 
         # 判断输入路径是否存在
         if not loaded_failed_tex_dict:
             return self.feedback.CP('没有连接失败的贴图')
 
+        extensions = [
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif',
+            '.svg', '.webp', '.ico', '.heic', '.heif', '.raw',
+            '.psd', '.ai', '.eps', '.jfif', '.pjpeg', '.pjp' ,'tga'
+        ]
+
+
 
         start_time = time.time()
+        # 寻找路径下的内容
         path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
             path,
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
-            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'],
+            extensions
+            )
+
 
         get_path_contenes_time = time.time() - start_time
 
@@ -2780,6 +2812,8 @@ class TM_RepathFiles(QtWidgets.QDialog):
         correct_path_dictionary = self.dataP.searchKeysInDictUsingAhoCorapy(loaded_failed_tex_dict,
                                                                             path_contenes,
                                                                             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
+
+
         if correct_path_dictionary == {}:
             return self.feedback.CP("没有寻找到对应的贴图文件")
 
@@ -2789,10 +2823,26 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.feedback.CP('查询文件夹过程时间：'+ format(get_path_contenes_time, '.2f'))
         self.feedback.CP('寻找对比过程时间：' + format(find_time, '.2f'))
 
+        for texFileName in correct_path_dictionary:
+            # 获取失败贴图对应的节点名称、材质名称和旧路径
+            node_name = loaded_failed_tex_dict[texFileName][0]  # 节点名称
+            mat_name = loaded_failed_tex_dict[texFileName][1]  # 材质名称
+            old_path = loaded_failed_tex_dict[texFileName][2]  # 旧路径（修正索引为2）
+            new_path = correct_path_dictionary[texFileName]  # 新路径
 
+            try:
+                # 更新主节点的贴图路径
+                cmds.setAttr(f"{node_name}.fileTextureName", new_path, type="string")
+            except Exception as e:
+                print(f"更新节点 {node_name} 失败: {e}")
 
-
-
+            # 如果存在相同文件名的其他节点，逐一更新其贴图路径
+            if texFileName in same_path_dict:
+                for duplicate_node_name in same_path_dict[texFileName]:
+                    try:
+                        cmds.setAttr(f"{duplicate_node_name}.fileTextureName", new_path, type="string")
+                    except Exception as e:
+                        print(f"更新节点 {duplicate_node_name} 失败: {e}")
     def test(self):
         pass
 
