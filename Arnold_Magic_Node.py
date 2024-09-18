@@ -1045,12 +1045,11 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.WINDOWS_NAME = f"{self.DataPLT['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.DataPLT['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}{self.DataPLT['__init__']['day']}"
 
         # 判断窗口是否存在，如果存在则删除
-        if cmds.window(self.WINDOWS_NAME, exists=True):
-            cmds.deleteUI(self.WINDOWS_NAME)
+        delete_window_if_existe('TextureManagerWin')
 
 
 
-        self.setObjectName(self.WINDOWS_NAME)
+        self.setObjectName('TextureManagerWin')
         self.setWindowTitle(self.WINDOWS_NAME)
         self.setWindowIcon(QtGui.QIcon(Icon_path + "\\TXManagerShelf_200.png"))
         #...窗口长宽
@@ -1204,7 +1203,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 压缩贴图
         self.TexturelList_Processed_Image_Button = QtWidgets.QPushButton(lang['TexturelList_Processed_Image_Button']) # 处理图像
         self.TexturelList_Processed_Image_Button.setFixedHeight(40)
-        self.TexturelList_Processed_Image_Button.clicked.connect(lambda: self.test())
+        self.TexturelList_Processed_Image_Button.clicked.connect(lambda: self.image_processing_Win())
 
         # TexturelList 贴图列表
         self.TexturelList = QtWidgets.QTableView()
@@ -1934,6 +1933,9 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         tm_RepathFiles.new_MterialNodeAllInfoDict_signal.connect(self.replace_path_data_and_refresh_ui)
 
+    def image_processing_Win(self):
+        tm_ImageProcessing = TM_ImageProcessing(self.WINDOWS_NAME, parent=self)
+        tm_ImageProcessing.show()
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
         # 遍历模型中的每一行
@@ -2139,10 +2141,9 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         WINDOWS_NAME =  self.DataPLT['__init__']['WINDOWS_NAME'] + WinName #Win名称
 
         # 判断窗口是否存在，如果存在则删除
-        if cmds.window(WINDOWS_NAME, exists=True):
-            cmds.deleteUI(WINDOWS_NAME)
+        delete_window_if_existe('TM_FindAndReplace_Win')
 
-        self.setObjectName(WINDOWS_NAME)
+        self.setObjectName('TM_FindAndReplace_Win')
         self.setWindowTitle(WINDOWS_NAME)
         #...窗口长宽
         self.setMinimumHeight(400)
@@ -2638,13 +2639,13 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.initial_widgets_settings()
     # 初始化窗口配置
     def initialize_window_config(self, WinName):
+
         # 命名常量命名
         WINDOWS_NAME =  self.DataPLT['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
 
-        if cmds.window(WINDOWS_NAME, exists=True):
-            cmds.deleteUI(WINDOWS_NAME)
+        delete_window_if_existe('TM_RepathFiles_Win')
 
-        self.setObjectName(WINDOWS_NAME)
+        self.setObjectName('TM_RepathFiles_Win')
         self.setWindowTitle(WINDOWS_NAME)
 
         #...窗口长宽
@@ -2682,6 +2683,10 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.select_folder_button.setFixedWidth(35)
         self.select_folder_button.clicked.connect(lambda *args:self.select_folder())
 
+        self.memory_search_mode_checkbox = QtWidgets.QCheckBox(
+            self.DataPLT['create_widgets']['memory_search_mode_checkbox'])  # 记忆搜索模式
+        self.memory_search_mode_checkbox.setEnabled(False)
+
         self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
         self.search_subfolders_checkbox.stateChanged.connect(
             lambda *args: self.modify_config('search_subfolders_checkbox', self.search_subfolders_checkbox.isChecked()))
@@ -2706,13 +2711,28 @@ class TM_RepathFiles(QtWidgets.QDialog):
         path_list_layout.addWidget(self.select_folder_button)
         # 配置选项输入
         config_checkbox_01 = QtWidgets.QHBoxLayout()
-        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        config_checkbox_01.addWidget(self.memory_search_mode_checkbox)
+
+        config_checkbox_01.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
         config_checkbox_01.addWidget(self.search_subfolders_checkbox)
-        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        config_checkbox_01.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
         config_checkbox_01.addWidget(self.multiple_subfolder_search_checkbox)
-        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        config_checkbox_01.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
         config_checkbox_01.addWidget(self.ignore_case_checkbox)
-        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        config_checkbox_01.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
 
         # 按钮
         button_01 = QtWidgets.QHBoxLayout()
@@ -2903,6 +2923,60 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.TM_repath_files_config_FilePath, config)
     # --------------------保存设置内容的函数
 
+# 贴图管理器的图像处理界面
+class TM_ImageProcessing(QtWidgets.QDialog):
+    def __init__(self, WinName = '', parent=None):
+        super(TM_ImageProcessing, self).__init__(parent)
+
+        self.TextureManagerWin = parent  # 保存主窗口的引用
+
+        # 0. 初始化全局配置
+        self.initial_global_config()
+
+        # 1. 初始化窗口配置
+        self.initialize_window_config(WinName)
+
+        # 2. 创建控件
+        self.create_widgets()
+
+        # 3. 创建布局
+        self.create_layouts()
+
+        # 4. 初始化控件
+        self.initial_widgets_settings()
+
+    # 初始化窗口配置
+    def initialize_window_config(self, WinName):
+        # 命名常量命名
+        WINDOWS_NAME =  'TM_ImageProcessing' + WinName #Win名称
+
+        delete_window_if_existe('TM_ImageProcessing_Win')
+
+        self.setObjectName('TM_ImageProcessing_Win')
+        self.setWindowTitle(WINDOWS_NAME)
+
+        #...窗口长宽
+        #self.setMinimumHeight(400)
+        self.setMinimumWidth(650)
+
+    def initial_global_config(self):
+        pass
+
+    def create_widgets(self):
+        pass
+
+    def create_layouts(self):
+        pass
+
+    def initial_widgets_settings(self):
+        pass
+
+# 删除存在objectname的窗口
+def delete_window_if_existe(window_name):
+    for widget in QtWidgets.QApplication.allWidgets():
+        if widget.objectName() == window_name:
+            widget.close()
+            widget.deleteLater()
 
 
 
