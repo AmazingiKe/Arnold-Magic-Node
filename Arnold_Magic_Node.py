@@ -1932,6 +1932,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         tm_RepathFiles = TM_RepathFiles(self.WINDOWS_NAME, parent=self)
         tm_RepathFiles.show()
 
+        tm_RepathFiles.new_MterialNodeAllInfoDict_signal.connect(self.replace_path_data_and_refresh_ui)
+
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
         # 遍历模型中的每一行
@@ -2610,7 +2612,11 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.config_path, config)
     # --------------------保存设置内容的函数
 
+# 贴图管理器的寻找路径修复界面
 class TM_RepathFiles(QtWidgets.QDialog):
+    # 定义一个信号，传递多个变量
+    new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
+
     def __init__(self, WinName = '', parent = None):
         super(TM_RepathFiles, self).__init__(parent)
 
@@ -2776,7 +2782,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
                             # 如果还没有记录，初始化一个空列表用于存储使用该文件名的纹理名称
                             same_path_dict[tex_file_name] = []
                         # 将当前纹理名称添加到对应文件名的列表中
-                        same_path_dict[tex_file_name].append(TexName)
+                        same_path_dict[tex_file_name].append([TexName, MatName])
                     else:
                         # 如果该文件名尚未存在于连接失败的贴图字典中，添加新的条目
                         # 值列表包含纹理名称、材质名称以及原始路径
@@ -2787,9 +2793,8 @@ class TM_RepathFiles(QtWidgets.QDialog):
             return self.feedback.CP('没有连接失败的贴图')
 
         extensions = [
-            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif',
-            '.svg', '.webp', '.ico', '.heic', '.heif', '.raw',
-            '.psd', '.ai', '.eps', '.jfif', '.pjpeg', '.pjp' ,'tga'
+            '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif',
+            '.raw','.tga', '.exr'
         ]
 
 
@@ -2823,6 +2828,10 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.feedback.CP('查询文件夹过程时间：'+ format(get_path_contenes_time, '.2f'))
         self.feedback.CP('寻找对比过程时间：' + format(find_time, '.2f'))
 
+        # update_dict字典是为了储存接下来需要更新主数据
+        update_dict = {}
+
+
         for texFileName in correct_path_dictionary:
             # 获取失败贴图对应的节点名称、材质名称和旧路径
             node_name = loaded_failed_tex_dict[texFileName][0]  # 节点名称
@@ -2836,13 +2845,50 @@ class TM_RepathFiles(QtWidgets.QDialog):
             except Exception as e:
                 print(f"更新节点 {node_name} 失败: {e}")
 
+            # 写入更新的node_name(节点名称)
+            update_dict[node_name] = mat_name
+
+            # 把旧总数据字典中的path（路径）更新成新替换完成的路径
+            old_MterialNodeAllInfoDict[mat_name][node_name]['Path'] = new_path
+
             # 如果存在相同文件名的其他节点，逐一更新其贴图路径
             if texFileName in same_path_dict:
-                for duplicate_node_name in same_path_dict[texFileName]:
+
+
+                for duplicate_node_list in same_path_dict[texFileName]:
+
                     try:
-                        cmds.setAttr(f"{duplicate_node_name}.fileTextureName", new_path, type="string")
+                        cmds.setAttr(f"{duplicate_node_list[0]}.fileTextureName", new_path, type="string")
                     except Exception as e:
-                        print(f"更新节点 {duplicate_node_name} 失败: {e}")
+                        print(f"更新节点 {duplicate_node_list[0]} 失败: {e}")
+
+                    # 写入更新的node_name(节点名称)
+                    update_dict[duplicate_node_list[0]] = duplicate_node_list[1]
+                    # 把旧总数据字典中的path（路径）更新成新替换完成的路径
+                    old_MterialNodeAllInfoDict[duplicate_node_list[1]][duplicate_node_list[0]]['Path'] = new_path
+
+
+        new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(update_dict, old_MterialNodeAllInfoDict)
+
+
+        # 获取零时的表格列表数据
+        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+
+        # 获取当前表格中都有那些贴图
+        table_tex_list = []
+        for index, key in enumerate(temp_TextureManager_texture_table_data):
+            table_tex_list.append(temp_TextureManager_texture_table_data[index][0])
+
+        # 把表格中有的贴图做成的列表在总信息中筛选出来
+        select_texture_dict = {}
+        for index, table_list in enumerate(temp_TextureManager_texture_table_data):
+            select_texture_dict[temp_TextureManager_texture_table_data[index][0]] = \
+            temp_TextureManager_texture_table_data[index][1]
+
+
+        # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
+        self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
+
     def test(self):
         pass
 

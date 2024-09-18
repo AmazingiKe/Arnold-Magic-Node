@@ -1228,10 +1228,12 @@ class GetNodeData():
 
         return TexturesNodeAllInfoDict
 
+    #   更新数据列表中的分辨率等的数据
     def TM_StickerUpdateStatusDict(self, target_diact, update_dict):
 
         # 使用前一定要先更改一次路径先
         for nodeName, matName in target_diact.items():
+
             nodePath = update_dict[matName][nodeName]['Path']
 
             #   获取连接状态
