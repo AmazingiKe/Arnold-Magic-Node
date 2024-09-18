@@ -23,9 +23,7 @@ LibsPath = ScriptPath + '\\Libs\\maya' + str(MayaVersion)
 MayapyPath = MayaInstallDir + '\\bin\\Mayapy.exe'
 
 LibsFilesDict = {
-    # 'cv2': 'opencv-python',
-    # 'imageio': 'imageio',
-    # 'imageio_ffmpeg': 'imageio[ffmpeg]',  # imageio的ffmpeg扩展
+    'cv2': 'opencv-python',
     'imagesize': 'imagesize',
     'keyboard': 'keyboard',
     'msgpack': 'msgpack',

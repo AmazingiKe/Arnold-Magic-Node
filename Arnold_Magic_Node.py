@@ -1,41 +1,47 @@
-# ##############################################################################################
-# # ++导入所需的库和模块
-# Maya库
-import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于与 Maya API 交互
-import maya.OpenMayaUI as omui
+##############################################################################################
+# # ++ 导入所需的库和模块
 
-# # 文件与系统操作
-import os  # 文件路径操作和操作系统交互
-import sys  # 与 Python 解释器交互，获取脚本路径、调整模块搜索路径
-import importlib  # 动态导入和重新加载模块
+# 1. Maya 库
+import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命令和操作场景
+import maya.OpenMayaUI as omui  # 导入 Maya 的 OpenMayaUI 模块，用于操作 Maya 的用户界面
 
-# 数据处理
-import json  # 处理 JSON 数据
-import ast  # 解析和操作 Python 代码的抽象语法树
-import copy
+# 2. 文件与系统操作
+import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
+import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
+import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
+import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 
-# 字符串处理
-import re  # 正则表达式操作
-import difflib  # 比较文本差异
+# 3. 数据处理
+import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
+import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
+import copy  # 提供对象的浅拷贝和深拷贝功能，确保数据在复制时不会相互影响
+import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
+from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
 
-# 图像处理
-import imghdr  # 识别图像文件类型
+# 4. 字符串处理
+import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
+import difflib  # 用于比较文本差异，生成差异报告或补丁，适合版本控制和文本分析
 
-# 时间管理
-import time  # 处理时间相关操作
-from datetime import datetime
+# 5. 图像处理
+import imghdr  # 用于识别图像文件的类型，如 JPEG、PNG、GIF 等
+from PIL import Image  # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
 
-import webbrowser   # 快速打开web网页
+# 6. 时间管理
+import time  # 提供时间相关的函数，如时间戳获取、延时操作等
+from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
+# 7. 网络操作
+import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
+import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
 
-# 导入PySide
+# 8. PySide 库
+# 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
 try:
     from PySide2 import QtCore
     from PySide2 import QtWidgets
     from PySide2 import QtGui
     from shiboken2 import wrapInstance
     from PySide2.QtCore import Signal, Slot
-
 except ImportError:
     from PySide6 import QtCore
     from PySide6 import QtWidgets
@@ -45,18 +51,19 @@ except ImportError:
 
 # ------------------------------------------
 # 获取脚本路径
-Script_path = os.path.join(os.path.dirname(__file__))
-Icon_path = Script_path + "\icon"
+Script_path = os.path.join(os.path.dirname(__file__))  # 获取当前脚本的目录路径
+Icon_path = Script_path + "\icon"  # 定义图标路径，假设图标位于脚本目录下的 'icon' 文件夹
 # ------------------------------------------
 
-# 导入自定义库 Arnold_Magic_Node_lib
-import Arnold_Magic_Node_lib
+# 9. 自定义库导入与依赖管理
+import Arnold_Magic_Node_lib  # 导入自定义的 Arnold 魔法节点库
 importlib.reload(Arnold_Magic_Node_lib)  # 在开发阶段，重新加载模块以反映对库的更改
-from Arnold_Magic_Node_lib import *
+from Arnold_Magic_Node_lib import *  # 从自定义库中导入所有内容
 
-import DependenciesLibs
-DependenciesLibs.importLibs()
+import DependenciesLibs  # 导入自定义的依赖管理模块
+DependenciesLibs.importLibs()  # 调用自定义模块中的函数，动态导入和初始化所需的依赖库
 
+# 10. 初始化变量
 # 创建初始化变量
 LicenseV_device_fingerprint = None
 LicenseV_public_key = None
@@ -69,9 +76,10 @@ LicenseV_remaining_time = None
 SoftwareState = "Beta"
 SoftwareVersion = "0.5.1"
 
-
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
+# --------------------初始变量结束
+
 
 
 # --------------------初始变量结束
@@ -2924,6 +2932,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
     # --------------------保存设置内容的函数
 
 # 贴图管理器的图像处理界面
+# 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
     def __init__(self, WinName = '', parent=None):
         super(TM_ImageProcessing, self).__init__(parent)
@@ -2963,14 +2972,77 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         pass
 
     def create_widgets(self):
-        pass
+        self.format_combo_box_label = QtWidgets.QLabel("格式：")
+
+        format_list = ['jpg', 'png', 'tif', 'bmp', 'tga']
+        self.format_combo_box = QtWidgets.QComboBox()
+        self.format_combo_box.addItems(format_list)  # 添加选项
+
+        # 创建一个显示输入结果的 QLabel
+        self.zoom_ratios_combo_box_label = QtWidgets.QLabel("缩放：")
+
+        # 创建可编辑的 QComboBox
+        self.zoom_ratios_combo_box = QtWidgets.QComboBox()
+        self.zoom_ratios_combo_box.setEditable(True)  # 设置为可编辑状态
+        self.zoom_ratios_combo_box.addItems(["10%", "25%", "33%", "50%", "75%", "85%", "100%"])  # 添加选项
+
+        # 设置 zoom_ratios_combo_box 的参数
+        self.zoom_ratios_combo_box.setFixedWidth(80)
+
+        # 创建一个显示输入结果的 QLabel
+        self.resampling_mode_combo_box_label = QtWidgets.QLabel("重新取样：")
+
+        # 重采样的模式
+        resampling_mode_list = ['最近邻插值', '双线性插值', '三次插值', 'Lanczos 插值', '区域插值', '填充插值外点', '逆映射插值']
+        self.resampling_combo_box = QtWidgets.QComboBox()
+        self.resampling_combo_box.addItems(resampling_mode_list)  # 添加选项
+
+
+        # jpg的参数设置面板
+        self.jpg_quality_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+
+        # jpg_quality_slider控件的设置
+        # 设置最小值为0，最大值为100，步长为5
+        self.jpg_quality_slider.setMinimum(0)
+        self.jpg_quality_slider.setMaximum(100)
+        self.jpg_quality_slider.setTickInterval(5)  # 设置刻度间隔为5
+        self.jpg_quality_slider.setSingleStep(5)  # 设置滑动步长为5
+        self.jpg_quality_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)  # 设置刻度显示在滑杆下方
+
+
 
     def create_layouts(self):
-        pass
+
+        # 第一层的多选格式的控件
+        combo_layout = QtWidgets.QHBoxLayout()
+        combo_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        combo_layout.addWidget(self.format_combo_box_label)
+        combo_layout.addWidget(self.format_combo_box)
+        combo_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        combo_layout.addWidget(self.zoom_ratios_combo_box_label)
+        combo_layout.addWidget(self.zoom_ratios_combo_box)
+        combo_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        combo_layout.addWidget(self.resampling_mode_combo_box_label)
+        combo_layout.addWidget(self.resampling_combo_box)
+
+        jpg_config_layout = QtWidgets.QHBoxLayout()
+        jpg_config_layout.addWidget(self.jpg_quality_slider)
+
+
+
+        Main_Layout = QtWidgets.QVBoxLayout()
+        Main_Layout.addLayout(combo_layout)
+        Main_Layout.addLayout(jpg_config_layout)
+        # 设置窗口的主布局
+        self.setLayout(Main_Layout)
 
     def initial_widgets_settings(self):
         pass
-
+        # self.zoom_ratios_combo_box_label.setVisible(False)
+        # self.zoom_ratios_combo_box.setVisible(False)
 # 删除存在objectname的窗口
 def delete_window_if_existe(window_name):
     for widget in QtWidgets.QApplication.allWidgets():

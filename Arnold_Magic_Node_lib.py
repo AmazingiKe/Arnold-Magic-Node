@@ -1,40 +1,41 @@
 ##############################################################################################
-# # ++导入所需的库和模块
-# Maya库
-import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于与 Maya API 交互
-import maya.OpenMayaUI as omui
+# # ++ 导入所需的库和模块
 
-# # 文件与系统操作
-import os  # 文件路径操作和操作系统交互
-import sys  # 与 Python 解释器交互，获取脚本路径、调整模块搜索路径
-import importlib  # 动态导入和重新加载模块
-import pathlib
-# 数据处理
-import json  # 处理 JSON 数据
-import ast  # 解析和操作 Python 代码的抽象语法树
-import msgpack
-from ahocorapy.keywordtree import KeywordTree
+# 1. Maya 库
+import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命令和操作场景
+import maya.OpenMayaUI as omui  # 导入 Maya 的 OpenMayaUI 模块，用于操作 Maya 的用户界面
 
-# 字符串处理
-import re  # 正则表达式操作
-import difflib  # 比较文本差异
+# 2. 文件与系统操作
+import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
+import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
+import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
+import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 
-# 图像处理
-import imghdr  # 识别图像文件类型
-from PIL import Image
+# 3. 数据处理
+import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
+import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
+import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
+from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
 
-# 时间管理
-import time  # 处理时间相关操作
-from datetime import datetime
+# 4. 字符串处理
+import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
+import difflib  # 用于比较文本差异，生成差异报告或补丁，适合版本控制和文本分析
 
-import webbrowser   # 快速打开web网页
-import keyboard
+# 5. 图像处理
+import imghdr  # 用于识别图像文件的类型，如 JPEG、PNG、GIF 等
+from PIL import Image  # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
 
-# 获取脚本路径
-Script_path = os.path.join(os.path.dirname(__file__))
+# 6. 时间管理
+import time  # 提供时间相关的函数，如时间戳获取、延时操作等
+from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
-import DependenciesLibs
-DependenciesLibs.importLibs()
+# 7. 网络操作
+import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
+import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
+
+# 8. 依赖管理
+import DependenciesLibs  # 导入自定义的依赖管理模块，用于加载和初始化项目所需的其他库
+DependenciesLibs.importLibs()  # 调用自定义模块中的函数，动态导入和初始化所需的依赖库
 
 # ##############################################################################################
 
