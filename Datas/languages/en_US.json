@@ -1,12 +1,7 @@
 {
   "language": "en_US",
   "version": "Beta",
-
-
-
   "ArnoldMagicNode": {
-
-
 
     "TM_WIN": {
       "__init__": {
@@ -15,13 +10,13 @@
         "day": "Days"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "Enter material name to search...",
-        "TexturelListSearch_placeholder": "Enter texture name to search...",
+        "MaterialListSearch_placeholder": "Enter the material name to search....",
+        "TexturelListSearch_placeholder": "Enter the texture name to search....",
         "TexturelList_Unselect_All_Button": "Deselect All",
-        "TexturelList_reverse_selection": "Invert Selection",
-        "TexturelList_Find_Missing_Textures_Button": "Find Missing Textures",
-        "TexturelList_Intelligent_Find_Max_Size_Button": "Find Largest Textures",
-        "TexturelList_Search_And_Replace_Date_Button": "Find and Replace",
+        "TexturelList_reverse_selection": "Reverse Selection",
+        "TexturelList_Find_Missing_Textures_Button": "Find Missing",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "Find Large Textures",
+        "TexturelList_Search_And_Replace_Date_Button": "Search and Replace",
         "TexturelList_Replace_Data_Button": "Auto Fix Path",
         "TexturelList_Processed_Image_Button": "Process Image",
         "TexturelList_Refresh_Button_ToolTip": "Refresh based on cache",
@@ -35,19 +30,19 @@
       },
       "create_widgets": {
         "label_data_to_edit_options": "Content to Modify",
-        "label_data_to_edit_options_02": "Select based on the content to modify",
+        "label_data_to_edit_options_02": "Choose according to what you want to modify",
         "sl_material": "Material",
         "sl_texture": "Texture",
         "sl_texture_path": "Texture Path",
-        "label_modify_options": "Modification Range",
+        "label_modify_options": "Scope of Modification",
         "radio_all": "All",
         "radio_table": "In Table",
-        "radio_selection": "Selected",
+        "radio_selection": "In Selection",
         "label_find": "Find Content",
-        "line_edit_find_placeholder": "Enter content to find...",
+        "line_edit_find_placeholder": "Enter the content to find...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-        "line_edit_replace_placeholder": "Enter replacement content...",
-        "checkbox_case_sensitive": "Ignore Case Sensitivity",
+        "line_edit_replace_placeholder": "Enter the replacement content...",
+        "checkbox_case_sensitive": "Ignore Case",
         "checkbox_regex": "Use Regular Expressions",
         "button_replace": "Replace"
       }
@@ -58,10 +53,11 @@
         "WINDOWS_NAME": "Auto Fix Path-"
       },
       "create_widgets": {
+        "memory_search_mode_checkbox": "Memory Search Mode",
         "search_subfolders_checkbox": "Search Subfolders",
-        "multiple_subfolder_search_checkbox": "Search Multiple Subfolders",
+        "multiple_subfolder_search_checkbox": "Multiple Subfolder Search",
         "ignore_case_checkbox": "Ignore Case",
-        "fix_path_button": "Start Path Fix"
+        "fix_path_button": "Start Fixing Path"
       }
     }
   },
@@ -69,44 +65,52 @@
   "ArnoldMagicNodeLibs": {
     "DataP": {
       "SSARD": {
-        "01": "The input data is not of string type",
+        "01": "The passed data is not a string",
         "02": "Regular expression error:"
       }
     }
   },
-
   "LicenseV": {
     "GMI": {
-      "01": "Unable to retrieve motherboard ID, please check permissions"
+      "01": "Cannot get motherboard ID, please check permissions"
     },
-
     "GWTS": {
-      "01": "Failed to retrieve Taobao timestamp",
+      "01": "Failed to get Taobao timestamp",
       "02": "Failed to get link time:"
     },
-
     "GNTS": {
-      "01": "Failed to retrieve NTP time:"
+      "01": "Failed to get NTP time:"
     },
-
     "VL": {
       "01": "Invalid license format",
-      "02": "Device identifier mismatch",
-      "03": "License has expired!",
+      "02": "Device ID mismatch",
+      "03": "License expired!",
       "04": "Signature verification failed, the license may have been tampered with",
       "05": "License format error",
       "06": "Unknown error occurred during verification, please contact the developer"
     },
-
     "LW": {
-      "DIL": "Device Identifier (Needs to be provided to the developer)",
+      "DIL": "Device ID (needs to be provided to the developer)",
       "SUL": "Enter Serial Number",
-      "SNT": "Please Enter the Serial Number",
+      "SNT": "Please enter the serial number",
       "VB": "Verify License"
     },
-
     "MP": {
-      "01": "Unable to get online time"
+      "01": "Cannot get online time"
+    }
+  },
+
+  "DLibs": {
+    "FP": "@Arnold Tool Plugin Reminder {} | ",
+    "CVF": "Great, configuration library folder exists ╭(●｀∀´●)╯ Applause Applause",
+    "DL": {
+      "01": "Found",
+      "02": "Library does not exist ◔ ‸◔？ Downloading ≖‿≖✧ Please wait patiently",
+      "03": "Awesome!!!! No issues with environment configuration ♪（＾∀＾●）ﾉｼ "
+    },
+    "MP": {
+      "01": "Library search time: ",
+      "02": " seconds"
     }
   }
 }

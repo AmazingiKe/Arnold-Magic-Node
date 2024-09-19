@@ -2,45 +2,49 @@
   "language": "ja_JP",
   "version": "Beta",
   "ArnoldMagicNode": {
-
-
-
     "TM_WIN": {
       "__init__": {
         "WINDOWS_NAME": "テクスチャマネージャー",
-        "remaining_time": "ライセンス残り時間",
+        "remaining_time": "ライセンスの残り時間",
         "day": "日"
       },
       "create_widgets": {
         "MaterialListSearch_placeholder": "検索するマテリアル名を入力してください....",
         "TexturelListSearch_placeholder": "検索するテクスチャ名を入力してください....",
-        "TexturelList_Unselect_All_Button": "全選択解除",
-        "TexturelList_reverse_selection": "反転選択",
-        "TexturelList_Find_Missing_Textures_Button": "欠落を検出",
-        "TexturelList_Intelligent_Find_Max_Size_Button": "最大サイズのテクスチャを選択",
-        "TexturelList_Search_And_Replace_Date_Button": "検索と置換",
+        "TexturelList_Unselect_All_Button": "すべての選択を解除",
+        "TexturelList_reverse_selection": "選択を反転",
+        "TexturelList_Find_Missing_Textures_Button": "欠落を選択",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "大きなテクスチャを選択",
+        "TexturelList_Search_And_Replace_Date_Button": "置換を検索",
         "TexturelList_Replace_Data_Button": "パスを自動修正",
         "TexturelList_Processed_Image_Button": "画像を処理",
         "TexturelList_Refresh_Button_ToolTip": "キャッシュに基づいて再更新",
-        "TexturelList_Headers": ["テクスチャノード名", "マテリアル", "サイズ", "ピクセルサイズ", "フォーマット", "参照回数", "ステータス", "パス"]
+        "TexturelList_Headers": [
+          "テクスチャノード名",
+          "マテリアル",
+          "サイズ",
+          "ピクセルサイズ",
+          "フォーマット",
+          "参照回数",
+          "状態",
+          "パス"
+        ]
       }
     },
-
-
     "TM_FAR_WIN": {
       "__init__": {
         "WINDOWS_NAME": "検索と置換-"
       },
       "create_widgets": {
-        "label_data_to_edit_options": "編集内容",
-        "label_data_to_edit_options_02": "編集内容に応じて選択してください",
+        "label_data_to_edit_options": "変更内容",
+        "label_data_to_edit_options_02": "変更したい内容に応じて選択してください",
         "sl_material": "マテリアル",
         "sl_texture": "テクスチャ",
         "sl_texture_path": "テクスチャパス",
-        "label_modify_options": "編集範囲",
-        "radio_all": "すべて",
+        "label_modify_options": "変更内容の範囲",
+        "radio_all": "全て",
         "radio_table": "テーブル内",
-        "radio_selection": "選択項目",
+        "radio_selection": "選択中",
         "label_find": "検索内容",
         "line_edit_find_placeholder": "検索内容を入力してください...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
@@ -50,59 +54,67 @@
         "button_replace": "置換"
       }
     },
-
-
-
     "TM_RF_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "パスを自動修正-"
+        "WINDOWS_NAME": "パスの自動修正-"
       },
       "create_widgets": {
+        "memory_search_mode_checkbox": "メモリ検索モード",
         "search_subfolders_checkbox": "サブフォルダを検索",
         "multiple_subfolder_search_checkbox": "複数のサブフォルダを検索",
         "ignore_case_checkbox": "大文字と小文字を無視",
-        "fix_path_button": "パス修正を開始"
+        "fix_path_button": "パスの修正を開始"
       }
     }
   },
-
-
-
   "ArnoldMagicNodeLibs": {
     "DataP": {
       "SSARD": {
-        "01": "入力されたデータは文字列型ではありません",
-        "02": "正規表現エラー:"
+        "01": "渡されたデータが文字列型ではありません",
+        "02": "正規表現エラー :"
       }
     }
   },
   "LicenseV": {
     "GMI": {
-      "01": "マザーボードIDを取得できませんでした。権限を確認してください"
+      "01": "マザーボードIDを取得できません。権限を確認してください"
     },
     "GWTS": {
-      "01": "Taobaoタイムスタンプを取得できませんでした",
-      "02": "リンク時間の取得に失敗しました:"
+      "01": "淘宝のタイムスタンプを取得できません",
+      "02": "リンクの時間の取得に失敗しました:"
     },
     "GNTS": {
       "01": "NTP時間の取得に失敗しました:"
     },
     "VL": {
-      "01": "ライセンスフォーマットが無効です",
-      "02": "デバイス識別子が一致しません",
+      "01": "ライセンス形式が無効です",
+      "02": "デバイス識別コードが一致しません",
       "03": "ライセンスが期限切れです！",
-      "04": "署名の検証に失敗しました。ライセンスが改ざんされた可能性があります",
-      "05": "ライセンスフォーマットエラー",
-      "06": "検証中に不明なエラーが発生しました。開発者に連絡してください"
+      "04": "署名の検証に失敗しました。ライセンスが改ざんされている可能性があります",
+      "05": "ライセンス形式エラー",
+      "06": "検証中に未知のエラーが発生しました。開発者に連絡してください"
     },
     "LW": {
-      "DIL": "デバイス識別子（開発者に提供する必要があります）",
+      "DIL": "デバイス識別コード（開発者に提供する必要があります）",
       "SUL": "シリアル番号を入力",
       "SNT": "シリアル番号を入力してください",
       "VB": "ライセンスを検証"
     },
     "MP": {
-      "01": "オンライン時間を取得できませんでした"
+      "01": "オンライン時間を取得できません"
+    }
+  },
+  "DLibs": {
+    "FP": "@Arnold Tool プラグイン通知 {} | ",
+    "CVF": "設定済みのライブラリフォルダが存在します ╭(●｀∀´●)╯ 拍手拍手",
+    "DL": {
+      "01": "発見",
+      "02": "ライブラリが存在しません ◔ ‸◔？ ダウンロード中≖‿≖✧お待ちください",
+      "03": "素晴らしい！！！！環境設定に問題はありません♪（＾∀＾●）ﾉｼ "
+    },
+    "MP": {
+      "01": "ライブラリ検索時間: ",
+      "02": " 秒"
     }
   }
 }
