@@ -52,7 +52,6 @@ except ImportError:
 # ------------------------------------------
 # 获取脚本路径
 Script_path = os.path.join(os.path.dirname(__file__))  # 获取当前脚本的目录路径
-Icon_path = Script_path + "\icon"  # 定义图标路径，假设图标位于脚本目录下的 'icon' 文件夹
 # ------------------------------------------
 
 # 9. 自定义库导入与依赖管理
@@ -78,6 +77,13 @@ SoftwareVersion = "0.5.1"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
+
+datas_path = os.path.join(Script_path, "Datas") # 定义数据文件夹  ->全局变量
+
+settings_path = os.path.join(datas_path, "settings") # 定义设置配置文件夹  ->全局变量
+
+icon_path = os.path.join(Script_path, "icon") # 定义图标路径  ->全局变量
+
 # --------------------初始变量结束
 
 
@@ -85,232 +91,6 @@ pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a9190
 # --------------------初始变量结束
 
 # ----------------------------------------------------初始配置变量 开始
-
-TEX_PROCESSING_DATA = {
-    "TexFirstFilter": [
-        {"TexFirstFilterData": {
-            'base': ['BASE_MASK'],
-            'baseColor': ["ALBEDO", "BASE_COLOR", "BASECOLOR", "DIFFUSE"],
-            'diffuseRoughness': ['DIFFUSEROUGHNESS'],
-            'metalness': ["METALNESS", "METALLIC", "METALIC", "METAL","DIFFUSE"],
-            'specular': ["SPECULAR", "SPEC"],
-            'specularColor': ["SPECULARCOLOR"],
-            'specularRoughness': ["ROUGHNESS", "ROUGH"],
-            'specularAnisotropy': ["SPECULARANISOTROPY"],
-            'specularRotation': ["SPECULARROTATION"],
-            'subsurface': ['SUBSURFACE', 'SSS'],
-            'subsurfaceColor': ["TRANSLUCENCY", "SUBSURFACECOLOR"],
-            'subsurfaceRadius': ["SUBSURFACERADIUS", "SUBSURFACE-RADIUS", "SUBSURFACE-RAD"],
-            'emission': ["EMISSION", "ILLUMINATION"],
-            'emissionColor': ["EMISSIONCOLOR"],
-            'opacity': ["ALPHA", "ALPHAMASKED", "MASK", "OPACITY", "TRANSPARENCY"],
-            'normalCamera': ["NORMAL","NORMALMAP","NRM"]
-        }},
-        {"TexSoloFilterData": {
-            "AO": ["AO", "AMBIENT_OCCLUSION", "OCC", "AMBIENT", "OCCLUSION"],
-            "Bump": ["BUMP", "BMP"],
-            "Displacement": ["HEIGHT","DISPLACEMENT", "DISP", "DEPTH", "HEIGHTMAP"]
-        }}
-    ],
-    "ColorSpace": [
-        {"ColorSpaceData": ['sRGB', 'Gamma 2.2 / Rec.709', 'Rec.1886 / Rec.709 video', 'AdobeRGB',
-                            'PCI-P3 D65', 'ACEScg', 'ACES2065-1', 'scene-linear Rec.709-sRGB',
-                            'scene-linear DCI-P3 D65', 'scene-linear Rec.2020', 'Raw', 'ACEScct',
-                            'Utility-Raw', 'Utility - linear - sRGB', 'Utility - sRGB - Texture']},
-        {"AutoSetColorSpaceConfig":{
-            'base': 'Raw',
-            'baseColor': 'sRGB',
-            'diffuseRoughness': 'Raw',
-            'metalness': 'Raw',
-            'specular': 'Raw',
-            'specularColor': 'sRGB',
-            'specularRoughness': 'Raw',
-            'specularAnisotropy': 'Raw',
-            'specularRotation': 'Raw',
-            'subsurface': 'Raw',
-            'subsurfaceColor': 'sRGB',
-            'subsurfaceRadius': 'Raw',
-            'emission': 'Raw',
-            'emissionColor': 'sRGB',
-            'opacity': 'Raw',
-            'normalCamera': 'Raw',
-            "AO": 'Raw',
-            "Bump": 'Raw',
-            "Displacement": 'Raw'
-        }}
-    ],
-    "ProcSet_Options":{
-        'TexFirstFilter_Options': {
-            'base': False,
-            'baseColor': True,
-            'diffuseRoughness': False,
-            'metalness': True,
-            'specular': False,
-            'specularColor': False,
-            'specularRoughness': True,
-            'specularAnisotropy': False,
-            'specularRotation': False,
-            'subsurface': False,
-            'subsurfaceColor': False,
-            'subsurfaceRadius': False,
-            'emission': False,
-            'emissionColor': False,
-            'opacity': True,
-            'normalCamera': True,
-            "AO": False,
-            "Bump": False,
-            "Displacement": False
-            },
-        "TexSoloFilterData_Options" :{
-            "AO": True,
-            "Bump": False,
-            "Displacement": True
-            },
-        "Auto_Node_Connection_Options" : {
-            'base': False,
-            'baseColor': True,
-            'diffuseRoughness': False,
-            'metalness': False,
-            'specular': False,
-            'specularColor': False,
-            'specularRoughness': True,
-            'specularAnisotropy': False,
-            'specularRotation': False,
-            'subsurface': False,
-            'subsurfaceColor': False,
-            'subsurfaceRadius': False,
-            'emission': False,
-            'emissionColor': False,
-            'opacity': True,
-            'normalCamera': True,
-            "AO": False,
-            "Bump": False,
-            "Displacement": True
-            },
-        "ProcessingNodeData" : {
-        'base': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'baseColor': {
-            "NodeList": ["aiColorCorrect"],
-            "InputPort": "input",
-            "OutputPort": "outColor"
-        },
-        'diffuseRoughness': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'metalness': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'specular': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'specularColor': {
-            "NodeList": ["aiColorCorrect"],
-            "InputPort": "input",
-            "OutputPort": "outColor"
-        },
-        'specularRoughness': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'specularAnisotropy': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'specularRotation': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'subsurface': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'subsurfaceColor': {
-            "NodeList": ["aiColorCorrect"],
-            "InputPort": "input",
-            "OutputPort": "outColor"
-        },
-        'subsurfaceRadius': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'emission': {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        'emissionColor': {
-            "NodeList": ["aiColorCorrect"],
-            "InputPort": "input",
-            "OutputPort": "outColor"
-        },
-        'opacity': {
-            "NodeList": ["aiColorCorrect"],
-            "InputPort": "input",
-            "OutputPort": "outColor"
-        },
-        'normalCamera': {
-            "NodeList": ["aiColorCorrect"],
-            "InputPort": "input",
-            "OutputPort": "outColor"
-        },
-        "AO": {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        "Bump": {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        },
-        "Displacement": {
-            "NodeList": ["aiRampRgb", "aiRange"],
-            "InputPort": "input",
-            "OutputPort": "outColorR"
-        }
-    },
-        'InputPortList': ["input", "passthrough"],
-        'OutputPortList': ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"],
-        'GraysList' : ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'AO', 'Bump', 'Displacement'],
-        'ColorList' : ['baseColor', 'specularColor', 'subsurfaceColor', 'subsurfaceRadius', 'emissionColor', 'opacity', 'normalCamera'],
-        'MagicConnectionSetColorSpace' : True,
-        'PathDetectionConnectionSetColorSpace' : True
-    },
-    "Path_Detection":{
-            'exclude_list' : ['.tx', '_PREVIEW', '_preview', 'LOD1','LOD2', 'LOD3', 'LOD4', 'LOD5', 'LOD6', 'LOD7', 'LOD8', 'LOD9', 'LOD10'],
-            'format_list' : ['jpg', 'png', 'tiff', 'exr', 'tif', 'ex', "psd", "raw"],
-            'similarity_range' : 0.1,
-            'similarity_max' : 1,
-            'length_weight' : 0.3,
-            'auto_max_val' : True,
-            'near_one_value' : False,
-            'case_sensitive' : True,
-    },
-    "Other_Settings" :{
-        "language" : "zh_CN",
-    }
-                }
-
-RENDERING_WRITE_OPTION_DATA = {
-    'default_rendering_properties_write_options' : True,
-    'rendering_properties_write_options' : True,
-    'AOV_properties_properties_write_options' : True
-                                }
 
 TM_FindAndReplace_config_dict = {
     "modify_content_options" : 1 ,
@@ -353,13 +133,11 @@ class Arnold_Magic_Node_UI(object):
         # 创建主窗口
         self.window = cmds.workspaceControl(WIN_TITLE, retain=False, floating=True,w=300,h=300)
 
-
-
+        # 初始化全局数据
+        self.initial_global_config()
 
         # 创建窗口控件
         self.create_widgets()
-
-
 
         # 显示窗口
         cmds.showWindow(self.window)
@@ -374,30 +152,60 @@ class Arnold_Magic_Node_UI(object):
         customMenu = cmds.popupMenu(button=3)
 
         cmds.menuItem(label= '贴图处理工具', divider=True) # 添加分割线
-        cmds.menuItem(label= '贴图管理器', c=lambda *args:TextureManagerWinInstance(), i = Icon_path + "\\TXManagerShelf_200.png")
-        cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(), i = Icon_path + "\\RenderToTextureShelf_200.png")
 
-        cmds.menuItem(label= '渲染预设设置', divider=True) # 添加分割线
-        cmds.menuItem(label= '添加渲染预设', c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
-        cmds.menuItem(label= '修改渲染预设', c= lambda *args:modify_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
-        cmds.menuItem(label= '删除渲染预设', c= lambda *args:delete_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
-        cmds.menuItem(label= '打开渲染预设文件夹', c= lambda *args:os.startfile(Script_path + "\Data\Render_settings"))
+        cmds.menuItem(label= '贴图管理器', c=lambda *args:TextureManagerWinInstance(),
+                      i = icon_path + "\\TXManagerShelf_200.png")
+
+        cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(),
+                      i = icon_path + "\\RenderToTextureShelf_200.png")
+
+        cmds.menuItem(label= '渲染预设设置',
+                      divider=True) # 添加分割线
+
+        cmds.menuItem(label= '添加渲染预设',
+                      c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+
+        cmds.menuItem(label= '修改渲染预设',
+                      c= lambda *args:modify_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
+
+        cmds.menuItem(label= '删除渲染预设',
+                      c= lambda *args:delete_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
+
+        cmds.menuItem(label= '打开渲染预设文件夹',
+                      c= lambda *args:os.startfile(Script_path + "\Data\Render_settings"))
+
         cmds.menuItem(divider=True)
-        default_rendering_properties_options = cmds.menuItem(label= '输出 默认参数', cb= True, c= lambda *args:self.modify_rendering_properties_write_options('default_rendering_properties_write_options', cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
-        rendering_properties_options = cmds.menuItem(label= '输出 阿诺德参数', cb= True, c= lambda *args:self.modify_rendering_properties_write_options('rendering_properties_write_options', cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
-        aov_properties_properties_options = cmds.menuItem(label= '输出 AOV参数', cb= True, c= lambda *args:self.modify_rendering_properties_write_options('AOV_properties_properties_write_options', cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
+
+        default_rendering_properties_options = cmds.menuItem(label= '输出 默认参数',
+                                                             cb= True,
+                                                             c= lambda *args:self.modify_rendering_properties_write_options('default_rendering_properties_write_options', cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
+
+        rendering_properties_options = cmds.menuItem(label= '输出 阿诺德参数',
+                                                     cb= True,
+                                                     c= lambda *args:self.modify_rendering_properties_write_options('rendering_properties_write_options', cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
+
+        aov_properties_properties_options = cmds.menuItem(label= '输出 AOV参数',
+                                                          cb= True,
+                                                          c= lambda *args:self.modify_rendering_properties_write_options('AOV_properties_properties_write_options', cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
         cmds.menuItem(divider=True)
 
-        cmds.menuItem(label= '设置', c= lambda *args:Arnold_Magic_Node_Settings_Panel())
+        cmds.menuItem(label= '设置',
+                      c= lambda *args:Arnold_Magic_Node_Settings_Panel())
 
-
-
+        # 读取settings_path文件夹下的render_preset_config_dict文件
+        render_preset_config_dict =  self.dataM.bin_load_data(
+            os.path.join(settings_path, 'render_preset_config.bin'))
 
         # 修改默认值
-        RENDERING_WRITE_OPTION_DICT =  load_data("RENDERING_WRITE_OPTION_DATA") # 读取渲染文件
-        cmds.menuItem(default_rendering_properties_options, edit= True, checkBox= RENDERING_WRITE_OPTION_DICT['default_rendering_properties_write_options'])
-        cmds.menuItem(rendering_properties_options, edit= True, checkBox= RENDERING_WRITE_OPTION_DICT['rendering_properties_write_options'])
-        cmds.menuItem(aov_properties_properties_options, edit= True, checkBox= RENDERING_WRITE_OPTION_DICT['AOV_properties_properties_write_options'])
+        cmds.menuItem(default_rendering_properties_options,
+                      edit = True,
+                      checkBox = render_preset_config_dict['default_rendering_properties_write_options'])
+        cmds.menuItem(rendering_properties_options,
+                      edit = True,
+                      checkBox = render_preset_config_dict['rendering_properties_write_options'])
+        cmds.menuItem(aov_properties_properties_options,
+                      edit = True,
+                      checkBox = render_preset_config_dict['AOV_properties_properties_write_options'])
         # 菜单=========
 
         cmds.text(label=" "*1)
@@ -428,9 +236,15 @@ class Arnold_Magic_Node_UI(object):
 
         self.color_space_preset = cmds.optionMenu(mvi = 16, cc=lambda* args:color_space_preset_menu(cmds.optionMenu(self.color_space_preset, query=True, value=True)))
         # 用循环创建color_space_list的menu
-        color_space_list = load_data('TEX_PROCESSING_DATA')["ColorSpace"][0]['ColorSpaceData']
-        for uv_mode_name in color_space_list:
-            cmds.menuItem(label=uv_mode_name)
+
+        # 读取settings_path文件夹下的texture_processing_data文件
+        texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin')
+        )
+        
+        # 循环创建色彩空间菜单选项
+        for color_space_name in texture_processing_data['ColorSpace'][0]['ColorSpaceData']:
+            cmds.menuItem(label = color_space_name)
 
         # 自动色彩空间的按钮
         cmds.button(label="自动色彩空间",c=lambda *args:AutoSet_TexColorSpace())
@@ -463,15 +277,32 @@ class Arnold_Magic_Node_UI(object):
         cmds.text(label="                     "*1)
         # self.Arnold_Magic_Node_Settings_Panel = cmds.button(label="设置",c=lambda *args:Arnold_Magic_Node_Settings_Panel())
         # self.test = cmds.iconTextButton(i=Script_path+ r'\icon\TEST.png',c=lambda *args:test(), h=37.5/1.8,w=80)
-        cmds.iconTextButton(i=Script_path+ r'\icon\Autodesk_Arnold_logo.png', h=37.5/1.8, w=155/1.8, c=lambda *args:TextureManagerWinInstance())
+        cmds.iconTextButton(i = os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
+                            h=37.5/1.8,
+                            w=155/1.8,
+                            c=lambda *args:TextureManagerWinInstance())
+
         cmds.text(label=" "*1)
+
+    # 初始化全局数据
+    def initial_global_config(self):
+        self.dataM = DataManager()
+        self.dataP = DataProcessor()
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.getnodedata = GetNodeData() # 获取节点数据模块
 
     # 修改渲染属性写入选项
     def modify_rendering_properties_write_options(self, write_name, val):
-        RENDERING_WRITE_OPTION_DICT =  load_data("RENDERING_WRITE_OPTION_DATA") # 读取渲染文件
-        RENDERING_WRITE_OPTION_DICT[write_name] = val
-        file_path = os.path.join(os.path.dirname(__file__)) +'\\RENDERING_WRITE_OPTION_DATA.json'
-        write_data(file_path, RENDERING_WRITE_OPTION_DICT)
+        # 读取渲染文件
+        new_render_preset_config =  self.dataM.bin_load_data(
+            os.path.join(settings_path, 'render_preset_config.bin'))
+
+        # 修改数据
+        new_render_preset_config[write_name] = val
+
+        # 保存修改完的渲染预设配置
+        self.dataM.bin_save_data(os.path.join(settings_path, 'render_preset_config.bin'),
+                                 new_render_preset_config)
 
 # 插件设置按钮
 class  Arnold_Magic_Node_Settings_Panel(object):
@@ -997,8 +828,6 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         os.remove(Script_path+'\RENDERING_WRITE_OPTION_DATA.json')
         os.remove(Script_path+'\TEX_PROCESSING_DATA.json')
 
-
-
 # 贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
 
@@ -1059,7 +888,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         self.setObjectName('TextureManagerWin')
         self.setWindowTitle(self.WINDOWS_NAME)
-        self.setWindowIcon(QtGui.QIcon(Icon_path + "\\TXManagerShelf_200.png"))
+        self.setWindowIcon(QtGui.QIcon(icon_path + "\\TXManagerShelf_200.png"))
         #...窗口长宽
         self.setMinimumHeight(1050)
         self.setMinimumWidth(2500)
@@ -1107,7 +936,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 材质列表刷新
         self.MaterialList_Refresh_Button = QtWidgets.QPushButton()
-        self.MaterialList_Refresh_Button.setIcon(QtGui.QIcon(Icon_path + "\\ResetMode_200.png"))
+        self.MaterialList_Refresh_Button.setIcon(QtGui.QIcon(icon_path + "\\ResetMode_200.png"))
         self.MaterialList_Refresh_Button.clicked.connect(lambda *args: (self.refresh_scene_node_info(),
                                                                         self.refresh_material_list()))
         self.MaterialList_Refresh_Button.setFixedWidth(40)
@@ -1146,7 +975,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 贴图列表的刷新
         self.TexturelList_Refresh_Button = QtWidgets.QPushButton()
-        self.TexturelList_Refresh_Button.setIcon(QtGui.QIcon(Icon_path + "\\ResetMode_200.png"))
+        self.TexturelList_Refresh_Button.setIcon(QtGui.QIcon(icon_path + "\\ResetMode_200.png"))
         self.TexturelList_Refresh_Button.setFixedWidth(40)
         self.TexturelList_Refresh_Button.setFixedHeight(40)
         self.TexturelList_Refresh_Button.setIconSize(QtCore.QSize(32, 32))
@@ -1155,7 +984,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 全选材质节点
         self.MaterialList_SelectAll_Button = QtWidgets.QPushButton()
-        self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(Icon_path + "\\render_aiStandardSurface_Select.png"))
+        self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(icon_path + "\\render_aiStandardSurface_Select.png"))
         self.MaterialList_SelectAll_Button.setFixedWidth(40)
         self.MaterialList_SelectAll_Button.setFixedHeight(40)
         self.MaterialList_SelectAll_Button.clicked.connect(lambda: self.all_selected_materials())
@@ -1342,42 +1171,42 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.MaterialList.clear()
 
         for mat_node_name in self.MterialNodeAllInfoDict:
-            item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\render_aiImage.png"), mat_node_name)
+            item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\render_aiImage.png"), mat_node_name)
 
             try:
                 # 场景中存在的对象都可以获取到材质的类型
                 node_type = cmds.nodeType(mat_node_name)
             except:
                 # 如果获取不到就是缺失的贴图列表
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\render_aiImage.png"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\render_aiImage.png"), mat_node_name)
                 self.MaterialList.addItem(item)
                 break
 
             if node_type == 'lambert':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\lambert.svg"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\lambert.svg"), mat_node_name)
 
             elif node_type == 'standardSurface':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\standardSurface.svg"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\standardSurface.svg"), mat_node_name)
 
             elif node_type == 'aiStandardSurface':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\render_aiStandardSurface.png"),
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\render_aiStandardSurface.png"),
                                                  mat_node_name)
 
             elif node_type == 'aiStandardVolume':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\render_aiVolumeCollector.png"),
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\render_aiVolumeCollector.png"),
                                                  mat_node_name)
 
             elif node_type == 'aiStandardHair':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\render_aiHair.png"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\render_aiHair.png"), mat_node_name)
 
             elif node_type == 'blinn':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\blinn.svg"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\blinn.svg"), mat_node_name)
 
             elif node_type == 'phongE':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\phongE.svg"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\phongE.svg"), mat_node_name)
 
             elif node_type == 'phong':
-                item = QtWidgets.QListWidgetItem(QtGui.QIcon(Icon_path + "\\phong.svg"), mat_node_name)
+                item = QtWidgets.QListWidgetItem(QtGui.QIcon(icon_path + "\\phong.svg"), mat_node_name)
 
             # 设置为可编辑
             item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
@@ -1451,7 +1280,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # # 使用正则表达式搜索，如果找到匹配的内容，就将对应的项添加到列表中
         # for matNodeName in self.MterialNodeAllInfoDict:
         #   if re.search(search_content, matNodeName, re.IGNORECASE):
-        #       item = QtWidgets.QListWidgetItem(QtGui.QIcon (Icon_path + "\\render_aiStandardSurface.png"), matNodeName)
+        #       item = QtWidgets.QListWidgetItem(QtGui.QIcon (icon_path + "\\render_aiStandardSurface.png"), matNodeName)
         #       # 将item添加到listWidget中
         #       self.MaterialList.addItem(item)
 

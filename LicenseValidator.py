@@ -67,11 +67,9 @@ public_password = "ea54b522ed180be0691d084cde28c930".encode()
 
 # 获取语言
 # 获取语言设置
-language = dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
-# 建语言文件路径
-language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
+language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json' ))['language_config']
 # 加载语言文件
-LanguageText = dataM.ascii_load_data(language_file_path)
+language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json' ))["LicenseV"]
 
 ##############################################################################################
 
@@ -87,7 +85,7 @@ def get_motherboard_id():
         serial_number = lines[1]
         return serial_number
     else:
-        feedback.CP(LanguageText["LicenseV"]["GMI"]["01"])
+        feedback.CP(language["GMI"]["01"])
         return None
 
 #   Hardware Identifier 设别标识符
@@ -229,7 +227,7 @@ def verify_license(public_key_pem, license_b64, current_device_fingerprint, curr
     """
 
     # 加载语言文件
-    LT = LanguageText["LicenseV"]['VL']
+    LT = language['VL']
 
 
     try:
@@ -380,7 +378,7 @@ class LicenseWin(QtWidgets.QDialog):
         super(LicenseWin, self).__init__(parent)
 
         # 加载语言文件
-        self.LT= LanguageText["LicenseV"]['LW']
+        self.LT= language['LW']
 
         #   判断窗口是否存在，如果存在则删除
         if cmds.window(LicenseWin.WINDOWS_NAME, exists=True):
@@ -391,7 +389,7 @@ class LicenseWin(QtWidgets.QDialog):
         self.setWindowTitle(LicenseWin.WINDOWS_NAME)
 
         #...窗口长宽
-        self.setFixedSize(850, 600)
+        self.setFixedSize(700, 500)
 
         # 关闭高DPI缩放
         QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_DisableHighDpiScaling)
@@ -411,25 +409,29 @@ class LicenseWin(QtWidgets.QDialog):
 
 
         # 设备识别码标签和文本框
-        self.device_id_label = QtWidgets.QLabel(self.LT["DIL"])
+        self.device_id_label = QtWidgets.QLabel(self.LT["DIL"]) # "设备识别码（需要提供给开发者）"
         self.device_id_label.setAlignment(QtCore.Qt.AlignCenter)
         self.device_id_label.setFont(label_font)  # 应用字体到 QLabel
 
+
         self.device_id_text = QtWidgets.QLineEdit(cached_device_fingerprint)
         self.device_id_text.setReadOnly(True)
-        self.device_id_text.setFixedHeight(100)
+        self.device_id_text.setFixedHeight(45)
+        self.device_id_text.setFixedWidth(680)
 
         # 序列号标签和文本框
-        self.serial_number_label = QtWidgets.QLabel(self.LT["SUL"])
+        self.serial_number_label = QtWidgets.QLabel(self.LT["SUL"]) # "输入序列号"
         self.serial_number_label.setAlignment(QtCore.Qt.AlignCenter)
         self.serial_number_label.setFont(label_font)  # 应用字体到 QLabel
 
 
         self.serial_number_text = QtWidgets.QTextEdit()
-        self.serial_number_text.setPlaceholderText(self.LT["SNT"])
+        self.serial_number_text.setPlaceholderText(self.LT["SNT"]) # "请输入序列号"
         self.serial_number_text.setFixedHeight(300)
+        self.serial_number_text.setFixedWidth(680)
+
         # 验证按钮
-        self.verify_button = QtWidgets.QPushButton(self.LT["VB"])
+        self.verify_button = QtWidgets.QPushButton(self.LT["VB"]) # "验证许可"
         self.verify_button.clicked.connect(self.verify_license)
 
     def create_layouts(self):
@@ -448,8 +450,8 @@ class LicenseWin(QtWidgets.QDialog):
         license = self.serial_number_text.toPlainText()
 
         if license == '' :
-            feedback.CPW("请输入序列号")
-
+            feedback.CPW(language['LW']['01']) # 请输入序列号
+            return
         # 获取当前时间戳
         try:
             try:
@@ -457,11 +459,11 @@ class LicenseWin(QtWidgets.QDialog):
             except:
                 current_timestamp = get_web_timestamp()
         except:
-            feedback.CP("无法获取时间")
+            feedback.CPW(language['MP']['02']) # 无法获取时间
 
         #   如果没有时间会直接停止验证
         if not current_timestamp:
-            feedback.CPW("无法获取在线时间")
+            feedback.CPW(language['MP']['01']) # 无法获取在线时间
             return
 
         validating = verify_license(public_key, license, cached_device_fingerprint, current_timestamp, public_password)
@@ -519,11 +521,11 @@ def Main_program():
             except:
                 current_timestamp = get_web_timestamp()
         except:
-            feedback.CP("无法获取时间")
+            feedback.CPW(language['MP']['02']) # 无法获取时间
 
         # 如果没有时间会直接停止验证
         if not current_timestamp:
-            feedback.CPW(LanguageText['LicenseV']['MP']['01']) # 无法获取在线时间
+            feedback.CPW(language['MP']['01']) # 无法获取在线时间
             return
 
         validating = verify_license(public_key, license, cached_device_fingerprint, current_timestamp, public_password)

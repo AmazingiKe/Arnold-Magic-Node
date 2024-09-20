@@ -1340,22 +1340,25 @@ class DataProcessor():
     def __init__(self):
         self.feedback = FeedbackPrompt() # 错误提示模块
 
-        # 获取语言
-        # 获取语言设置
+        # 插件路径
+        Script_path = os.path.join(os.path.dirname(__file__))
+
+        # 实例化数据管理类
         dataM = DataManager()
 
-        language = dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"][
-            "language"]
-        # 建语言文件路径
-        language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
-        # 加载语言文件
-        self.DataPLT = dataM.ascii_load_data(language_file_path)['ArnoldMagicNodeLibs']['DataP']
+
+
+        # 获取语言设置
+        language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
+        # 获取语言
+        self.language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNodeLibs']['DataP']
+
 
     def SimpleSearchAndReplaceData(self, OriginalContent, SearchContent, ReplaceContent, case_sensitive=True, use_regex=False):
         # 检查是否输入为字符串类型
         if not isinstance(OriginalContent, str) or not isinstance(SearchContent, str) or not isinstance(ReplaceContent,
                                                                                                         str):
-            self.feedback.CP(self.DataPLT['SSARD']['01'])
+            self.feedback.CP(self.language['SSARD']['01'])
             return False
 
         # 如果使用正则表达式
@@ -1370,7 +1373,7 @@ class DataProcessor():
                 result = re.sub(SearchContent, ReplaceContent, OriginalContent, flags=flags)
                 return result
             except re.error as e:
-                self.feedback.CP(f"{self.DataPLT['SSARD']['02']}{e}")
+                self.feedback.CP(f"{self.language['SSARD']['02']}{e}")
                 return False
         else:
             # 普通字符串替换，根据是否区分大小写处理
