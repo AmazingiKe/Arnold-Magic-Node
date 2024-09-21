@@ -51,7 +51,7 @@ except ImportError:
 
 # ------------------------------------------
 # 获取脚本路径
-Script_path = os.path.join(os.path.dirname(__file__))  # 获取当前脚本的目录路径
+SCRIPT_PATH = os.path.join(os.path.dirname(__file__))  # 获取当前脚本的目录路径
 # ------------------------------------------
 
 # 9. 自定义库导入与依赖管理
@@ -78,12 +78,21 @@ SoftwareVersion = "0.5.1"
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
 
-datas_path = os.path.join(Script_path, "Datas") # 定义数据文件夹  ->全局变量
+datas_path = os.path.join(SCRIPT_PATH, "Datas") # 定义数据文件夹  ->全局变量
 
 settings_path = os.path.join(datas_path, "settings") # 定义设置配置文件夹  ->全局变量
 
-icon_path = os.path.join(Script_path, "icon") # 定义图标路径  ->全局变量
+icon_path = os.path.join(SCRIPT_PATH, "icon") # 定义图标路径  ->全局变量
 
+
+# 定义全局字体大小变量
+SMALL_FONT_SIZE = 10
+
+
+# NORMAL_FONT_SIZE = 14
+# MEDIUM_FONT_SIZE = 16
+# LARGE_FONT_SIZE = 18
+# EXTRA_LARGE_FONT_SIZE = 24
 # --------------------初始变量结束
 
 
@@ -107,6 +116,15 @@ TM_RepathFiles_config_dict = {
     "search_subfolders_checkbox" : False,
     "multiple_subfolder_search_checkbox" : False,
     "ignore_case_checkbox" : False
+}
+
+TM_ImageProcessing_config_dict = {
+    "format" : "jpg",
+    "zoom" : "100",
+    "resampling_mode" : 1,
+    "JPG_quality" : 90,
+    "PNG_quality" : 7,
+    "backup_suffix" : '_TM_backup'
 }
 
 TextureManagerWin_config_dict = {
@@ -172,7 +190,7 @@ class Arnold_Magic_Node_UI(object):
                       c= lambda *args:delete_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
 
         cmds.menuItem(label= '打开渲染预设文件夹',
-                      c= lambda *args:os.startfile(Script_path + "\Data\Render_settings"))
+                      c= lambda *args:os.startfile(SCRIPT_PATH + "\Data\Render_settings"))
 
         cmds.menuItem(divider=True)
 
@@ -259,7 +277,7 @@ class Arnold_Magic_Node_UI(object):
         # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
 
 
-        renderer_data_path =  Script_path + r"\Datas\Render_settings"
+        renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
 
         # 获取文件名字
         file_names = os.listdir(renderer_data_path)
@@ -276,7 +294,7 @@ class Arnold_Magic_Node_UI(object):
 
         cmds.text(label="                     "*1)
         # self.Arnold_Magic_Node_Settings_Panel = cmds.button(label="设置",c=lambda *args:Arnold_Magic_Node_Settings_Panel())
-        # self.test = cmds.iconTextButton(i=Script_path+ r'\icon\TEST.png',c=lambda *args:test(), h=37.5/1.8,w=80)
+        # self.test = cmds.iconTextButton(i=SCRIPT_PATH+ r'\icon\TEST.png',c=lambda *args:test(), h=37.5/1.8,w=80)
         cmds.iconTextButton(i = os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
                             h=37.5/1.8,
                             w=155/1.8,
@@ -681,7 +699,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
 
                 #...并修改
                 TexFirstFilterData["TexFirstFilter"][0]["TexFirstFilterData"][channel] = output_list
-                write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+                write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
     def TexSoloFilterData_modify(self, channel):
         for i in self.TexSoloFilter_widgets_name:
@@ -695,7 +713,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
 
                 #...并修改
                 TexFirstFilterData["TexFirstFilter"][1]["TexSoloFilterData"][channel] = output_list
-                write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+                write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
     def ColorSpaceData_modify(self, tx_val):
         #...读取文件
@@ -707,7 +725,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         output_list = [s.strip() for s in output_list] # 删除所有的空格
         #...并修改
         TexFirstFilterData["ColorSpace"][0]["ColorSpaceData"] = output_list
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
     def SetTexFirstFilterOptions(self, selected_items):
 
@@ -719,7 +737,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
                 if i == key:
                     TEX_PROCESSING_DATA["ProcSet_Options"]["TexFirstFilter_Options"][key] = True
 
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
 
     def SetAuto_Node_Connection_Options(self, selected_items):
 
@@ -731,7 +749,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
                 if i == key:
                     TEX_PROCESSING_DATA["ProcSet_Options"]["Auto_Node_Connection_Options"][key] = True
 
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
 
     def exclude_list_modify(self, tx_val):
         #...读取文件
@@ -743,7 +761,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         output_list = [s.strip() for s in output_list] # 删除所有的空格
         #...并修改
         TexFirstFilterData["Path_Detection"]["exclude_list"] = output_list
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
     def format_list_modify(self, tx_val):
         #...读取文件
@@ -755,7 +773,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         output_list = [s.strip() for s in output_list] # 删除所有的空格
         #...并修改
         TexFirstFilterData["Path_Detection"]["format_list"] = output_list
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
     def NodeListField_modify(self, Channel ,tx_val):
         #...读取文件
@@ -767,7 +785,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         output_list = [s.strip() for s in output_list] # 删除所有的空格
         #...并修改
         TexFirstFilterData["ProcSet_Options"]["ProcessingNodeData"][Channel]["NodeList"] = output_list
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
 
     def AddNodeButton_modify(self, Channel ,tx_val, textField_Name):
@@ -786,7 +804,7 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         #...并修改
 
         TexFirstFilterData["ProcSet_Options"]["ProcessingNodeData"][Channel]["NodeList"] = output_list
-        write_data(Script_path+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
+        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
 
         ProcessingNodeData = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["ProcessingNodeData"]
         cmds.textField(textField_Name, edit= True, text=str(ProcessingNodeData[Channel]["NodeList"])
@@ -818,15 +836,15 @@ class  Arnold_Magic_Node_Settings_Panel(object):
             current_level[key_path[-1]] = value  # 设置最终键的值
 
             # 修改并写回文件
-            write_data(Script_path + '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
+            write_data(SCRIPT_PATH + '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
 
 
     # 设置菜单的函数
 
     # resetData删除配置文件
     def resetData(self):
-        os.remove(Script_path+'\RENDERING_WRITE_OPTION_DATA.json')
-        os.remove(Script_path+'\TEX_PROCESSING_DATA.json')
+        os.remove(SCRIPT_PATH+'\RENDERING_WRITE_OPTION_DATA.json')
+        os.remove(SCRIPT_PATH+'\TEX_PROCESSING_DATA.json')
 
 # 贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
@@ -841,16 +859,19 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM = DataManager() # 储存模块
         self.dataP = DataProcessor() # 数据处理模块
 
-        self.TextureManager_texture_table_data_temp_path = Script_path + "\\Temp\\TM_texture_table_data.bin"
-        self.TextureManager_config_path = Script_path + "\\Datas\\texture_manager\\TM_config_data.bin"
+        self.TextureManager_texture_table_data_temp_path = SCRIPT_PATH + "\\Temp\\TM_texture_table_data.bin"
+        self.TextureManager_config_path = SCRIPT_PATH + "\\Datas\\texture_manager\\TM_config_data.bin"
 
+        # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
+        # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
+        language_config = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH , 'Datas', 'settings', 'language_config.json') )['language_config']
 
-        language = self.dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
-        # 建语言文件路径
-        language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
-        # 加载语言文件
-        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_WIN']
-
+        # 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
+        # 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
+        # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
+        self.language = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH , 'Datas', 'languages', f'{language_config}.json') )['ArnoldMagicNode']['TM_WIN']
 
         # 如果有这个TM_texture_table_data文件删除并新创建一个空数据文件
         if os.path.exists(self.TextureManager_texture_table_data_temp_path):
@@ -879,7 +900,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         #...窗口名字
 
-        self.WINDOWS_NAME = f"{self.DataPLT['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.DataPLT['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}{self.DataPLT['__init__']['day']}"
+        self.WINDOWS_NAME = f"{self.language['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.language['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}{self.language['__init__']['day']}"
 
         # 判断窗口是否存在，如果存在则删除
         delete_window_if_existe('TextureManagerWin')
@@ -924,7 +945,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
 
     def create_widgets(self):
-        lang = self.DataPLT['create_widgets']
+        lang = self.language['create_widgets']
 
         # MaterialListSearch 搜索框
         self.MaterialListSearch = QtWidgets.QLineEdit()
@@ -1966,16 +1987,22 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.dataP = DataProcessor()
         self.getnodedata = GetNodeData()
 
-        self.config_path = os.path.join(Script_path, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
+        self.config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
 
-        language = self.dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
-        # 建语言文件路径
-        language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
-        # 加载语言文件
-        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_FAR_WIN']
+        # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
+        # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
+        language_config = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH , 'Datas', 'settings', 'language_config.json') )['language_config']
+
+        # 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
+        # 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
+        # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
+        self.language = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH , 'Datas', 'languages', f'{language_config}.json') )['ArnoldMagicNode']['TM_FAR_WIN']
+
 
         # 命名常量命名
-        WINDOWS_NAME =  self.DataPLT['__init__']['WINDOWS_NAME'] + WinName #Win名称
+        WINDOWS_NAME =  self.language['__init__']['WINDOWS_NAME'] + WinName #Win名称
 
         # 判断窗口是否存在，如果存在则删除
         delete_window_if_existe('TM_FindAndReplace_Win')
@@ -1996,7 +2023,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.initial_settings()
 
     def create_widgets(self):
-        lang = self.DataPLT['create_widgets']  # 获取当前语言的数据
+        lang = self.language['create_widgets']  # 获取当前语言的数据
 
         # 设置字体大小
         font_20x = QtGui.QFont()
@@ -2478,7 +2505,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
     def initialize_window_config(self, WinName):
 
         # 命名常量命名
-        WINDOWS_NAME =  self.DataPLT['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
+        WINDOWS_NAME =  self.language['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
 
         delete_window_if_existe('TM_RepathFiles_Win')
 
@@ -2492,18 +2519,25 @@ class TM_RepathFiles(QtWidgets.QDialog):
     # 初始化全局设置
     def initial_global_config(self):
         # 实例数据管理器
-        self.dataM = DataManager()
-        self.dataP = DataProcessor()
+        self.dataM = DataManager() # 数据管理
+        self.dataP = DataProcessor() # 数据处理
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.getnodedata = GetNodeData() # 获取节点数据模块
 
-        language = self.dataM.ascii_load_data(os.path.join(Script_path, "TEX_PROCESSING_DATA.json"))["Other_Settings"]["language"]
-        # 建语言文件路径
-        language_file_path = os.path.join(Script_path, "Datas", "languages", f"{language}.json")
-        # 加载语言文件
-        self.DataPLT = self.dataM.ascii_load_data(language_file_path)['ArnoldMagicNode']['TM_RF_WIN']
 
-        self.TM_repath_files_config_FilePath = os.path.join(Script_path, "Datas", "texture_manager", "TM_repath_files_config.bin")
+        # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
+        # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
+        language_config = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+
+        # 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
+        # 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
+        # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
+        self.language = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['TM_RF_WIN']
+
+
+        self.TM_repath_files_config_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager", "TM_repath_files_config.bin")
 
         # 如果TM_repath_files_config配置文件不存在会重新创建一次
         if not os.path.exists(self.TM_repath_files_config_FilePath):
@@ -2521,22 +2555,22 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.select_folder_button.clicked.connect(lambda *args:self.select_folder())
 
         self.memory_search_mode_checkbox = QtWidgets.QCheckBox(
-            self.DataPLT['create_widgets']['memory_search_mode_checkbox'])  # 记忆搜索模式
+            self.language['create_widgets']['memory_search_mode_checkbox'])  # 记忆搜索模式
         self.memory_search_mode_checkbox.setEnabled(False)
 
-        self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
+        self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
         self.search_subfolders_checkbox.stateChanged.connect(
             lambda *args: self.modify_config('search_subfolders_checkbox', self.search_subfolders_checkbox.isChecked()))
 
-        self.multiple_subfolder_search_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['multiple_subfolder_search_checkbox']) # 多个子文件夹搜索
+        self.multiple_subfolder_search_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['multiple_subfolder_search_checkbox']) # 多个子文件夹搜索
         self.multiple_subfolder_search_checkbox.stateChanged.connect(
             lambda *args: self.modify_config('multiple_subfolder_search_checkbox', self.multiple_subfolder_search_checkbox.isChecked()))
 
-        self.ignore_case_checkbox = QtWidgets.QCheckBox(self.DataPLT['create_widgets']['ignore_case_checkbox']) # 忽略大小写
+        self.ignore_case_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['ignore_case_checkbox']) # 忽略大小写
         self.ignore_case_checkbox.stateChanged.connect(
             lambda *args: self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
 
-        self.fix_path_button = QtWidgets.QPushButton(self.DataPLT['create_widgets']['fix_path_button'])
+        self.fix_path_button = QtWidgets.QPushButton(self.language['create_widgets']['fix_path_button'])
         self.fix_path_button.clicked.connect(lambda *args: self.fix_path())
 
     # 创建布局
@@ -2763,6 +2797,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
 # 贴图管理器的图像处理界面
 # 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
+
     def __init__(self, WinName = '', parent=None):
         super(TM_ImageProcessing, self).__init__(parent)
 
@@ -2774,19 +2809,22 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 1. 初始化窗口配置
         self.initialize_window_config(WinName)
 
-        # 2. 创建控件
+        # 2. 创建菜单
+        self.menu_widgets()
+
+        # 3. 创建控件
         self.create_widgets()
 
-        # 3. 创建布局
+        # 4. 创建布局
         self.create_layouts()
 
-        # 4. 初始化控件
+        # 5. 初始化控件
         self.initial_widgets_settings()
 
     # 初始化窗口配置
     def initialize_window_config(self, WinName):
         # 命名常量命名
-        WINDOWS_NAME =  'TM_ImageProcessing' + WinName #Win名称
+        WINDOWS_NAME =  '图像处理-' + WinName #Win名称
 
         delete_window_if_existe('TM_ImageProcessing_Win')
 
@@ -2798,14 +2836,52 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.setMinimumWidth(650)
 
     def initial_global_config(self):
-        pass
+
+        # 实例数据管理器
+        self.dataM = DataManager() # 数据管理
+        self.dataP = DataProcessor() # 数据处理
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.getnodedata = GetNodeData() # 获取节点数据模块
+
+        # TM_ImageProcessing配置文件路径
+        self.TM_image_processing_config_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager",
+                                                            "TM_image_processing_config.bin")
+
+        # 如果TM_image_processing_config配置文件不存在会重新创建一次
+        if not os.path.exists(self.TM_image_processing_config_FilePath):
+            self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, TM_ImageProcessing_config_dict)
+
+    def menu_widgets(self):
+        # 创建菜单栏
+        self.menu_bar = QtWidgets.QMenuBar(self)
+
+        # 创建“编辑”菜单
+        self.edit_menu = self.menu_bar.addMenu("编辑")
+
+        self.redo_action = QtGui.QAction("还原图像", self)
+        self.edit_menu.addAction(self.redo_action)
+
+        self.help_menu = self.menu_bar.addMenu("帮助")
+
+        self.instructions_action = QtGui.QAction("使用说明", self)
+        self.help_menu.addAction(self.instructions_action)
 
     def create_widgets(self):
+        common_font = QtGui.QFont()
+        common_font.setPointSize(SMALL_FONT_SIZE)
+
+
+
+
         self.format_combo_box_label = QtWidgets.QLabel("格式：")
 
         format_list = ['jpg', 'png', 'tif', 'bmp', 'tga']
         self.format_combo_box = QtWidgets.QComboBox()
         self.format_combo_box.addItems(format_list)  # 添加选项
+        self.format_combo_box.currentTextChanged.connect(lambda :(self.modify_config(
+            'format', self.format_combo_box.currentText().replace('%', '')),
+            self.update_quality_controls_visibility()))
+
 
         # 创建一个显示输入结果的 QLabel
         self.zoom_ratios_combo_box_label = QtWidgets.QLabel("缩放：")
@@ -2818,6 +2894,12 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 设置 zoom_ratios_combo_box 的参数
         self.zoom_ratios_combo_box.setFixedWidth(80)
 
+        # 绑定 currentTextChanged 信号到自定义的函数
+        self.zoom_ratios_combo_box.currentTextChanged.connect(lambda :self.modify_config(
+            'zoom', self.zoom_ratios_combo_box.currentText()))
+
+
+
         # 创建一个显示输入结果的 QLabel
         self.resampling_mode_combo_box_label = QtWidgets.QLabel("重新取样：")
 
@@ -2825,7 +2907,10 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         resampling_mode_list = ['最近邻插值', '双线性插值', '三次插值', 'Lanczos 插值', '区域插值', '填充插值外点', '逆映射插值']
         self.resampling_combo_box = QtWidgets.QComboBox()
         self.resampling_combo_box.addItems(resampling_mode_list)  # 添加选项
+        self.resampling_combo_box.currentTextChanged.connect(lambda :self.modify_config(
+            'resampling_mode', self.resampling_combo_box.currentIndex()))
 
+        self.jpg_label = QtWidgets.QLabel("JPG的品质: ")
 
         # jpg的参数设置面板
         self.jpg_quality_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -2837,42 +2922,165 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.jpg_quality_slider.setTickInterval(5)  # 设置刻度间隔为5
         self.jpg_quality_slider.setSingleStep(5)  # 设置滑动步长为5
         self.jpg_quality_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)  # 设置刻度显示在滑杆下方
+        self.jpg_quality_slider.setFixedHeight(25)
+        self.jpg_quality_slider.setFixedWidth(400)
+
+        self.jpg_quality_slider.valueChanged.connect(lambda: self.update_quality_display_label())
+
+        self.jpg_quality_display_label = QtWidgets.QLabel('0')
 
 
+
+
+
+
+        self.png_label = QtWidgets.QLabel("PNG的品质: ")
+
+        # jpg的参数设置面板
+        self.png_quality_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+
+        # png_quality_slider控件的设置
+        # 设置最小值为0，最大值为100，步长为5
+        self.png_quality_slider.setMinimum(0)
+        self.png_quality_slider.setMaximum(9)
+        self.png_quality_slider.setTickInterval(1)  # 设置刻度间隔为5
+        self.png_quality_slider.setSingleStep(1)  # 设置滑动步长为5
+        self.png_quality_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)  # 设置刻度显示在滑杆下方
+        self.png_quality_slider.setFixedHeight(25)
+        self.png_quality_slider.setFixedWidth(400)
+
+        self.png_quality_slider.valueChanged.connect(lambda :self.update_quality_display_label())
+
+        self.png_quality_display_label = QtWidgets.QLabel('0')
+
+
+
+        self.conversion_button = QtWidgets.QPushButton('开始转换')
 
     def create_layouts(self):
-
-        # 第一层的多选格式的控件
+        # 第一层的多选格式的控件布局
         combo_layout = QtWidgets.QHBoxLayout()
-        combo_layout.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        # 添加标签和控件，无需过多的 Spacer
+        combo_layout.addStretch()  # 在开头加入可伸缩的空白
         combo_layout.addWidget(self.format_combo_box_label)
         combo_layout.addWidget(self.format_combo_box)
-        combo_layout.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        combo_layout.addStretch()  # 控制空白区域
         combo_layout.addWidget(self.zoom_ratios_combo_box_label)
         combo_layout.addWidget(self.zoom_ratios_combo_box)
-        combo_layout.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        combo_layout.addStretch()  # 控制空白区域
         combo_layout.addWidget(self.resampling_mode_combo_box_label)
         combo_layout.addWidget(self.resampling_combo_box)
+        combo_layout.addStretch()  # 在末尾加入可伸缩的空白
 
+        # JPG配置布局
         jpg_config_layout = QtWidgets.QHBoxLayout()
+        jpg_config_layout.addStretch()  # 控制空白区域
+        jpg_config_layout.addWidget(self.jpg_label)
+        jpg_config_layout.addStretch()  # 控制空白区域
         jpg_config_layout.addWidget(self.jpg_quality_slider)
+        jpg_config_layout.addStretch()  # 控制空白区域
+        jpg_config_layout.addWidget(self.jpg_quality_display_label)
+        jpg_config_layout.addStretch()  # 控制空白区域
 
+        # PNG配置布局
+        png_config_layout = QtWidgets.QHBoxLayout()
+        png_config_layout.addStretch()  # 控制空白区域
+        png_config_layout.addWidget(self.png_label)
+        png_config_layout.addStretch()  # 控制空白区域
+        png_config_layout.addWidget(self.png_quality_slider)
+        png_config_layout.addStretch()  # 控制空白区域
+        png_config_layout.addWidget(self.png_quality_display_label)
+        png_config_layout.addStretch()  # 控制空白区域
 
+        conversion_layout = QtWidgets.QHBoxLayout()
+        conversion_layout.addWidget(self.conversion_button)
 
         Main_Layout = QtWidgets.QVBoxLayout()
+        Main_Layout.setMenuBar(self.menu_bar)
         Main_Layout.addLayout(combo_layout)
+        Main_Layout.addStretch()  # 控制空白区域
         Main_Layout.addLayout(jpg_config_layout)
+        Main_Layout.addStretch()  # 控制空白区域
+        Main_Layout.addLayout(png_config_layout)
+        Main_Layout.addStretch()
+        Main_Layout.addLayout(conversion_layout)
+
+
         # 设置窗口的主布局
         self.setLayout(Main_Layout)
 
     def initial_widgets_settings(self):
-        pass
-        # self.zoom_ratios_combo_box_label.setVisible(False)
-        # self.zoom_ratios_combo_box.setVisible(False)
-# 删除存在objectname的窗口
+        initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+
+        # 设置质量标签的初始值
+        self.jpg_quality_display_label.setText(str(initial_config['JPG_quality']))
+        self.png_quality_display_label.setText(str(initial_config['PNG_quality']))
+        # 设置控件的初始值
+        self.format_combo_box.setCurrentText(initial_config['format'])
+        self.zoom_ratios_combo_box.setCurrentText(initial_config['zoom'] + '%' )
+        self.resampling_combo_box.setCurrentIndex(initial_config['resampling_mode'])
+        self.jpg_quality_slider.setValue(initial_config['JPG_quality'])
+        self.png_quality_slider.setValue(initial_config['PNG_quality'])
+
+        self.update_quality_controls_visibility()
+
+    def update_quality_controls_visibility(self):
+        """
+        根据初始配置隐藏不需要的品质设置控件。
+
+        - 如果格式为 'jpg'，则隐藏 PNG 的品质设置控件。
+        - 如果格式为 'png'，则隐藏 JPG 的品质设置控件。
+        - 如果是其他格式，则隐藏所有与品质相关的控件。
+        """
+
+        def hide_jpg_controls(hide=True):
+            """设置 JPG 相关控件的可见性"""
+            self.jpg_label.setVisible(not hide)
+            self.jpg_quality_slider.setVisible(not hide)
+            self.jpg_quality_display_label.setVisible(not hide)
+
+        def hide_png_controls(hide=True):
+            """设置 PNG 相关控件的可见性"""
+            self.png_label.setVisible(not hide)
+            self.png_quality_slider.setVisible(not hide)
+            self.png_quality_display_label.setVisible(not hide)
+
+        initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+        current_format = initial_config.get('format', '')
+
+        # 根据当前格式隐藏或显示相关的控件
+        if current_format == 'jpg':
+            hide_jpg_controls(False)  # 显示 JPG 相关控件
+            hide_png_controls(True)  # 隐藏 PNG 相关控件
+        elif current_format == 'png':
+            hide_jpg_controls(True)  # 隐藏 JPG 相关控件
+            hide_png_controls(False)  # 显示 PNG 相关控件
+        else:
+            hide_jpg_controls(True)  # 隐藏所有品质相关控件
+            hide_png_controls(True)
+
+    def update_quality_display_label(self):
+        self.jpg_quality_display_label.setText(
+            str(self.jpg_quality_slider.value())
+        )
+        self.png_quality_display_label.setText(
+            str(self.png_quality_slider.value())
+        )
+
+
+    # --------------------保存设置内容的函数
+    def modify_config(self, key, cont):
+        config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+
+        config[key] = cont
+
+        self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, config)
+
+    # --------------------保存设置内容的函数
+
+
+    # 删除存在objectname的窗口
 def delete_window_if_existe(window_name):
     for widget in QtWidgets.QApplication.allWidgets():
         if widget.objectName() == window_name:
@@ -3597,7 +3805,7 @@ class rendering_preset_settings_button():
             default_rendering_properties = self.get_default_rendering_properties() # 获取默认渲染设置
             rendering_properties = self.get_rendering_properties() # 获取阿诺德渲染设置
             AOV_properties = self.get_AOV_properties() # 获取AOV设置
-            write_data_path =  Script_path + r"\Datas\Render_settings" # 路径
+            write_data_path =  SCRIPT_PATH + r"\Datas\Render_settings" # 路径
 
             # 02 把变量写入数据结构
             Render_settings = {
@@ -3642,12 +3850,12 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
             cmds.deleteUI(new_rendering_preset_name[i], menuItem=True)
 
     # 2, 删除本地文件
-    file_path = Script_path + '\\Datas\\Render_settings\\'
+    file_path = SCRIPT_PATH + '\\Datas\\Render_settings\\'
     os.remove(file_path + sl_name+ '.json')
 
 
     # # 3，重新添加控件的选项
-    # renderer_data_path =  Script_path + "\\Data\\Render_settings\\renderer"
+    # renderer_data_path =  SCRIPT_PATH + "\\Data\\Render_settings\\renderer"
 
     # # 获取文件名字
     # file_names = os.listdir(renderer_data_path)
@@ -3887,13 +4095,13 @@ def Main_program():
     # dataM = DataManager()   # 实例一个数据库
     #
     # # 判断脚本路径下也没有这个文件
-    # if not os.path.exists(os.path.join(Script_path,'TEX_PROCESSING_DATA.json')):
+    # if not os.path.exists(os.path.join(SCRIPT_PATH,'TEX_PROCESSING_DATA.json')):
     #   #创建这个文件TexFirstFilterData
-    #   save_data(os.path.join(Script_path,'TEX_PROCESSING_DATA.json'),TEX_PROCESSING_DATA)
+    #   save_data(os.path.join(SCRIPT_PATH,'TEX_PROCESSING_DATA.json'),TEX_PROCESSING_DATA)
     #
-    # if not os.path.exists(os.path.join(Script_path,'RENDERING_WRITE_OPTION_DATA.json')):
+    # if not os.path.exists(os.path.join(SCRIPT_PATH,'RENDERING_WRITE_OPTION_DATA.json')):
     #   #创建这个文件TexFirstFilterData
-    #   save_data(os.path.join(Script_path,'RENDERING_WRITE_OPTION_DATA.json'),RENDERING_WRITE_OPTION_DATA)
+    #   save_data(os.path.join(SCRIPT_PATH,'RENDERING_WRITE_OPTION_DATA.json'),RENDERING_WRITE_OPTION_DATA)
 
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()

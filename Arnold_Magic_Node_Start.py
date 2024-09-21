@@ -17,10 +17,10 @@ def main():
     importlib.reload(InitialConfigFile)
     InitialConfigFile.Main_program()
 
-    import LicenseValidator
-    importlib.reload(LicenseValidator)
-    LicenseValidator.Main_program()
+    # import LicenseValidator
+    # importlib.reload(LicenseValidator)
+    # LicenseValidator.Main_program()
 
-    # import Arnold_Magic_Node
-    # importlib.reload(Arnold_Magic_Node)
-    # Arnold_Magic_Node.Main_program()
+    import Arnold_Magic_Node
+    importlib.reload(Arnold_Magic_Node)
+    Arnold_Magic_Node.Main_program()

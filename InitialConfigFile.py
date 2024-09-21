@@ -458,8 +458,9 @@ def detecting_initial_config_files(path, filename, data):
     # 使用path和filename创建绝对路径
     abs_path = os.path.join(path, filename+'.bin')
 
-    # 如果发现文件缺失会进行创建相应的文件并存入相对的数据
-    if not os.path.exists(abs_path):
+    # 检查文件是否存在，或者文件大小是否为0KB
+    if not os.path.exists(abs_path) or os.path.getsize(abs_path) == 0:
+        # 如果文件不存在或者文件大小为0KB，重新保存数据
         bin_save_data(abs_path, data)
 
 
