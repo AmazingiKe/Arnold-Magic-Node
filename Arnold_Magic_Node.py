@@ -10,6 +10,7 @@ import os  # 提供与操作系统交互的功能，如文件路径操作、目�
 import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
+import shutil
 
 # 3. 数据处理
 import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
@@ -73,7 +74,7 @@ LicenseV_remaining_time = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.5.1"
+SoftwareVersion = "0.5.5"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -124,7 +125,11 @@ TM_ImageProcessing_config_dict = {
     "resampling_mode" : 1,
     "JPG_quality" : 90,
     "PNG_quality" : 7,
-    "backup_suffix" : '_TM_backup'
+    "backup_suffix" : '_TM_backup',
+    "processed_suffix" : "_TM_processed" ,
+    "convert_format" : True,
+    "scale_texture" : False,
+
 }
 
 TextureManagerWin_config_dict = {
@@ -859,8 +864,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM = DataManager() # 储存模块
         self.dataP = DataProcessor() # 数据处理模块
 
-        self.TextureManager_texture_table_data_temp_path = SCRIPT_PATH + "\\Temp\\TM_texture_table_data.bin"
-        self.TextureManager_config_path = SCRIPT_PATH + "\\Datas\\texture_manager\\TM_config_data.bin"
+        self.TextureManager_texture_table_data_temp_path = SCRIPT_PATH + "\\Temp\\TM_texture_table.bin"
+        self.TextureManager_config_path = SCRIPT_PATH + "\\Datas\\texture_manager\\TM_config.bin"
 
         # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
         # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
@@ -1794,6 +1799,9 @@ class TextureManagerWin(QtWidgets.QDialog):
     def image_processing_Win(self):
         tm_ImageProcessing = TM_ImageProcessing(self.WINDOWS_NAME, parent=self)
         tm_ImageProcessing.show()
+
+        tm_ImageProcessing.new_MterialNodeAllInfoDict_signal.connect(self.replace_path_data_and_refresh_ui)
+
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
         # 遍历模型中的每一行
@@ -2254,7 +2262,6 @@ class TM_FindAndReplace(QtWidgets.QDialog):
             MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
 
             # 获取出表格中
-
             selected_indexes = self.TextureManagerWin.TexturelList.selectionModel().selectedRows()
             if selected_indexes:
                 # 用于存储所有选中行的数据
@@ -2797,6 +2804,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
 # 贴图管理器的图像处理界面
 # 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
+    new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
 
     def __init__(self, WinName = '', parent=None):
         super(TM_ImageProcessing, self).__init__(parent)
@@ -2832,7 +2840,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.setWindowTitle(WINDOWS_NAME)
 
         #...窗口长宽
-        #self.setMinimumHeight(400)
+        self.setMinimumHeight(200)
         self.setMinimumWidth(650)
 
     def initial_global_config(self):
@@ -2842,6 +2850,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.dataP = DataProcessor() # 数据处理
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.getnodedata = GetNodeData() # 获取节点数据模块
+        self.imageP = ImageProcessor() # 处理图像
+
+        # 基础缓存数据变量空字典
+        image_processing_cache_dict = {}
+
 
         # TM_ImageProcessing配置文件路径
         self.TM_image_processing_config_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager",
@@ -2851,6 +2864,16 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         if not os.path.exists(self.TM_image_processing_config_FilePath):
             self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, TM_ImageProcessing_config_dict)
 
+
+
+        # TM_ImageProcessing的缓存文件路径
+        self.TM_image_processing_cache_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager",
+                                                            "TM_image_processing_cache.bin")
+
+        # 如果TM_image_processing_cache缓存文件不存在会重新创建一次
+        if not os.path.exists(self.TM_image_processing_cache_FilePath):
+            self.dataM.bin_save_data(self.TM_image_processing_cache_FilePath, image_processing_cache_dict)
+
     def menu_widgets(self):
         # 创建菜单栏
         self.menu_bar = QtWidgets.QMenuBar(self)
@@ -2858,8 +2881,15 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 创建“编辑”菜单
         self.edit_menu = self.menu_bar.addMenu("编辑")
 
+        self.clear_cache = QtGui.QAction("清除缓存  ！谨慎删除！", self)
+        self.clear_cache.triggered.connect(lambda :os.remove(self.TM_image_processing_cache_FilePath))
+
         self.redo_action = QtGui.QAction("还原图像", self)
+
+        self.edit_menu.addAction(self.clear_cache)
         self.edit_menu.addAction(self.redo_action)
+
+
 
         self.help_menu = self.menu_bar.addMenu("帮助")
 
@@ -2875,11 +2905,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
         self.format_combo_box_label = QtWidgets.QLabel("格式：")
 
-        format_list = ['jpg', 'png', 'tif', 'bmp', 'tga']
+        format_list = ['jpg', 'png', 'tif', 'bmp']
         self.format_combo_box = QtWidgets.QComboBox()
         self.format_combo_box.addItems(format_list)  # 添加选项
-        self.format_combo_box.currentTextChanged.connect(lambda :(self.modify_config(
-            'format', self.format_combo_box.currentText().replace('%', '')),
+        self.format_combo_box.currentTextChanged.connect(lambda :(
+            self.modify_config('format', self.format_combo_box.currentText()), # 存入数据
             self.update_quality_controls_visibility()))
 
 
@@ -2892,13 +2922,17 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.zoom_ratios_combo_box.addItems(["10%", "25%", "33%", "50%", "75%", "85%", "100%"])  # 添加选项
 
         # 设置 zoom_ratios_combo_box 的参数
-        self.zoom_ratios_combo_box.setFixedWidth(80)
+        self.zoom_ratios_combo_box.setFixedWidth(100)
 
         # 绑定 currentTextChanged 信号到自定义的函数
-        self.zoom_ratios_combo_box.currentTextChanged.connect(lambda :self.modify_config(
-            'zoom', self.zoom_ratios_combo_box.currentText()))
+        self.zoom_ratios_combo_box.currentTextChanged.connect(lambda :(
+            self.modify_config('zoom', self.zoom_ratios_combo_box.currentText().replace('%', ''))))
 
+        # 获取 QComboBox 内部的 QLineEdit
+        self.zoom_ratios_line_edit = self.zoom_ratios_combo_box.lineEdit()
 
+        # 当编辑结束时，连接信号到槽函数
+        self.zoom_ratios_line_edit.editingFinished.connect(lambda :self.update_zoom_ratios_string())
 
         # 创建一个显示输入结果的 QLabel
         self.resampling_mode_combo_box_label = QtWidgets.QLabel("重新取样：")
@@ -2925,13 +2959,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.jpg_quality_slider.setFixedHeight(25)
         self.jpg_quality_slider.setFixedWidth(400)
 
-        self.jpg_quality_slider.valueChanged.connect(lambda: self.update_quality_display_label())
+        self.jpg_quality_slider.valueChanged.connect(lambda: (
+            self.update_quality_display_label(),
+            self.modify_config('JPG_quality', self.jpg_quality_slider.value())))
 
-        self.jpg_quality_display_label = QtWidgets.QLabel('0')
-
-
-
-
+        self.jpg_quality_display_label = QtWidgets.QLabel()
 
 
         self.png_label = QtWidgets.QLabel("PNG的品质: ")
@@ -2949,13 +2981,26 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.png_quality_slider.setFixedHeight(25)
         self.png_quality_slider.setFixedWidth(400)
 
-        self.png_quality_slider.valueChanged.connect(lambda :self.update_quality_display_label())
+        self.png_quality_slider.valueChanged.connect(lambda :(
+            self.update_quality_display_label(),
+            self.modify_config('PNG_quality', self.png_quality_slider.value())))
 
-        self.png_quality_display_label = QtWidgets.QLabel('0')
+        self.png_quality_display_label = QtWidgets.QLabel()
+
+
+
+        self.convert_format_check_box = QtWidgets.QCheckBox('转换格式')
+        self.convert_format_check_box.clicked.connect(
+            lambda :self.modify_config('convert_format', self.convert_format_check_box.isChecked()))
+
+        self.scale_texture_check_box = QtWidgets.QCheckBox('缩放贴图')
+        self.scale_texture_check_box.clicked.connect(
+            lambda: self.modify_config('scale_texture', self.scale_texture_check_box.isChecked()))
 
 
 
         self.conversion_button = QtWidgets.QPushButton('开始转换')
+        self.conversion_button.clicked.connect(lambda :self.image_conversion())
 
     def create_layouts(self):
         # 第一层的多选格式的控件布局
@@ -2993,6 +3038,13 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         png_config_layout.addWidget(self.png_quality_display_label)
         png_config_layout.addStretch()  # 控制空白区域
 
+        radio_button = QtWidgets.QHBoxLayout()
+        radio_button.addStretch()
+        radio_button.addWidget(self.convert_format_check_box)
+        radio_button.addStretch()
+        radio_button.addWidget(self.scale_texture_check_box)
+        radio_button.addStretch()
+
         conversion_layout = QtWidgets.QHBoxLayout()
         conversion_layout.addWidget(self.conversion_button)
 
@@ -3001,9 +3053,9 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         Main_Layout.addLayout(combo_layout)
         Main_Layout.addStretch()  # 控制空白区域
         Main_Layout.addLayout(jpg_config_layout)
-        Main_Layout.addStretch()  # 控制空白区域
         Main_Layout.addLayout(png_config_layout)
         Main_Layout.addStretch()
+        Main_Layout.addLayout(radio_button)
         Main_Layout.addLayout(conversion_layout)
 
 
@@ -3018,13 +3070,17 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.png_quality_display_label.setText(str(initial_config['PNG_quality']))
         # 设置控件的初始值
         self.format_combo_box.setCurrentText(initial_config['format'])
-        self.zoom_ratios_combo_box.setCurrentText(initial_config['zoom'] + '%' )
+        self.zoom_ratios_combo_box.setCurrentText(self.ensure_single_percent(initial_config['zoom']))
         self.resampling_combo_box.setCurrentIndex(initial_config['resampling_mode'])
         self.jpg_quality_slider.setValue(initial_config['JPG_quality'])
         self.png_quality_slider.setValue(initial_config['PNG_quality'])
+        self.convert_format_check_box.setChecked(initial_config['convert_format'])
+        self.scale_texture_check_box.setChecked(initial_config['scale_texture'])
 
         self.update_quality_controls_visibility()
+        self.update_quality_display_label()
 
+    # 更新jpg和png之间切换的控件显示模式
     def update_quality_controls_visibility(self):
         """
         根据初始配置隐藏不需要的品质设置控件。
@@ -3060,13 +3116,227 @@ class TM_ImageProcessing(QtWidgets.QDialog):
             hide_jpg_controls(True)  # 隐藏所有品质相关控件
             hide_png_controls(True)
 
+    # 更新质量显示的标签
     def update_quality_display_label(self):
         self.jpg_quality_display_label.setText(
-            str(self.jpg_quality_slider.value())
+            str(self.jpg_quality_slider.value()) + '%'
         )
         self.png_quality_display_label.setText(
-            str(self.png_quality_slider.value())
+            str(self.png_quality_slider.value()) + ' 级'
         )
+
+    # 更新zoom_ratios的字符串，具体是强制加入%
+    def update_zoom_ratios_string(self):
+        new_text = (self.ensure_single_percent(self.zoom_ratios_combo_box.currentText()))
+        self.zoom_ratios_combo_box.setCurrentText(new_text)
+
+    # 处理字符串%号
+    def ensure_single_percent(self, s):
+        # 去掉字符串两端的空格
+        s = s.strip()
+
+        # 检查字符串中是否包含 %
+        if '%' in s:
+            # 如果有多个 %，将连续的 % 替换为一个 %
+            s = '%'.join(part for part in s.split('%') if part) + '%'
+        else:
+            # 如果没有 %，在字符串末尾加上 %
+            s += '%'
+
+        return s
+
+    # 获取表格中选中的行
+    def get_selected_rows_data(self):
+        # 获取表格中选中的行
+        selected_indexes = self.TextureManagerWin.TexturelList.selectionModel().selectedRows()
+
+        # 如果没有选中任何行，提前返回
+        if not selected_indexes:
+            self.feedback.CP("没有选中任何行")
+            return []
+
+        # 使用列表推导式获取所有选中行的数据
+        all_selected_rows_data = [
+            [self.TextureManagerWin.TEXTURELIST_MODEL.index(index.row(), column).data()
+             for column in range(self.TextureManagerWin.TEXTURELIST_MODEL.columnCount())]
+            for index in selected_indexes
+        ]
+
+        return all_selected_rows_data
+
+    # 给文件名称结尾添加后缀名称
+    def add_suffix_to_filename(self, file_path, suffix):
+        # 获取文件名和扩展名
+        file_name, file_ext = os.path.splitext(file_path)
+
+        # 检查文件名是否已有指定后缀
+        if file_name.endswith(suffix):
+            return file_path
+        else:
+            # 如果没有后缀，添加后缀
+            new_file_name = file_name + suffix + file_ext
+            return new_file_name
+
+    # 检测并复制文件带后缀
+    def copy_file_with_suffix(self, old_info_path, new_file_path):
+
+        # 检查带后缀的文件是否存在
+        if os.path.exists(new_file_path):
+            return
+        else:
+            try:
+                # 如果不存在，复制原始文件并命名为带后缀的文件，不复制权限
+                shutil.copyfile(old_info_path, new_file_path)
+
+                return
+            except Exception as e:
+                self.feedback.CP("复制备份文件时出错")
+                print(e)
+                return
+
+    # 转换格式按钮
+    def image_conversion(self):
+
+        # 缓存文件
+        cache_data = self.dataM.bin_load_data(self.TM_image_processing_cache_FilePath)
+        # 配置文件
+        initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+
+        # 写入图片缓存数据
+        def write_image_processing_cache(backup_image_file_path):
+
+            # 获取文件名称
+            tex_file_name = os.path.basename(backup_image_file_path)
+
+            # 分离文件名和扩展名
+            tex_file_name_without_extension, extension = os.path.splitext(tex_file_name)
+
+            cache_data[tex_file_name_without_extension] = [extension, backup_image_file_path]
+
+            # 保存缓存文件
+            self.dataM.bin_save_data(self.TM_image_processing_cache_FilePath, cache_data)
+
+
+
+        # 如果没有勾选转换格式和缩放比例那不会有任何操作，会直接退出函数
+        if not initial_config.get('convert_format', False) and not initial_config.get('scale_texture', False):
+            return  # 如果两者都是 False，直接 return
+
+        # 图像处理后的后缀名称
+        image_processed_suffix = initial_config['processed_suffix']
+
+
+        # 从主窗口获取的材质所有数据
+        old_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
+
+
+        # 输出格式与扩展名映射
+        format_mapping = {
+            'jpg': 'jpg',
+            'jpeg': 'jpg',
+            'png': 'png',
+            'tif': 'tif',
+            'bmp': 'bmp',
+        }
+
+        need_update_dict = {}
+
+        for val in self.get_selected_rows_data():
+
+            old_info_path = old_MterialNodeAllInfoDict[val[1]][val[0]]['Path']
+
+            # 如果路径不存在会直接跳过这个循环
+            if not os.path.exists(old_info_path):
+                self.feedback.CP('你的这张图片路径连接失败： ' + old_info_path)
+                continue
+
+            # 判断目前表格中的文件名称是否已经包含后缀
+            if image_processed_suffix in os.path.basename(old_info_path):
+                old_info_path = old_info_path.replace("_TM_processed", "")
+
+            # 分离文件名和扩展名
+            file_name, file_extension = old_info_path.rsplit(".", 1)
+            # 添加后缀并生成新的文件路径
+            backup_image_file_path = f"{file_name}{image_processed_suffix}.{file_extension}"
+
+
+
+
+
+            # 判断处理过的名称格式是否和这次选择的格式名称一样，如果一样就删除掉之前的格式名称，防止残留文件
+            # 获取备份图像的文件名（不带扩展名）
+            backup_image_name = os.path.splitext(os.path.basename(backup_image_file_path))[0]
+
+            # 如果缓存中存在同名的图像文件
+            if backup_image_name in cache_data:
+                cached_format, cached_file_path = cache_data[backup_image_name]
+                # 如果缓存的文件格式与当前选择的格式不同
+                if cached_format != initial_config['format']:
+                    # 删除旧的缓存文件，防止残留文件
+                    if os.path.exists(cached_file_path):
+                        try:
+                            os.remove(cached_file_path)
+                        except Exception as e:
+                            self.feedback.CP('无法删除{}残留文件，原因：{}'.format(cached_file_path, e))
+
+
+
+            # 检查是否需要转换格式
+            if initial_config['convert_format']:
+
+                # 根据输出格式生成输出路径
+                if initial_config['format'] in format_mapping:
+                    # 通过分割文件名，去掉原文件扩展名，并添加新的扩展名
+                    backup_image_file_path = f"{backup_image_file_path.rsplit('.', 1)[0]}.{format_mapping[initial_config['format']]}"
+                else:
+                    # 如果格式不被支持，输出反馈信息并返回
+                    self.feedback.CP(f"不支持的格式: {initial_config['format']}")
+                    return
+
+                # 执行格式转换，使用备份图像文件名作为输入和输出路径
+                self.imageP.convert_image_format(input_path=old_info_path,
+                                                 output_path=backup_image_file_path,
+                                                 output_format=initial_config['format'],
+                                                 jpg_quality=initial_config['JPG_quality'],
+                                                 png_compression=initial_config['PNG_quality'])
+                # 如果需要缩放，则在转换格式后进行缩放
+                if initial_config['scale_texture']:
+                    self.imageP.resize_image(input_path=backup_image_file_path,
+                                             output_path=backup_image_file_path,
+                                             scale_percent=int(initial_config['zoom']),
+                                             resample_mode=str(initial_config['resampling_mode']))
+
+
+                # 写入缓存
+                write_image_processing_cache(backup_image_file_path)
+
+            # 如果没有进行格式转换，但需要缩放，则直接缩放
+            elif initial_config['scale_texture']:
+                self.imageP.resize_image(input_path=old_info_path,
+                                         output_path=backup_image_file_path,
+                                         scale_percent=int(initial_config['zoom']),
+                                         resample_mode=str(initial_config['resampling_mode']))
+                # 写入缓存
+                write_image_processing_cache(backup_image_file_path)
+
+            # 更新节点为新的路径
+            try:
+                cmds.setAttr(f"{val[0]}.fileTextureName", backup_image_file_path, type="string")
+            except Exception as e:
+                print(f"更新节点 {val[0]} 失败: {e}")
+
+            # 最后一部 修改主窗口缓存数据
+            old_MterialNodeAllInfoDict[val[1]][val[0]]['Path'] = backup_image_file_path
+
+            # 把更新目标写入字典
+            need_update_dict[val[0]] = val[1]
+
+        # 更新主窗口字典数据
+        new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(need_update_dict,
+                                                                                 old_MterialNodeAllInfoDict)
+
+        # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
+        self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
 
 
     # --------------------保存设置内容的函数
@@ -3076,11 +3346,13 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         config[key] = cont
 
         self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, config)
-
     # --------------------保存设置内容的函数
 
 
     # 删除存在objectname的窗口
+
+
+
 def delete_window_if_existe(window_name):
     for widget in QtWidgets.QApplication.allWidgets():
         if widget.objectName() == window_name:

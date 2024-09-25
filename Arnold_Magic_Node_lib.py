@@ -16,6 +16,7 @@ import json  # 用于序列化和反序列化 JSON 数据，方便与外部数�
 import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
 import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
 from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
+import numpy as np
 
 # 4. 字符串处理
 import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
@@ -24,6 +25,7 @@ import difflib  # 用于比较文本差异，生成差异报告或补丁，适�
 # 5. 图像处理
 import imghdr  # 用于识别图像文件的类型，如 JPEG、PNG、GIF 等
 from PIL import Image  # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
+import cv2
 
 # 6. 时间管理
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
@@ -1118,6 +1120,7 @@ class GetNodeData():
 
                 MterialNodeAllInfoDict[matName][nodeNmae]["Dimensions"] = [width, height]
 
+                MterialNodeAllInfoDict[matName][nodeNmae]["Dimensions"]
 
 
 
@@ -1470,6 +1473,163 @@ class DataProcessor():
                 break  # 找到第一个匹配项后停止对该键的搜索
 
         return correct_path_dictionary
+
+# 专门用来处理图像
+class ImageProcessor():
+    def __init__(self):
+        self.feedback = FeedbackPrompt() # 错误提示模块
+
+        # 插件路径
+        Script_path = os.path.join(os.path.dirname(__file__))
+
+        # 实例化数据管理类
+        dataM = DataManager()
+
+
+
+        # 获取语言设置
+        language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
+        # 获取语言
+        self.language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNodeLibs']
+
+    def resize_image(self, input_path, output_path, scale_percent=100, resample_mode='1'):
+        """
+        缩放图片
+        参数：
+            input_path (str): 输入图片的路径
+            output_path (str): 输出图片的路径
+            scale_percent (int): 缩放比例（默认100%，不缩放）
+            resample_mode (str): 重采样模式，默认使用cv2.INTER_LINEAR
+        返回：
+            None
+        """
+
+        # 检查缩放比例是否合法
+        if scale_percent <= 0 or scale_percent > 100:
+            self.feedback.CP(f"缩放比例无效: {scale_percent}，请设置0到100之间的有效值。")
+            return
+
+        # 合法的重采样模式
+        interpolation_methods = {
+            '0': cv2.INTER_NEAREST,  # 最近邻插值
+            '1': cv2.INTER_LINEAR,  # 双线性插值
+            '2': cv2.INTER_CUBIC,  # 三次插值
+            '3': cv2.INTER_LANCZOS4,  # Lanczos 插值
+            '4': cv2.INTER_AREA  # 区域插值（主要用于缩小图像）
+        }
+
+        # 尝试读取图片
+        try:
+            with open(input_path, 'rb') as f:
+                img_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
+                image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        except Exception as e:
+            self.feedback.CP(f"读取图片失败：{e}")
+            return
+
+        # 如果缩放比例为100%，不做任何的缩放
+        if scale_percent == 100:
+            return
+
+        # 计算缩放后的尺寸
+        width = int(image.shape[1] * scale_percent / 100)
+        height = int(image.shape[0] * scale_percent / 100)
+        dim = (width, height)
+
+        # 执行缩放操作
+        resized_image = cv2.resize(image, dim, interpolation=interpolation_methods[resample_mode])
+
+        # 使用 Unicode 路径转为字节路径来保存图片
+        try:
+            success, encoded_image = cv2.imencode('.jpg', resized_image)
+            if success:
+                with open(output_path, 'wb') as f:
+                    f.write(encoded_image)
+
+        except PermissionError as e:
+            self.feedback.CP(f"文件写入权限错误：{e}")
+        except Exception as e:
+            self.feedback.CP(f"保存图片失败：{e}")
+
+    def convert_image_format(self, input_path, output_path, output_format=None, jpg_quality=95, png_compression=3):
+        """
+         转换图片格式
+         参数：
+             input_path (str): 输入图片的路径
+             output_path (str): 输出图片的路径
+             output_format (str): 转换后的格式（如'jpg', 'png'），如果为None，保持原格式
+             jpg_quality (int): jpg质量（1-100，默认95）
+             png_compression (int): png压缩等级（0-9，默认3）
+         返回：
+             None
+         """
+
+        # 尝试读取图片
+        try:
+            with open(input_path, 'rb') as f:
+                img_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
+                image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        except Exception as e:
+            self.feedback.CP(f"转换格式-读取图片失败：{e}")
+            return
+
+        if image is None:
+            self.feedback.CP(f"转换格式-读取图片缓存失败：" + os.path.basename(input_path))
+            return
+
+        # 检查输出格式
+        try:
+            if output_format.lower() in ['jpg', 'jpeg']:
+                success, encoded_image = cv2.imencode('.jpg', image, [int(cv2.IMWRITE_JPEG_QUALITY), jpg_quality])
+                if success:
+                    with open(output_path, 'wb') as f:
+                        f.write(encoded_image)
+            elif output_format.lower() == 'png':
+                success, encoded_image = cv2.imencode('.png', image,
+                                                      [int(cv2.IMWRITE_PNG_COMPRESSION), png_compression])
+                if success:
+                    with open(output_path, 'wb') as f:
+                        f.write(encoded_image)
+            # 如果输出格式为其他格式，使用指定的格式进行编码
+            else:
+                # 根据指定的输出格式进行编码，格式需以 ".格式" 的方式传入
+                success, encoded_image = cv2.imencode(f'.{output_format}', image)
+                # 如果编码成功，则以二进制写模式保存图像到指定的路径
+                if success:
+                    with open(output_path, 'wb') as f:
+                        f.write(encoded_image)
+
+            self.feedback.CP(f"{os.path.basename(input_path)} 已转换为{output_format}格式 新路径：{output_path}")
+
+        except Exception as e:
+            self.feedback.CP(f"转换格式-保存图片失败：{e}")
+
+
+    def check_and_set_permission(self, file_path):
+        if os.path.exists(file_path):
+            # 获取文件状态
+            file_status = os.stat(file_path)
+
+            # 检查文件是否有写权限
+            if not os.access(file_path, os.W_OK):
+                self.feedback.CP(f"文件 {file_path} 没有写权限，正在尝试修改权限...")
+                try:
+                    # 给文件赋予读写权限
+                    os.chmod(file_path, stat.S_IWRITE | stat.S_IREAD)
+                    self.feedback.CP(f"已成功修改 {file_path} 的权限。")
+                except Exception as e:
+                    self.feedback.CP(f"修改权限失败：{e}")
+            else:
+                self.feedback.CP(f"文件 {file_path} 已有写权限。")
+        else:
+            self.feedback.CP(f"文件 {file_path} 不存在。")
+
+
+
+
+
+
+
 
 
 
