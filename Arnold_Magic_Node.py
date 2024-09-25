@@ -3194,6 +3194,15 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                 print(e)
                 return
 
+    # 修改文件命格式
+    def modify_file_extension(self, file_path, new_extension):
+        # 获取文件名和目录
+        directory, file_name = os.path.split(file_path)
+        # 修改文件扩展名
+        new_file_name = os.path.splitext(file_name)[0] + '.' + new_extension
+        # 返回新的完整路径
+        return os.path.join(directory, new_file_name)
+
     # 转换格式按钮
     def image_conversion(self):
 
@@ -3203,15 +3212,23 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
 
         # 写入图片缓存数据
-        def write_image_processing_cache(backup_image_file_path):
-
+        def write_image_processing_cache(old_extension, backup_image_file_path):
             # 获取文件名称
             tex_file_name = os.path.basename(backup_image_file_path)
 
             # 分离文件名和扩展名
-            tex_file_name_without_extension, extension = os.path.splitext(tex_file_name)
+            tex_file_name_without_extension, tex_file_name_extension = os.path.splitext(tex_file_name)
 
-            cache_data[tex_file_name_without_extension] = [extension, backup_image_file_path]
+            # 检查 cache_data 中是否存在该文件名
+            if tex_file_name_without_extension not in cache_data:
+                # 如果不存在，创建新的条目
+                cache_data[tex_file_name_without_extension] = [old_extension,
+                                                               tex_file_name_extension,
+                                                               backup_image_file_path]
+            else:
+                # 如果已存在，修改扩展名和备份文件路径
+                cache_data[tex_file_name_without_extension][1] = tex_file_name_extension
+                cache_data[tex_file_name_without_extension][2] = backup_image_file_path
 
             # 保存缓存文件
             self.dataM.bin_save_data(self.TM_image_processing_cache_FilePath, cache_data)
@@ -3221,6 +3238,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 如果没有勾选转换格式和缩放比例那不会有任何操作，会直接退出函数
         if not initial_config.get('convert_format', False) and not initial_config.get('scale_texture', False):
             return  # 如果两者都是 False，直接 return
+
+        # 如果没有选中内容不会执行
+        if self.get_selected_rows_data() == []:
+            return
+
 
         # 图像处理后的后缀名称
         image_processed_suffix = initial_config['processed_suffix']
@@ -3254,22 +3276,42 @@ class TM_ImageProcessing(QtWidgets.QDialog):
             if image_processed_suffix in os.path.basename(old_info_path):
                 old_info_path = old_info_path.replace("_TM_processed", "")
 
+            # -----------------
+            old_tex_name = os.path.basename(old_info_path)
             # 分离文件名和扩展名
-            file_name, file_extension = old_info_path.rsplit(".", 1)
+            old_tex_name_without_extension, old_tex_extension = os.path.splitext(old_tex_name)
+            old_dir_path = os.path.dirname(old_info_path)
+
+
+            # old_tex_name 带格式的旧贴图名称
+            # old_tex_name_without_extension 不带格式的旧贴图名称
+            # old_tex_extension 旧贴图格式
+            # old_dir_path # 这是旧贴图路径
+            # -----------------
+
+
+
             # 添加后缀并生成新的文件路径
-            backup_image_file_path = f"{file_name}{image_processed_suffix}.{file_extension}"
+            backup_image_file_path = os.path.normpath(
+                f"{os.path.join(old_dir_path, old_tex_name_without_extension)}{image_processed_suffix}{old_tex_extension}")
+
+            # 缓存中的图像的文件名（不带扩展名）
+            backup_image_name = old_tex_name_without_extension + image_processed_suffix
+
+            if backup_image_name in cache_data:
+                if cache_data[backup_image_name][0] != old_tex_extension:
+                    cache_ori_path = self.modify_file_extension(old_info_path, cache_data[backup_image_name][0])
+                    if os.path.exists(cache_ori_path):
+                        old_info_path = cache_ori_path
 
 
 
 
 
             # 判断处理过的名称格式是否和这次选择的格式名称一样，如果一样就删除掉之前的格式名称，防止残留文件
-            # 获取备份图像的文件名（不带扩展名）
-            backup_image_name = os.path.splitext(os.path.basename(backup_image_file_path))[0]
-
             # 如果缓存中存在同名的图像文件
             if backup_image_name in cache_data:
-                cached_format, cached_file_path = cache_data[backup_image_name]
+                cached_old_format , cached_format, cached_file_path = cache_data[backup_image_name]
                 # 如果缓存的文件格式与当前选择的格式不同
                 if cached_format != initial_config['format']:
                     # 删除旧的缓存文件，防止残留文件
@@ -3308,7 +3350,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
                 # 写入缓存
-                write_image_processing_cache(backup_image_file_path)
+                write_image_processing_cache(val[4], backup_image_file_path)
 
             # 如果没有进行格式转换，但需要缩放，则直接缩放
             elif initial_config['scale_texture']:
@@ -3317,7 +3359,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                                          scale_percent=int(initial_config['zoom']),
                                          resample_mode=str(initial_config['resampling_mode']))
                 # 写入缓存
-                write_image_processing_cache(backup_image_file_path)
+                write_image_processing_cache(val[4], backup_image_file_path)
 
             # 更新节点为新的路径
             try:
