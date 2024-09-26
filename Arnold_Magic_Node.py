@@ -38,17 +38,15 @@ import keyboard  # 用于监听和发送键盘事件，适合自动化任务和�
 # 8. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
 try:
-    from PySide2 import QtCore
-    from PySide2 import QtWidgets
-    from PySide2 import QtGui
-    from shiboken2 import wrapInstance
-    from PySide2.QtCore import Signal, Slot
-except ImportError:
-    from PySide6 import QtCore
-    from PySide6 import QtWidgets
-    from PySide6 import QtGui
-    from shiboken6 import wrapInstance
+    from PySide6 import QtCore, QtWidgets, QtGui
     from PySide6.QtCore import Signal, Slot
+    from PySide6.QtGui import QAction
+    from shiboken6 import wrapInstance
+except ImportError:
+    from PySide2 import QtCore, QtWidgets, QtGui
+    from PySide2.QtCore import Signal, Slot
+    from PySide2.QtWidgets import QAction
+    from shiboken2 import wrapInstance
 
 # ------------------------------------------
 # 获取脚本路径
@@ -129,8 +127,8 @@ TM_ImageProcessing_config_dict = {
     "processed_suffix" : "_TM_processed" ,
     "convert_format" : True,
     "scale_texture" : False,
-
 }
+
 
 TextureManagerWin_config_dict = {
     'listwidget_data' : 50 ,
@@ -147,7 +145,7 @@ def MayaMainWindows():
 # 插件窗口
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
-        WIN_TITLE = "Arnold_Magic_Node  Beta:1.1    许可证剩余时间 : {}天".format(str(LicenseV_remaining_time))
+        WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}    许可证剩余时间 : {str(LicenseV_remaining_time)}天"
 
         # 判断窗口是否存在，如果存在则删除
         if cmds.window(WIN_TITLE, exists=True):
@@ -213,7 +211,7 @@ class Arnold_Magic_Node_UI(object):
         cmds.menuItem(divider=True)
 
         cmds.menuItem(label= '设置',
-                      c= lambda *args:Arnold_Magic_Node_Settings_Panel())
+                      c= lambda *args:ArnoldMagicNodeSettingsPanel())
 
         # 读取settings_path文件夹下的render_preset_config_dict文件
         render_preset_config_dict =  self.dataM.bin_load_data(
@@ -266,7 +264,7 @@ class Arnold_Magic_Node_UI(object):
         )
         
         # 循环创建色彩空间菜单选项
-        for color_space_name in texture_processing_data['ColorSpace'][0]['ColorSpaceData']:
+        for color_space_name in texture_processing_data['ColorSpace']['ColorSpaceData']:
             cmds.menuItem(label = color_space_name)
 
         # 自动色彩空间的按钮
@@ -303,7 +301,7 @@ class Arnold_Magic_Node_UI(object):
         cmds.iconTextButton(i = os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
                             h=37.5/1.8,
                             w=155/1.8,
-                            c=lambda *args:TextureManagerWinInstance())
+                            c=lambda *args:ArnoldMagicNodeSettingsPanel())
 
         cmds.text(label=" "*1)
 
@@ -328,7 +326,7 @@ class Arnold_Magic_Node_UI(object):
                                  new_render_preset_config)
 
 # 插件设置按钮
-class  Arnold_Magic_Node_Settings_Panel(object):
+class  Arnold_Magic_Node_Settings_Panel_old(object):
     def __init__(self):
         WIN_TITLE = "Arnold_Magic_Node_Settings_Panel"
 
@@ -341,8 +339,8 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         self.window = cmds.window(WIN_TITLE, title=WIN_TITLE,sizeable=False, widthHeight=(530, 600))
 
 
-
-
+        # 加载初始全局数据
+        self.initial_global_config()
 
         self.create_widgets()
 
@@ -351,6 +349,14 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         # 显示窗口
         cmds.showWindow(self.window)
 
+    def initial_global_config(self):
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.pathD = PathDetection()  # 数据检测模块
+        ### 初始化配置数据
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
 
     def create_widgets(self):
 
@@ -387,9 +393,9 @@ class  Arnold_Magic_Node_Settings_Panel(object):
 
 
         #------------------------>自定义过滤名字   开始
-        TexFirstFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][0]["TexFirstFilterData"]
-        TexSoloFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][1]["TexSoloFilterData"]
-        TexFirstFilter_Options = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["TexFirstFilter_Options"]
+        texture_filter_dict = self.texture_processing_data['TexFirstFilter']
+
+        TexFirstFilter_Options =  self.texture_processing_data['ProcSet_Options']['TexFirstFilter_Options']
 
         # 这个是存下来的控件信息
         self.TexFirstFilter_widgets_name = {}
@@ -404,10 +410,8 @@ class  Arnold_Magic_Node_Settings_Panel(object):
         cmds.text(label = " [1] ---------->连接设置:", fn="smallBoldLabelFont", h= 35)
 
         ModifyMagicConnectionSetColorSpace = cmds.checkBox(l='连接时开启自动色彩空间',
-                                                                            value = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["MagicConnectionSetColorSpace"],
+                                                                            value = self.texture_processing_data["ProcSet_Options"]["MagicConnectionSetColorSpace"],
                                                                             cc = lambda *args:self.ModifyConfigurationFile(cmds.checkBox(ModifyMagicConnectionSetColorSpace, query=True, value=True), ["ProcSet_Options","MagicConnectionSetColorSpace"]))
-
-
 
 
 
@@ -427,32 +431,19 @@ class  Arnold_Magic_Node_Settings_Panel(object):
 
 
         cmds.text(label = " [3] ---------->自定义过滤名字:", fn="smallBoldLabelFont", h= 35)
-        # 创建TexFirstFilterData输入框
-        for channel in TexFirstFilterData:
+        # 创建texture_filter_dict输入框
+        for channel in texture_filter_dict:
 
             # 将每个输入框添加到滚动布局中
             cmds.text(label = channel.capitalize()+" :", parent = TexFirstFilter_scroll_layout, fn="smallBoldLabelFont")
             self.TexFirstFilter_widgets_name[channel] = cmds.textField(parent=TexFirstFilter_scroll_layout,
                                                 #...删除掉[]还有双引号
-                                                text= str((load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][0]["TexFirstFilterData"][channel])).replace('[', '').replace(']', '').replace("'", ""),
+                                                text= str((texture_filter_dict[channel])).replace('[', '').replace(']', '').replace("'", ""),
                                                 ed= True,
                                                 fn= "smallBoldLabelFont",
                                                 w= 500,
                                                 h= 35,
                                                 tcc= lambda _, channel=channel: self.TexFirstFilterData_modify(channel))
-        # 创建TexSoloFilterData输入框
-        for channel in TexSoloFilterData:
-            # 将每个输入框添加到滚动布局中
-            cmds.text(label = channel.capitalize()+" :", parent = TexFirstFilter_scroll_layout, fn="smallBoldLabelFont")
-            self.TexSoloFilter_widgets_name[channel] = cmds.textField(parent=TexFirstFilter_scroll_layout,
-                                                #...删除掉[]还有双引号
-                                                text= str((load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][1]["TexSoloFilterData"][channel])).replace('[', '').replace(']', '').replace("'", ""),
-                                                ed= True,
-                                                fn= "smallBoldLabelFont",
-                                                w= 500,
-                                                h= 35,
-                                                tcc=lambda _, channel=channel: self.TexSoloFilterData_modify(channel))
-
 
 
 
@@ -831,17 +822,18 @@ class  Arnold_Magic_Node_Settings_Panel(object):
             value -- 要设置的新值
             key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
             """
-            # 读取文件
-            TEX_PROCESSING_DATA = load_data('TEX_PROCESSING_DATA')
+
+            # 加载数据
+            texture_processing_data = self.dataM.bin_load_data(
+                os.path.join(settings_path, 'texture_processing_data.bin'))
 
             # 根据给定的键路径设置值
-            current_level = TEX_PROCESSING_DATA
+            current_level = texture_processing_data
             for key in key_path[:-1]:  # 迭代到倒数第二个键
                 current_level = current_level[key]  # 进入下一层级
             current_level[key_path[-1]] = value  # 设置最终键的值
 
-            # 修改并写回文件
-            write_data(SCRIPT_PATH + '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
+            self.dataM.bin_save_data(os.path.join(settings_path, 'texture_processing_data.bin'), texture_processing_data)
 
 
     # 设置菜单的函数
@@ -850,6 +842,364 @@ class  Arnold_Magic_Node_Settings_Panel(object):
     def resetData(self):
         os.remove(SCRIPT_PATH+'\RENDERING_WRITE_OPTION_DATA.json')
         os.remove(SCRIPT_PATH+'\TEX_PROCESSING_DATA.json')
+
+
+
+class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(ArnoldMagicNodeSettingsPanel, self).__init__(parent)
+
+        # 0. 初始化全局配置
+        self.initial_global_config()
+
+        # 1. 初始化窗口配置
+        self.initialize_window_config()
+
+        # 2. 创建菜单
+        self.create_menu()
+
+        # 3. 创建控件
+        self.create_widgets()
+
+        # 4. 创建布局
+        self.create_layouts()
+
+        # 5. 初始化控件
+        self.initial_widgets_settings()
+
+        # 显示窗口
+        self.show()
+
+    def initial_global_config(self):
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.pathD = PathDetection()  # 数据检测模块
+        ### 初始化配置数据
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    def initialize_window_config(self):
+
+        WINDOWS_NAME = f'插件设置  {SoftwareState} : {SoftwareVersion} 许可证剩余时间 : {str(LicenseV_remaining_time)}天'  # Win名称
+
+        delete_window_if_existe('ArnoldMagicNodeSettingsPanel')
+
+        self.setObjectName('ArnoldMagicNodeSettingsPanel')
+        self.setWindowTitle(WINDOWS_NAME)
+
+
+        #...窗口长宽
+        self.setMinimumHeight(530)
+        self.setMinimumWidth(700)
+
+
+    def create_menu(self):
+        # 创建主菜单栏
+        self.main_menu_bar = QtWidgets.QMenuBar(self)
+
+        # 设置菜单及其动作
+        self.settings_menu = self.main_menu_bar.addMenu('设置')
+
+        # 创建“重置数据”动作
+        self.reset_data_action = QAction('重置数据', self)
+        # 连接“重置数据”动作的触发信号到对应的槽函数
+        # self.reset_data_action.triggered.connect(self.reset_data)
+        self.settings_menu.addAction(self.reset_data_action)
+
+        # 许可证菜单及其动作
+        self.license_menu = self.main_menu_bar.addMenu('许可证')
+
+        # 创建“更换许可证”动作
+        self.change_license_action = QAction('更换许可证', self)
+        # 创建“许可证详细信息”动作
+        self.license_info_action = QAction('详细信息', self)
+
+        # 将动作添加到许可证菜单
+        self.license_menu.addAction(self.change_license_action)
+        self.license_menu.addAction(self.license_info_action)
+
+        # 关于菜单及其动作
+        self.about_menu = self.main_menu_bar.addMenu('关于')
+
+        # 创建“赞助”动作
+        self.sponsor_action = QAction('赞助', self)
+        # 创建“联系/反馈”动作
+        self.contact_feedback_action = QAction('联系/反馈', self)
+        # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
+        self.help_document_action = QAction('帮助文档', self)
+        self.help_document_action.triggered.connect(lambda :QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://flowus.cn/amazingike/93cfb135-4ab3-4536-8a5b-9b3e53042b51')))
+
+        # 将动作添加到关于菜单
+        self.about_menu.addAction(self.sponsor_action)
+        self.about_menu.addAction(self.contact_feedback_action)
+        self.about_menu.addAction(self.help_document_action)
+
+
+    def create_widgets(self):
+        # 创建选项卡部件
+        self.tab_widget = QtWidgets.QTabWidget()
+
+        # 创建各个选项卡页面
+        self.create_magic_connection_tab()
+        self.create_color_space_tab()
+        self.create_node_connection_tab()
+        self.create_path_matching_tab()
+
+    def create_layouts(self):
+        # 创建主布局
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.setMenuBar(self.main_menu_bar)
+        main_layout.addWidget(self.tab_widget)
+        self.setLayout(main_layout)
+
+    def initial_widgets_settings(self):
+        # 初始化控件的设置，例如设置默认值，连接信号和槽等
+        pass
+
+    def create_magic_connection_tab(self):
+        # 创建一个用于存放内容的 QWidget
+        content_widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(content_widget)
+
+        # [1] 连接设置
+        layout.addWidget(self.create_section_label("[1] ---------->连接设置:"))
+        self.magic_connection_checkbox = QtWidgets.QCheckBox('连接时开启自动色彩空间')
+        self.magic_connection_checkbox.setChecked(
+            self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace']
+        )
+        layout.addWidget(self.magic_connection_checkbox)
+
+        # [2] 自定义连接的贴图
+        layout.addWidget(self.create_section_label("[2] ---------->自定义连接的贴图:"))
+        self.tex_first_filter_options_list = QtWidgets.QListWidget()
+
+        ## 设置tex_first_filter_options_list参数
+
+        # 设置大小
+        self.tex_first_filter_options_list.setFixedHeight(410)
+
+
+        self.tex_first_filter_options_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        for name, value in self.texture_processing_data['ProcSet_Options']['TexFirstFilter_Options'].items():
+            item = QtWidgets.QListWidgetItem(name)
+            item.setSelected(value)
+            self.tex_first_filter_options_list.addItem(item)
+        layout.addWidget(self.tex_first_filter_options_list)
+
+        # [3] 自定义过滤名字
+        layout.addWidget(self.create_section_label("[3] ---------->自定义过滤名字:"))
+        self.tex_first_filter_fields = {}
+        for channel, filters in self.texture_processing_data['TexFirstFilter'].items():
+            channel_label = QtWidgets.QLabel(f"{channel.capitalize()} :")
+            channel_label.setStyleSheet("font-weight: bold;")
+            layout.addWidget(channel_label)
+            text_field = QtWidgets.QLineEdit(", ".join(filters))
+            self.tex_first_filter_fields[channel] = text_field
+            layout.addWidget(text_field)
+
+        # 创建一个 QScrollArea，并将内容部件添加进去
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)  # 使滚动区域自适应内容大小
+        scroll_area.setWidget(content_widget)  # 将内容部件设置为滚动区域的部件
+
+        # 创建一个用于选项卡的 QWidget，并设置布局
+        magic_connection_tab = QtWidgets.QWidget()
+        tab_layout = QtWidgets.QVBoxLayout(magic_connection_tab)
+        tab_layout.addWidget(scroll_area)  # 将滚动区域添加到选项卡布局中
+
+        # 将选项卡添加到 tab_widget
+        self.tab_widget.addTab(magic_connection_tab, "魔法连接")
+
+    def create_color_space_tab(self):
+
+        # 初始化变量
+        color_spaces = self.texture_processing_data['ColorSpace']['ColorSpaceData']  # 示例色彩空间列表
+
+
+        # 创建一个用于存放内容的 QWidget
+        content_widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(content_widget)
+
+
+
+
+
+        # [1] 自定义色彩空间
+        layout.addWidget(self.create_section_label("[1] ---------->自定义色彩空间:"))
+        self.color_space_text = QtWidgets.QPlainTextEdit()
+        # 设置 color_space_text 的内容
+        self.color_space_text.setPlainText(str(color_spaces))  # 您可以在这里添加默认的色彩空间列表
+        self.color_space_text.setFixedHeight(350)
+        layout.addWidget(self.color_space_text)
+
+        # [2] 自动设置色彩空间
+        layout.addWidget(self.create_section_label("[2] ---------->自动设置色彩空间:"))
+        self.auto_color_space_options = {}
+
+        channels = self.texture_processing_data['TexFirstFilter']  # 示例通道列表
+        for channel in channels:
+            h_layout = QtWidgets.QHBoxLayout()
+            label = QtWidgets.QLabel(f"{channel.capitalize()}:")
+            combo_box = QtWidgets.QComboBox()
+            combo_box.addItems(color_spaces)
+            self.auto_color_space_options[channel] = combo_box
+            h_layout.addWidget(label)
+            h_layout.addWidget(combo_box)
+            layout.addLayout(h_layout)
+
+        # 创建一个 QScrollArea，并将内容部件添加进去
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(content_widget)
+
+        # 创建一个用于选项卡的 QWidget，并设置布局
+        color_space_tab = QtWidgets.QWidget()
+        tab_layout = QtWidgets.QVBoxLayout(color_space_tab)
+        tab_layout.addWidget(scroll_area)
+
+        # 将选项卡添加到 tab_widget
+        self.tab_widget.addTab(color_space_tab, "颜色空间")
+
+    def create_node_connection_tab(self):
+        # 节点连接选项卡
+        node_connection_widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(node_connection_widget)
+
+        # [1] 自定义连接的节点
+        layout.addWidget(self.create_section_label("[1] ---------->自定义连接的节点:"))
+        self.auto_node_connection_list = QtWidgets.QListWidget()
+        self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        node_options = ["Option1", "Option2", "Option3"]  # 示例节点选项
+        for option in node_options:
+            item = QtWidgets.QListWidgetItem(option)
+            item.setSelected(True)
+            self.auto_node_connection_list.addItem(item)
+        layout.addWidget(self.auto_node_connection_list)
+
+        # 示例 ProcessingNodeData
+        self.processing_node_data = {
+            'diffuse': {'InputPort': 'color', 'NodeList': ['NodeA', 'NodeB'], 'OutputPort': 'outColor'},
+            'normal': {'InputPort': 'normalCamera', 'NodeList': ['NodeC'], 'OutputPort': 'outNormal'},
+            # 添加更多通道和数据
+        }
+
+        # 动态创建节点连接设置
+        for channel, data in self.processing_node_data.items():
+            layout.addWidget(self.create_section_label(channel.upper()))
+            h_layout = QtWidgets.QHBoxLayout()
+            input_port_combo = QtWidgets.QComboBox()
+            input_port_combo.addItems(['color', 'normalCamera', 'specularColor'])  # 示例输入端口
+            input_port_combo.setCurrentText(data['InputPort'])
+
+            node_list_edit = QtWidgets.QLineEdit(", ".join(data['NodeList']))
+
+            output_port_combo = QtWidgets.QComboBox()
+            output_port_combo.addItems(['outColor', 'outNormal', 'outAlpha'])  # 示例输出端口
+            output_port_combo.setCurrentText(data['OutputPort'])
+
+            add_node_button = QtWidgets.QPushButton("<")
+            add_node_button.clicked.connect(lambda _, c=channel: self.add_node_to_list(c))
+
+            h_layout.addWidget(input_port_combo)
+            h_layout.addWidget(node_list_edit)
+            h_layout.addWidget(output_port_combo)
+            h_layout.addWidget(add_node_button)
+
+            layout.addLayout(h_layout)
+
+        # 添加到选项卡
+        self.tab_widget.addTab(node_connection_widget, "节点连接")
+
+    def create_path_matching_tab(self):
+        # 节点路径匹配选项卡
+        path_matching_widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(path_matching_widget)
+
+        # [1] 连接时相关设置
+        layout.addWidget(self.create_section_label("[1] ---------->连接时相关设置:"))
+        self.path_matching_checkbox = QtWidgets.QCheckBox('连接时开启自动色彩空间')
+        self.path_matching_checkbox.setChecked(True)
+        layout.addWidget(self.path_matching_checkbox)
+
+        # [2] 排除名称
+        layout.addWidget(self.create_section_label("[2] ---------->排除名称:"))
+        self.exclude_list_text = QtWidgets.QPlainTextEdit()
+        self.exclude_list_text.setPlainText("exclude1, exclude2")
+        layout.addWidget(self.exclude_list_text)
+
+        # [3] 格式名称
+        layout.addWidget(self.create_section_label("[3] ---------->格式名称:"))
+        self.format_list_text = QtWidgets.QPlainTextEdit()
+        self.format_list_text.setPlainText("format1, format2")
+        layout.addWidget(self.format_list_text)
+
+        # [4] 匹配时相关设置
+        layout.addWidget(self.create_section_label("[4] ---------->匹配时相关设置:"))
+        self.case_sensitive_checkbox = QtWidgets.QCheckBox('是否根据大小写进行判断')
+        self.case_sensitive_checkbox.setChecked(False)
+        layout.addWidget(self.case_sensitive_checkbox)
+
+        self.near_one_value_checkbox = QtWidgets.QCheckBox('获取到接近1的值')
+        self.near_one_value_checkbox.setChecked(True)
+        layout.addWidget(self.near_one_value_checkbox)
+
+        self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动获取最大值')
+        self.auto_max_val_checkbox.setChecked(True)
+        layout.addWidget(self.auto_max_val_checkbox)
+
+        self.similarity_max_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.similarity_max_slider.setMinimum(0)
+        self.similarity_max_slider.setMaximum(100)
+        self.similarity_max_slider.setValue(80)  # 示例值
+        layout.addWidget(QtWidgets.QLabel("相似度判断值:"))
+        layout.addWidget(self.similarity_max_slider)
+
+        self.similarity_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.similarity_range_slider.setMinimum(0)
+        self.similarity_range_slider.setMaximum(100)
+        self.similarity_range_slider.setValue(20)  # 示例值
+        layout.addWidget(QtWidgets.QLabel("相似度差异值:"))
+        layout.addWidget(self.similarity_range_slider)
+
+        self.length_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.length_weight_slider.setMinimum(0)
+        self.length_weight_slider.setMaximum(100)
+        self.length_weight_slider.setValue(50)  # 示例值
+        layout.addWidget(QtWidgets.QLabel("内容相似/长度判断权重:"))
+        layout.addWidget(self.length_weight_slider)
+
+        # 添加到选项卡
+        self.tab_widget.addTab(path_matching_widget, "节点路径匹配")
+
+    def create_section_label(self, text):
+        label = QtWidgets.QLabel(text)
+        label.setStyleSheet("font-weight: bold;")
+        return label
+
+    def reset_data(self):
+        # 重置数据的功能实现
+        pass
+
+
+
+    def add_node_to_list(self, channel):
+        # 添加节点到列表的功能实现
+        pass
+
+
+    # --------------------保存设置内容的函数
+        def modify_config(self, key, cont):
+        config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+
+        config[key] = cont
+
+        self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, config)
+    # --------------------保存设置内容的函数
+
+
+
+
 
 # 贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
@@ -2881,10 +3231,10 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 创建“编辑”菜单
         self.edit_menu = self.menu_bar.addMenu("编辑")
 
-        self.clear_cache = QtGui.QAction("清除缓存  ！谨慎删除！", self)
+        self.clear_cache = QAction("清除缓存  ！谨慎删除！", self)
         self.clear_cache.triggered.connect(lambda :os.remove(self.TM_image_processing_cache_FilePath))
 
-        self.redo_action = QtGui.QAction("还原图像", self)
+        self.redo_action = QAction("还原图像", self)
 
         self.edit_menu.addAction(self.clear_cache)
         self.edit_menu.addAction(self.redo_action)
@@ -2893,7 +3243,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
         self.help_menu = self.menu_bar.addMenu("帮助")
 
-        self.instructions_action = QtGui.QAction("使用说明", self)
+        self.instructions_action = QAction("使用说明", self)
         self.help_menu.addAction(self.instructions_action)
 
     def create_widgets(self):
@@ -3298,15 +3648,12 @@ class TM_ImageProcessing(QtWidgets.QDialog):
             # 缓存中的图像的文件名（不带扩展名）
             backup_image_name = old_tex_name_without_extension + image_processed_suffix
 
+            # 检查缓存中是否存在相同的备份图像
             if backup_image_name in cache_data:
                 if cache_data[backup_image_name][0] != old_tex_extension:
                     cache_ori_path = self.modify_file_extension(old_info_path, cache_data[backup_image_name][0])
                     if os.path.exists(cache_ori_path):
                         old_info_path = cache_ori_path
-
-
-
-
 
             # 判断处理过的名称格式是否和这次选择的格式名称一样，如果一样就删除掉之前的格式名称，防止残留文件
             # 如果缓存中存在同名的图像文件
@@ -3317,7 +3664,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                     # 删除旧的缓存文件，防止残留文件
                     if os.path.exists(cached_file_path):
                         try:
-                            os.remove(cached_file_path)
+                            os.remove(cached_file_path)  # 删除旧的缓存文件
                         except Exception as e:
                             self.feedback.CP('无法删除{}残留文件，原因：{}'.format(cached_file_path, e))
 
@@ -4214,22 +4561,23 @@ def ai_aov_switch_button():
 
 # 魔法自动连接
 def magic_connection_button():
+    ### 实例各种模块
+    dataM = DataManager() # 数据管理模块
+    feedback = FeedbackPrompt()  # 错误提示模块
 
-    # 0.获取初始变量
-    TexFirstFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][0]["TexFirstFilterData"]
-    TexSoloFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][1]['TexSoloFilterData']
-    FilterData = TexFirstFilterData
-    FilterData.update(TexSoloFilterData)
-    ProcessingNodeData = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
-    ContOptions = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['TexFirstFilter_Options'] # 相应贴图是否要连接的参数
-    Auto_Node_Connection_Options = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
-    MagicConnectionSetColorSpace = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['MagicConnectionSetColorSpace'] # 魔法连接启用色彩空间
-    feedback = FeedbackPrompt() # 错误提示模块
+    ### 初始化配置数据
+    # 加载数据
+    texture_processing_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    texture_filter_dict = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
+    ProcessingNodeData = texture_processing_data['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
+    ContOptions =  texture_processing_data['ProcSet_Options']['TexFirstFilter_Options'] # 相应贴图是否要连接的参数
+    Auto_Node_Connection_Options =  texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
+    MagicConnectionSetColorSpace =  texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'] # 魔法连接启用色彩空间
 
     # 1.获取选择节点
-
     SlNode = process_sl_data()
-
     if SlNode == None:
         # 如果没有选择节点将会直接退出函数
         return
@@ -4238,8 +4586,6 @@ def magic_connection_button():
         # 检查SlNode字典中是否有file key 如果没有直接退出函数
         feedback.CP('没有<file>纹理节点，请选择纹理节点')
         return
-
-
 
     MatName = None
     # 2.创建材质球。
@@ -4263,7 +4609,7 @@ def magic_connection_button():
 
     # 4.执行匹配 连接创建处理节点并连接到材质球的操作
     NodePro = NodeProcessor()
-    NodePro.AutoNodeConnect(SlNode, MatName, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
+    NodePro.AutoNodeConnect(SlNode, MatName, texture_filter_dict, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
 
     # 5.设置色彩空间 如果自动色彩空间开启了就会设置
     if MagicConnectionSetColorSpace == True:
@@ -4271,9 +4617,19 @@ def magic_connection_button():
 
 
 def path_detection_connection_button():
+    ### 实例各种模块
+    dataM = DataManager() # 数据管理模块
+    feedback = FeedbackPrompt()  # 错误提示模块
+    pathD = PathDetection() # 数据检测模块
+    ### 初始化配置数据
+    # 加载数据
+    texture_processing_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'texture_processing_data.bin'))
 
-    Path_Detection = load_data('TEX_PROCESSING_DATA')["Path_Detection"]
+    path_detection_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'path_detection_config.bin'))
 
+    texture_filter_dict = texture_processing_data["TexFirstFilter"]  # 过滤贴图的数据
     matching_test_mode = True
     node_connection = False
 
@@ -4289,36 +4645,32 @@ def path_detection_connection_button():
     else:
         sl_data = process_sl_data()
         for node_name in sl_data['file']:
-            # 创建 PathDetection 类的实例
-            path_detection_instance = PathDetection()
+
 
             # 获取对饮节点路径下的内容并且过滤
-            node_attr = path_detection_instance.get_node_path(node_name)
+            node_attr = pathD.get_node_path(node_name)
 
             # 处理数据并匹配数据
-            exclude_list = Path_Detection['exclude_list']
-            tex_name_list = path_detection_instance.detection_path_content(node_name, exclude_list)
+            exclude_list = path_detection_data['exclude_list']
+            tex_name_list = pathD.detection_path_content(node_name, exclude_list)
 
             # 处理数据并匹配数据
-            length_weight = Path_Detection['length_weight']
-            format_list =  Path_Detection['format_list']
+            length_weight = path_detection_data['length_weight']
+            format_list =  path_detection_data['format_list']
 
-            TexFirstFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][0]["TexFirstFilterData"]
-            TexSoloFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][1]['TexSoloFilterData']
-            FilterData = TexFirstFilterData
-            FilterData.update(TexSoloFilterData)
-            case_sensitive = Path_Detection['case_sensitive']
-            similarity_dict = path_detection_instance.process_name_data(node_name, tex_name_list, length_weight, format_list, FilterData, TexFirstFilterData, TexSoloFilterData, case_sensitive)
+
+            case_sensitive = path_detection_data['case_sensitive']
+            similarity_dict = pathD.process_name_data(node_name, tex_name_list, length_weight, format_list, texture_filter_dict, case_sensitive)
 
             # 判断数据匹配数据
-            auto_max_val =  Path_Detection['auto_max_val']
-            similarity_max =  Path_Detection['similarity_max']
-            similarity_range = Path_Detection['similarity_range']
-            near_one_value = Path_Detection['near_one_value']
-            matching_list = path_detection_instance.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value)
+            auto_max_val =  path_detection_data['auto_max_val']
+            similarity_max =  path_detection_data['similarity_max']
+            similarity_range = path_detection_data['similarity_range']
+            near_one_value = path_detection_data['near_one_value']
+            matching_list = pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value)
 
             # 删除掉选择的节点
-            matching_list_pro = path_detection_instance.remove_matching_elements(os.path.basename(node_attr[node_name]['path']), matching_list)
+            matching_list_pro = pathD.remove_matching_elements(os.path.basename(node_attr[node_name]['path']), matching_list)
 
 
 

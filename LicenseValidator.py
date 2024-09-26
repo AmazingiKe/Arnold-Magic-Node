@@ -33,15 +33,16 @@ from cryptography.exceptions import InvalidSignature
 
 # 导入PySide
 try:
-    from PySide2 import QtCore
-    from PySide2 import QtWidgets
-    from PySide2 import QtGui
-    from shiboken2 import wrapInstance
-except ImportError:
-    from PySide6 import QtCore
-    from PySide6 import QtWidgets
-    from PySide6 import QtGui
+    from PySide6 import QtCore, QtWidgets, QtGui
+    from PySide6.QtCore import Signal, Slot
+    from PySide6.QtGui import QAction
     from shiboken6 import wrapInstance
+except ImportError:
+    from PySide2 import QtCore, QtWidgets, QtGui
+    from PySide2.QtCore import Signal, Slot
+    from PySide2.QtWidgets import QAction
+    from shiboken2 import wrapInstance
+
 
 
 

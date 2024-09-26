@@ -131,7 +131,7 @@ class PathDetection(object):
         return tex_name_list
 
     # 匹配零时组建数据库的文件
-    def process_name_data(self, node_name, tex_name_list, length_weight, format_list, filter_dict, TexFirstFilterData, TexSoloFilterData, case_sensitive):
+    def process_name_data(self, node_name, tex_name_list, length_weight, format_list, filter_dict, case_sensitive):
         """
         处理文件名并计算相似度。
 
@@ -182,12 +182,10 @@ class PathDetection(object):
         
         # 4，进行匹配源名字进行切片
         sl_node_texname_dict_pro = {sl_node_texname_pro: sl_node_texname_pro.split('_')}
-        sl_node_texname_dict_lastpro = self.match_and_remove_dict(sl_node_texname_dict_pro, TexFirstFilterData)
-        sl_node_texname_dict_lastpro = self.match_and_remove_dict(sl_node_texname_dict_lastpro, TexSoloFilterData)
+        sl_node_texname_dict_lastpro = self.match_and_remove_dict(sl_node_texname_dict_pro, filter_dict)
         # 5，进行匹配源名字进行切片    
         tex_name_dict_pro= {key: key.split('_') for key in tex_name_list_pro}
-        tex_name_dict_lastpro = self.match_and_remove_dict(tex_name_dict_pro, TexFirstFilterData)
-        tex_name_dict_lastpro = self.match_and_remove_dict(tex_name_dict_lastpro, TexSoloFilterData)
+        tex_name_dict_lastpro = self.match_and_remove_dict(tex_name_dict_pro, filter_dict)
 
         similarity_dict = {}
         # 6。匹配相似度
@@ -1788,20 +1786,20 @@ class DataManager:
             write_data(Script_path + '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
 
 
-# 读写模块
-def save_data(file_path, data):
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent = 4)
-
-def load_data(path_name):
-    file_path = os.path.join(os.path.dirname(__file__)) +'\\'+ path_name + '.json'
-    with open(file_path, 'r') as file:
-        data = json.load(file)
-    return data
-
-def write_data(file_path, data):
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent = 4)
-        file.write('\n')
+# # 读写模块
+# def save_data(file_path, data):
+#     with open(file_path, 'w') as file:
+#         json.dump(data, file, indent = 4)
+#
+# def load_data(path_name):
+#     file_path = os.path.join(os.path.dirname(__file__)) +'\\'+ path_name + '.json'
+#     with open(file_path, 'r') as file:
+#         data = json.load(file)
+#     return data
+#
+# def write_data(file_path, data):
+#     with open(file_path, 'w') as file:
+#         json.dump(data, file, indent = 4)
+#         file.write('\n')
 
 
