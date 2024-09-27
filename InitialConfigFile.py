@@ -272,7 +272,7 @@ new_texture_processing_data_dict = {
             "Displacement": 'Raw'
         }},
     "ProcSet_Options":{
-        'TexFirstFilter_Options': {
+        'Magic_Connection_Options': {
             'base': False,
             'baseColor': True,
             'diffuseRoughness': False,
@@ -289,9 +289,9 @@ new_texture_processing_data_dict = {
             'emissionColor': False,
             'opacity': True,
             'normalCamera': True,
-            "AO": False,
-            "Bump": False,
-            "Displacement": False
+            "ao": True,
+            "bump": False,
+            "displacement": False
             },
         "TexSoloFilterData_Options" :{
             "AO": True,

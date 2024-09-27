@@ -1,5 +1,6 @@
 ##############################################################################################
 # # ++ 导入所需的库和模块
+from time import sleep
 
 # 1. Maya 库
 import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命令和操作场景
@@ -72,7 +73,7 @@ LicenseV_remaining_time = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.5.5"
+SoftwareVersion = "0.5.6"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -86,12 +87,10 @@ icon_path = os.path.join(SCRIPT_PATH, "icon") # 定义图标路径  ->全局变�
 
 # 定义全局字体大小变量
 SMALL_FONT_SIZE = 10
-
-
-# NORMAL_FONT_SIZE = 14
-# MEDIUM_FONT_SIZE = 16
-# LARGE_FONT_SIZE = 18
-# EXTRA_LARGE_FONT_SIZE = 24
+NORMAL_FONT_SIZE = 14
+MEDIUM_FONT_SIZE = 16
+LARGE_FONT_SIZE = 18
+EXTRA_LARGE_FONT_SIZE = 24
 # --------------------初始变量结束
 
 
@@ -432,6 +431,7 @@ class  Arnold_Magic_Node_Settings_Panel_old(object):
 
         cmds.text(label = " [3] ---------->自定义过滤名字:", fn="smallBoldLabelFont", h= 35)
         # 创建texture_filter_dict输入框
+
         for channel in texture_filter_dict:
 
             # 将每个输入框添加到滚动布局中
@@ -844,7 +844,7 @@ class  Arnold_Magic_Node_Settings_Panel_old(object):
         os.remove(SCRIPT_PATH+'\TEX_PROCESSING_DATA.json')
 
 
-
+# 插件设置按钮qt写
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(ArnoldMagicNodeSettingsPanel, self).__init__(parent)
@@ -902,9 +902,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.settings_menu = self.main_menu_bar.addMenu('设置')
 
         # 创建“重置数据”动作
-        self.reset_data_action = QAction('重置数据', self)
+        self.reset_data_action = QAction('重置设置数据', self)
         # 连接“重置数据”动作的触发信号到对应的槽函数
-        # self.reset_data_action.triggered.connect(self.reset_data)
+        self.reset_data_action.triggered.connect(lambda :os.remove(os.path.join(settings_path, 'texture_processing_data.bin')))
         self.settings_menu.addAction(self.reset_data_action)
 
         # 许可证菜单及其动作
@@ -953,22 +953,35 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         main_layout.addWidget(self.tab_widget)
         self.setLayout(main_layout)
 
+    # 初始化控件的设置，例如设置默认值，连接信号和槽等
     def initial_widgets_settings(self):
-        # 初始化控件的设置，例如设置默认值，连接信号和槽等
-        pass
+        # 初始化create_magic_connection_tab 控件值
+        self.auto_color_space_connection.setChecked(
+            self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'])
 
+
+
+    # 魔法连接的标签页面
     def create_magic_connection_tab(self):
+        # 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
+        font.setBold(True)  # 设置加粗
+
         # 创建一个用于存放内容的 QWidget
         content_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(content_widget)
 
         # [1] 连接设置
         layout.addWidget(self.create_section_label("[1] ---------->连接设置:"))
-        self.magic_connection_checkbox = QtWidgets.QCheckBox('连接时开启自动色彩空间')
-        self.magic_connection_checkbox.setChecked(
-            self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace']
-        )
-        layout.addWidget(self.magic_connection_checkbox)
+        self.auto_color_space_connection = QtWidgets.QCheckBox('连接时开启自动色彩空间')
+
+        # auto_color_space_connection 连接修改配置函数
+        self.auto_color_space_connection.stateChanged.connect(lambda :self.modify_nested_config(
+                self.auto_color_space_connection.isChecked(),
+                ['ProcSet_Options', 'MagicConnectionSetColorSpace']))
+
+        layout.addWidget(self.auto_color_space_connection)
 
         # [2] 自定义连接的贴图
         layout.addWidget(self.create_section_label("[2] ---------->自定义连接的贴图:"))
@@ -977,26 +990,56 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         ## 设置tex_first_filter_options_list参数
 
         # 设置大小
-        self.tex_first_filter_options_list.setFixedHeight(410)
+        self.tex_first_filter_options_list.setFixedHeight(530)
 
-
+        # 设置选择模式
         self.tex_first_filter_options_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        for name, value in self.texture_processing_data['ProcSet_Options']['TexFirstFilter_Options'].items():
-            item = QtWidgets.QListWidgetItem(name)
-            item.setSelected(value)
+
+        # 循环创建每一个选项
+        for name, value in self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options'].items():
+            item = QtWidgets.QListWidgetItem(name.capitalize()) # 让名称的第一个字大写
+            item.setFont(font)
             self.tex_first_filter_options_list.addItem(item)
+
+            item.setSelected(value)
+        # 触发绑定函数
+        self.tex_first_filter_options_list.selectionModel().selectionChanged.connect(
+            lambda item:self.modify_tex_first_filter_options_list_config())
+
         layout.addWidget(self.tex_first_filter_options_list)
 
         # [3] 自定义过滤名字
         layout.addWidget(self.create_section_label("[3] ---------->自定义过滤名字:"))
-        self.tex_first_filter_fields = {}
+
+        self.texture_filter_fields = {}
+
         for channel, filters in self.texture_processing_data['TexFirstFilter'].items():
+            # 创建标题 第一个字母大写
             channel_label = QtWidgets.QLabel(f"{channel.capitalize()} :")
+            # 加粗字体
             channel_label.setStyleSheet("font-weight: bold;")
+            # 添加到layout
             layout.addWidget(channel_label)
-            text_field = QtWidgets.QLineEdit(", ".join(filters))
-            self.tex_first_filter_fields[channel] = text_field
-            layout.addWidget(text_field)
+
+            # 创建输入框，并设置初始文本为过滤器的组合
+            self.texture_filter_fields[channel] = QtWidgets.QLineEdit(", ".join(filters))
+
+            # 设置默认值
+            self.texture_filter_fields[channel].setText(
+                str(filters)
+                .replace('[', '')
+                .replace(']', '')
+                .replace("'", "")
+                .replace(",", " , "))
+
+
+            # 编辑时触发函数，绑定到具体的 QLineEdit 对象
+            self.texture_filter_fields[channel].textChanged.connect(
+                lambda text, ch=channel: self.modify_texture_filter_fields_config(ch, text)
+            )
+
+            # 添加到layout
+            layout.addWidget(self.texture_filter_fields[channel])
 
         # 创建一个 QScrollArea，并将内容部件添加进去
         scroll_area = QtWidgets.QScrollArea()
@@ -1011,7 +1054,12 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 将选项卡添加到 tab_widget
         self.tab_widget.addTab(magic_connection_tab, "魔法连接")
 
+    # 颜色空间的标签页面
     def create_color_space_tab(self):
+        # 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
+        font.setBold(True)  # 设置加粗
 
         # 初始化变量
         color_spaces = self.texture_processing_data['ColorSpace']['ColorSpaceData']  # 示例色彩空间列表
@@ -1027,10 +1075,30 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # [1] 自定义色彩空间
         layout.addWidget(self.create_section_label("[1] ---------->自定义色彩空间:"))
+
         self.color_space_text = QtWidgets.QPlainTextEdit()
+
+
         # 设置 color_space_text 的内容
-        self.color_space_text.setPlainText(str(color_spaces))  # 您可以在这里添加默认的色彩空间列表
+        self.color_space_text.setPlainText(
+            str(color_spaces)
+            .replace('[', '')
+            .replace(']', '')
+            .replace("'", "")
+            .replace(",", " , "))
+
+        # 设置窗口高度是350
         self.color_space_text.setFixedHeight(350)
+
+        # 设置字体
+        self.color_space_text.setFont(font)
+
+        # 修改激活函数 连接函数槽
+        self.color_space_text.textChanged.connect(self.modify_color_space_text_config)
+
+
+
+
         layout.addWidget(self.color_space_text)
 
         # [2] 自动设置色彩空间
@@ -1040,12 +1108,19 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         channels = self.texture_processing_data['TexFirstFilter']  # 示例通道列表
         for channel in channels:
             h_layout = QtWidgets.QHBoxLayout()
+
             label = QtWidgets.QLabel(f"{channel.capitalize()}:")
+
             combo_box = QtWidgets.QComboBox()
+
             combo_box.addItems(color_spaces)
+
             self.auto_color_space_options[channel] = combo_box
+
             h_layout.addWidget(label)
+
             h_layout.addWidget(combo_box)
+
             layout.addLayout(h_layout)
 
         # 创建一个 QScrollArea，并将内容部件添加进去
@@ -1061,6 +1136,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 将选项卡添加到 tab_widget
         self.tab_widget.addTab(color_space_tab, "颜色空间")
 
+    # 节点连接的标签页面
     def create_node_connection_tab(self):
         # 节点连接选项卡
         node_connection_widget = QtWidgets.QWidget()
@@ -1111,6 +1187,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(node_connection_widget, "节点连接")
 
+    # 节点路径匹配页面
     def create_path_matching_tab(self):
         # 节点路径匹配选项卡
         path_matching_widget = QtWidgets.QWidget()
@@ -1172,34 +1249,132 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(path_matching_widget, "节点路径匹配")
 
+
+
+
+
+    # 创建标签
     def create_section_label(self, text):
         label = QtWidgets.QLabel(text)
         label.setStyleSheet("font-weight: bold;")
         return label
 
-    def reset_data(self):
-        # 重置数据的功能实现
-        pass
 
+    # --------------------保存设置内容的函数 开始
 
-
-    def add_node_to_list(self, channel):
-        # 添加节点到列表的功能实现
-        pass
-
-
-    # --------------------保存设置内容的函数
-        def modify_config(self, key, cont):
+    # -----通用
+    def modify_config(self, key, cont):
         config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
 
         config[key] = cont
 
         self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, config)
-    # --------------------保存设置内容的函数
+
+    def modify_nested_config(self, value, key_path):
+        """
+        修改配置文件的特定键值。
+
+        参数:
+        value -- 要设置的新值
+        key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
+
+        功能:
+        1. 加载配置数据。
+        2. 根据提供的键路径找到并修改对应的值。
+        3. 保存修改后的配置数据。
+        """
+
+        # 加载二进制配置数据
+        texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin')
+        )
+
+        # 根据给定的键路径逐层访问数据
+        current_level = texture_processing_data
+        for key in key_path[:-1]:  # 遍历到倒数第二个键
+            current_level = current_level[key]  # 进入下一层级
+
+        # 设置最终键的值为新值
+        current_level[key_path[-1]] = value
+
+        # 保存修改后的配置数据
+        self.dataM.bin_save_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'),
+            texture_processing_data
+        )
+
+
+        # --------------------保存设置内容的函数
+    # -----通用
+
+    # 修改 tex_first_filter_options_list 通道是否要魔法连接的配置文件
+    def modify_tex_first_filter_options_list_config(self):
+        def main():
+            # 获取选中的项
+            selected_items = self.tex_first_filter_options_list.selectedItems()
+
+            # 如果没有选中项，则直接返回
+            if not selected_items:
+                return
+
+            # 提取选中的内容
+            selected_values = [item.text() for item in selected_items]
+            # 将选中的内容转换为全大写
+            selected_values_uppercase = [s.upper() for s in selected_values]
+
+            # 遍历处理数据中的每个通道
+            for channel in self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options']:
+                # 检查当前通道（大写）是否在选中的大写值中
+                if channel.upper() in selected_values_uppercase:
+                    # 如果匹配，更新配置文件为真
+                    self.modify_nested_config(True, ['ProcSet_Options', 'Magic_Connection_Options', channel])
+                else:
+                    # 如果不匹配，更新配置文件为假
+                    self.modify_nested_config(False, ['ProcSet_Options', 'Magic_Connection_Options', channel])
+
+            # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
+
+        QtCore.QTimer.singleShot(0, main)
+
+    # 修改 texture_filter_fields 过滤配置文件
+    def modify_texture_filter_fields_config(self, channel, val):
+
+        # 处理写入值，并强制转为大写
+        output_list = [item.strip().upper() for item in val.split(",")]
+
+        # 保存修改值
+        self.modify_nested_config(output_list, ['TexFirstFilter', channel])
+
+        # 刷新输入框
+        self.texture_filter_fields[channel].setText(
+                str(output_list)
+                .replace('[', '')
+                .replace(']', '')
+                .replace("'", "")
+                .replace(",", " , "))
+
+    # 修改 color_space_text 过滤配置文件
+    def modify_color_space_text_config(self):
+        val = self.color_space_text.toPlainText()
+
+        # 处理写入值，并强制转为大写
+        output_list = [item.strip() for item in val.split(",")]
+
+        # 保存修改值
+        self.modify_nested_config(output_list, ['ColorSpace', 'ColorSpaceData'])
+
+        # 刷新输入框 (BUG)
+        # self.color_space_text.setPlainText(
+        #     str(output_list)
+        #     .replace('[', '')
+        #     .replace(']', '')
+        #     .replace("'", "")
+        #     .replace(",", " , "))
 
 
 
 
+    # --------------------保存设置内容的函数 结束
 
 # 贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
