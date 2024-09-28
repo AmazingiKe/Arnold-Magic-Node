@@ -1062,7 +1062,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         font.setBold(True)  # 设置加粗
 
         # 初始化变量
-        color_spaces = self.texture_processing_data['ColorSpace']['ColorSpaceData']  # 示例色彩空间列表
+        color_spaces_data = self.texture_processing_data['ColorSpace']  # 示例色彩空间列表
 
 
         # 创建一个用于存放内容的 QWidget
@@ -1081,7 +1081,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 设置 color_space_text 的内容
         self.color_space_text.setPlainText(
-            str(color_spaces)
+            str(color_spaces_data['ColorSpaceData'])
             .replace('[', '')
             .replace(']', '')
             .replace("'", "")
@@ -1105,21 +1105,39 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addWidget(self.create_section_label("[2] ---------->自动设置色彩空间:"))
         self.auto_color_space_options = {}
 
+        # 用来储存图标变量
+        AutoSetColorSpaceMenuName = {}
+
         channels = self.texture_processing_data['TexFirstFilter']  # 示例通道列表
+
         for channel in channels:
             h_layout = QtWidgets.QHBoxLayout()
 
             label = QtWidgets.QLabel(f"{channel.capitalize()}:")
 
-            combo_box = QtWidgets.QComboBox()
+            # 加粗字体
+            label.setStyleSheet("font-weight: bold;")
 
-            combo_box.addItems(color_spaces)
+            AutoSetColorSpaceMenuName[channel] = QtWidgets.QComboBox()
 
-            self.auto_color_space_options[channel] = combo_box
+            AutoSetColorSpaceMenuName[channel].addItems(color_spaces_data['ColorSpaceData'])
+
+            # 设置默认值
+            AutoSetColorSpaceMenuName[channel].setCurrentText(color_spaces_data['AutoSetColorSpaceConfig'][channel])
+
+            # 设置激活函数
+            AutoSetColorSpaceMenuName[channel].currentIndexChanged.connect(
+                lambda _, ch=channel:
+                self.modify_nested_config(AutoSetColorSpaceMenuName[ch].currentText(), ['ColorSpace',
+                                                                                        'AutoSetColorSpaceConfig',
+                                                                                        ch]))
+
+
+            # self.auto_color_space_options[channel] = combo_box
 
             h_layout.addWidget(label)
 
-            h_layout.addWidget(combo_box)
+            h_layout.addWidget(AutoSetColorSpaceMenuName[channel])
 
             layout.addLayout(h_layout)
 
@@ -1138,30 +1156,41 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 节点连接的标签页面
     def create_node_connection_tab(self):
+        # 创建配置变量
+        node_connection_config = self.texture_processing_data['ProcSet_Options']
+
+        # 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
+        font.setBold(True)  # 设置加粗
+
         # 节点连接选项卡
         node_connection_widget = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(node_connection_widget)
+        node_connection_layout = QtWidgets.QVBoxLayout(node_connection_widget)
+
+        # 使用QScrollArea实现滚动
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_content_widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(scroll_content_widget)
 
         # [1] 自定义连接的节点
         layout.addWidget(self.create_section_label("[1] ---------->自定义连接的节点:"))
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        node_options = ["Option1", "Option2", "Option3"]  # 示例节点选项
-        for option in node_options:
-            item = QtWidgets.QListWidgetItem(option)
+
+        for channel in node_connection_config['Auto_Node_Connection_Options']:
+            item = QtWidgets.QListWidgetItem(channel.capitalize())  # 让名称的第一个字大写
             item.setSelected(True)
+            item.setFont(font)
             self.auto_node_connection_list.addItem(item)
+
+        # 设置大小
+        self.auto_node_connection_list.setFixedHeight(530)
         layout.addWidget(self.auto_node_connection_list)
 
-        # 示例 ProcessingNodeData
-        self.processing_node_data = {
-            'diffuse': {'InputPort': 'color', 'NodeList': ['NodeA', 'NodeB'], 'OutputPort': 'outColor'},
-            'normal': {'InputPort': 'normalCamera', 'NodeList': ['NodeC'], 'OutputPort': 'outNormal'},
-            # 添加更多通道和数据
-        }
-
         # 动态创建节点连接设置
-        for channel, data in self.processing_node_data.items():
+        for channel, data in node_connection_config['ProcessingNodeData'].items():
             layout.addWidget(self.create_section_label(channel.upper()))
             h_layout = QtWidgets.QHBoxLayout()
             input_port_combo = QtWidgets.QComboBox()
@@ -1175,6 +1204,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             output_port_combo.setCurrentText(data['OutputPort'])
 
             add_node_button = QtWidgets.QPushButton("<")
+            add_node_button.setFixedWidth(30)
             add_node_button.clicked.connect(lambda _, c=channel: self.add_node_to_list(c))
 
             h_layout.addWidget(input_port_combo)
@@ -1183,6 +1213,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             h_layout.addWidget(add_node_button)
 
             layout.addLayout(h_layout)
+
+        # 将内容添加到滚动区域
+        scroll_area.setWidget(scroll_content_widget)
+        node_connection_layout.addWidget(scroll_area)
 
         # 添加到选项卡
         self.tab_widget.addTab(node_connection_widget, "节点连接")
@@ -1535,36 +1569,55 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 全选材质节点
         self.MaterialList_SelectAll_Button = QtWidgets.QPushButton()
-        self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(icon_path + "\\render_aiStandardSurface_Select.png"))
+        self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(icon_path + "\\select_all_icon.png"))
         self.MaterialList_SelectAll_Button.setFixedWidth(40)
         self.MaterialList_SelectAll_Button.setFixedHeight(40)
         self.MaterialList_SelectAll_Button.clicked.connect(lambda: self.all_selected_materials())
-        self.MaterialList_SelectAll_Button.setIconSize(QtCore.QSize(32, 32))
+        self.MaterialList_SelectAll_Button.setIconSize(QtCore.QSize(38, 38))
 
         # 取消所有选择
-        self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton(lang['TexturelList_Unselect_All_Button']) # 取消全选
+        self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton() # 取消全选 lang['TexturelList_Unselect_All_Button']
         self.TexturelList_Unselect_All_Button.clicked.connect(lambda: (
             self.MaterialList.clearSelection(),
             self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
         ))
         self.TexturelList_Unselect_All_Button.setFixedHeight(40)
+        self.TexturelList_Unselect_All_Button.setFixedWidth(40)
+        self.TexturelList_Unselect_All_Button.setIcon(QtGui.QIcon(
+            os.path.join(icon_path , 'deselect_all_icon.png')))
+        self.TexturelList_Unselect_All_Button.setIconSize(QtCore.QSize(38, 38))
 
         # 反选
-        self.TexturelList_reverse_selection = QtWidgets.QPushButton(lang['TexturelList_reverse_selection']) # 反选
+        self.TexturelList_reverse_selection = QtWidgets.QPushButton() # 反选 lang['TexturelList_reverse_selection']
         self.TexturelList_reverse_selection.setFixedHeight(40)
+        self.TexturelList_reverse_selection.setFixedWidth(40)
+        self.TexturelList_reverse_selection.setIconSize(QtCore.QSize(42, 42))
         self.TexturelList_reverse_selection.clicked.connect(lambda: self.texture_list_reverse_selection())
+        self.TexturelList_reverse_selection.setIcon(QtGui.QIcon(
+            os.path.join(icon_path , 'invert_selection_icon.png')
+        ))
 
         # 一键选出所有缺失贴图
-        self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton(lang['TexturelList_Find_Missing_Textures_Button']) # 选出缺失
+        self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton() # 选出缺失 lang['TexturelList_Find_Missing_Textures_Button']
         self.TexturelList_Find_Missing_Textures_Button.clicked.connect(
             lambda: self.texture_list_find_missing_textures())
         self.TexturelList_Find_Missing_Textures_Button.setFixedHeight(40)
+        self.TexturelList_Find_Missing_Textures_Button.setFixedWidth(40)
+        self.TexturelList_Find_Missing_Textures_Button.setIconSize(QtCore.QSize(38, 38))
+        self.TexturelList_Find_Missing_Textures_Button.setIcon(QtGui.QIcon(
+            os.path.join(icon_path , 'select_missing_icon.png')
+        ))
 
         # 选出最大贴图的按钮
-        self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton(lang['TexturelList_Intelligent_Find_Max_Size_Button']) # 选出大贴图
+        self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton() # 选出大贴图 lang['TexturelList_Intelligent_Find_Max_Size_Button']
         self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(
                                                                             lambda: self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedHeight(40)
+        self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedWidth(40)
+        self.TexturelList_Intelligent_Find_Max_Size_Button.setIconSize(QtCore.QSize(38, 38))
+        self.TexturelList_Intelligent_Find_Max_Size_Button.setIcon(QtGui.QIcon(
+            os.path.join(icon_path , 'select_large_textures_icon.png')
+        ))
 
         # 选出最大贴图的容错率值
         self.tolerance_doubleSpinBox = QtWidgets.QDoubleSpinBox(self)
@@ -1652,9 +1705,9 @@ class TextureManagerWin(QtWidgets.QDialog):
         Texture_Search_Layout.addWidget(self.TexturelList_Refresh_Button)
         Texture_Search_Layout.addWidget(self.MaterialList_SelectAll_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Unselect_All_Button)
-        Texture_Search_Layout.addWidget(self.TexturelList_reverse_selection)
         Texture_Search_Layout.addWidget(self.TexturelList_Find_Missing_Textures_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Intelligent_Find_Max_Size_Button)
+        Texture_Search_Layout.addWidget(self.TexturelList_reverse_selection)
         Texture_Search_Layout.addWidget(self.tolerance_doubleSpinBox)
         Texture_Search_Layout.addWidget(self.TexturelListSearch)
         Texture_Search_Layout.addWidget(self.TexturelList_Search_And_Replace_Date_Button)
@@ -3769,6 +3822,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
             return
 
 
+
         # 图像处理后的后缀名称
         image_processed_suffix = initial_config['processed_suffix']
 
@@ -3865,21 +3919,27 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                                                  png_compression=initial_config['PNG_quality'])
                 # 如果需要缩放，则在转换格式后进行缩放
                 if initial_config['scale_texture']:
-                    self.imageP.resize_image(input_path=backup_image_file_path,
-                                             output_path=backup_image_file_path,
-                                             scale_percent=int(initial_config['zoom']),
-                                             resample_mode=str(initial_config['resampling_mode']))
-
+                    resize_image_state = self.imageP.resize_image(input_path=backup_image_file_path,
+                                                                 output_path=backup_image_file_path,
+                                                                 scale_percent=int(initial_config['zoom']),
+                                                                 resample_mode=str(initial_config['resampling_mode']))
+                    if resize_image_state == False:
+                        continue
 
                 # 写入缓存
                 write_image_processing_cache(val[4], backup_image_file_path)
 
             # 如果没有进行格式转换，但需要缩放，则直接缩放
             elif initial_config['scale_texture']:
-                self.imageP.resize_image(input_path=old_info_path,
-                                         output_path=backup_image_file_path,
-                                         scale_percent=int(initial_config['zoom']),
-                                         resample_mode=str(initial_config['resampling_mode']))
+                resize_image_state = self.imageP.resize_image(input_path=old_info_path,
+                                                             output_path=backup_image_file_path,
+                                                             scale_percent=int(initial_config['zoom']),
+                                                             resample_mode=str(initial_config['resampling_mode']))
+                # 如果图片处理返回False直接退出循环
+                if resize_image_state == False:
+                    continue
+
+
                 # 写入缓存
                 write_image_processing_cache(val[4], backup_image_file_path)
 
@@ -4745,9 +4805,10 @@ def magic_connection_button():
     texture_processing_data = dataM.bin_load_data(
         os.path.join(settings_path, 'texture_processing_data.bin'))
 
+
     texture_filter_dict = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
     ProcessingNodeData = texture_processing_data['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
-    ContOptions =  texture_processing_data['ProcSet_Options']['TexFirstFilter_Options'] # 相应贴图是否要连接的参数
+    ContOptions =  texture_processing_data['ProcSet_Options']['Magic_Connection_Options'] # 相应贴图是否要连接的参数
     Auto_Node_Connection_Options =  texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
     MagicConnectionSetColorSpace =  texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'] # 魔法连接启用色彩空间
 

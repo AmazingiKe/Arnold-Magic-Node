@@ -267,10 +267,11 @@ new_texture_processing_data_dict = {
             'emissionColor': 'sRGB',
             'opacity': 'Raw',
             'normalCamera': 'Raw',
-            "AO": 'Raw',
-            "Bump": 'Raw',
-            "Displacement": 'Raw'
+            "ao": 'Raw',
+            "bump": 'Raw',
+            "displacement": 'Raw'
         }},
+
     "ProcSet_Options":{
         'Magic_Connection_Options': {
             'base': False,
@@ -293,11 +294,6 @@ new_texture_processing_data_dict = {
             "bump": False,
             "displacement": False
             },
-        "TexSoloFilterData_Options" :{
-            "AO": True,
-            "Bump": False,
-            "Displacement": True
-            },
         "Auto_Node_Connection_Options" : {
             'base': False,
             'baseColor': True,
@@ -315,9 +311,9 @@ new_texture_processing_data_dict = {
             'emissionColor': False,
             'opacity': True,
             'normalCamera': True,
-            "AO": False,
-            "Bump": False,
-            "Displacement": True
+            "ao": False,
+            "bump": False,
+            "displacement": True
             },
         "ProcessingNodeData" : {
         'base': {
@@ -400,17 +396,17 @@ new_texture_processing_data_dict = {
             "InputPort": "input",
             "OutputPort": "outColor"
         },
-        "AO": {
+        "ao": {
             "NodeList": ["aiRampRgb", "aiRange"],
             "InputPort": "input",
             "OutputPort": "outColorR"
         },
-        "Bump": {
+        "bump": {
             "NodeList": ["aiRampRgb", "aiRange"],
             "InputPort": "input",
             "OutputPort": "outColorR"
         },
-        "Displacement": {
+        "displacement": {
             "NodeList": ["aiRampRgb", "aiRange"],
             "InputPort": "input",
             "OutputPort": "outColorR"

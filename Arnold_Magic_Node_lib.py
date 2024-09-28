@@ -1505,7 +1505,7 @@ class ImageProcessor():
         # 检查缩放比例是否合法
         if scale_percent <= 0 or scale_percent > 100:
             self.feedback.CP(f"缩放比例无效: {scale_percent}，请设置0到100之间的有效值。")
-            return
+            return False
 
         # 合法的重采样模式
         interpolation_methods = {
@@ -1523,11 +1523,11 @@ class ImageProcessor():
                 image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         except Exception as e:
             self.feedback.CP(f"读取图片失败：{e}")
-            return
+            return False
 
         # 如果缩放比例为100%，不做任何的缩放
         if scale_percent == 100:
-            return
+            return False
 
         # 计算缩放后的尺寸
         width = int(image.shape[1] * scale_percent / 100)
@@ -1784,22 +1784,4 @@ class DataManager:
 
             # 修改并写回文件
             write_data(Script_path + '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
-
-
-# # 读写模块
-# def save_data(file_path, data):
-#     with open(file_path, 'w') as file:
-#         json.dump(data, file, indent = 4)
-#
-# def load_data(path_name):
-#     file_path = os.path.join(os.path.dirname(__file__)) +'\\'+ path_name + '.json'
-#     with open(file_path, 'r') as file:
-#         data = json.load(file)
-#     return data
-#
-# def write_data(file_path, data):
-#     with open(file_path, 'w') as file:
-#         json.dump(data, file, indent = 4)
-#         file.write('\n')
-
 
