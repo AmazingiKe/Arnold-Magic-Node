@@ -71,6 +71,9 @@ LicenseV_public_key = None
 LicenseV_public_password = None
 LicenseV_remaining_time = None
 
+# 这个是默认窗口的名称记录函数
+AMN_UI_WorkSpaceControl = None
+
 ##############################################################################################
 
 # --------------------初始变量开始
@@ -146,6 +149,7 @@ def MayaMainWindows():
 # 插件窗口
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
+        global AMN_UI_WorkSpaceControl
         WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}    许可证剩余时间 : {str(LicenseV_remaining_time)}天"
 
         # 判断窗口是否存在，如果存在则删除
@@ -154,6 +158,7 @@ class Arnold_Magic_Node_UI(object):
 
         # 创建主窗口
         self.window = cmds.workspaceControl(WIN_TITLE, retain=False, floating=True,w=300,h=300)
+        AMN_UI_WorkSpaceControl = self.window
 
         # 初始化全局数据
         self.initial_global_config()
@@ -915,6 +920,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 创建“更换许可证”动作
         self.change_license_action = QAction('更换许可证', self)
+        self.change_license_action.triggered.connect(lambda :self.replace_license())
         # 创建“许可证详细信息”动作
         self.license_info_action = QAction('详细信息', self)
 
@@ -1253,7 +1259,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             add_node_button = QtWidgets.QPushButton("<")
             add_node_button.setFixedWidth(30)
             add_node_button.setFixedHeight(28)
-            # add_node_button.clicked.connect(lambda _, c=channel: self.add_node_to_list(c))
+            add_node_button.clicked.connect(lambda *_, ch=channel: self.add_pro_node_to_list(ch))
 
             # 全部加入到layout中
             h_layout.addWidget(input_port_combo[channel])
@@ -1346,11 +1352,13 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # -----通用
     def modify_config(self, key, cont):
-        config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+        config = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
 
         config[key] = cont
 
-        self.dataM.bin_save_data(self.TM_image_processing_config_FilePath, config)
+        self.dataM.bin_save_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'), config)
 
     def modify_nested_config(self, value, key_path):
         """
@@ -1414,6 +1422,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                     # 如果不匹配，更新配置文件为假
                     self.modify_nested_config(False, ['ProcSet_Options', 'Magic_Connection_Options', channel])
 
+            # 重新刷新设置属性
+            self.texture_processing_data = self.dataM.bin_load_data(
+                os.path.join(settings_path, 'texture_processing_data.bin'))
             # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
 
         QtCore.QTimer.singleShot(0, main)
@@ -1435,6 +1446,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 .replace("'", "")
                 .replace(",", " , "))
 
+        # 重新刷新设置属性
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
     # 修改 color_space_text 过滤配置文件
     def modify_color_space_text_config(self):
         val = self.color_space_text.toPlainText()
@@ -1444,6 +1459,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 保存修改值
         self.modify_nested_config(output_list, ['ColorSpace', 'ColorSpaceData'])
+
+        # 重新刷新设置属性
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
 
         # 刷新输入框 (BUG)
         # self.color_space_text.setPlainText(
@@ -1479,6 +1498,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
             # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
 
+            # 重新刷新设置属性
+            self.texture_processing_data = self.dataM.bin_load_data(
+                os.path.join(settings_path, 'texture_processing_data.bin'))
         QtCore.QTimer.singleShot(0, main)
 
     def modify_pro_node_list_config(self, channel, val):
@@ -1497,6 +1519,62 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             .replace(']', '')
             .replace("'", "")
             .replace(",", " , "))
+
+        # 重新刷新设置属性
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    def add_pro_node_to_list(self, channel):
+
+
+        # 按住alt键可以清除全部的输入
+        if keyboard.is_pressed('alt'):
+            output_list = self.texture_processing_data["ProcSet_Options"]["ProcessingNodeData"][channel]["NodeList"]
+            output_list.pop()
+        else:
+            # 获取选择到的节点
+            try:
+                select_node = list(process_sl_data().keys())[0]
+            except AttributeError:
+                return self.feedback.CP('添加到处理节点输入框 ->无法获取选择节点数据')
+
+            output_list = self.texture_processing_data["ProcSet_Options"]["ProcessingNodeData"][channel]["NodeList"]
+            output_list.append(select_node)
+
+            self.modify_nested_config(output_list, key_path = ['ProcSet_Options', 'ProcessingNodeData', channel, 'NodeList'])
+
+        self.node_list_edit[channel].setText(str(output_list)
+        .replace('[', '')
+        .replace(']', '')
+        .replace("'", "")
+        .replace(",", " , "))
+
+        # 重新刷新设置属性
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    def replace_license(self):
+        win_list = ['ArnoldMagicNodeSettingsPanel',
+                    'TextureManagerWin',
+                    'TM_FindAndReplace_Win',
+                    'TM_RepathFiles_Win',
+                    'TM_ImageProcessing_Win'
+                    ]
+        import LicenseValidator
+
+        for win_obj in win_list:
+            try:
+                delete_window_if_existe(win_obj)
+            except:
+                pass
+
+        # 判主窗口是否存在，如果存在则删除
+        if cmds.window(AMN_UI_WorkSpaceControl, exists=True):
+            cmds.deleteUI(AMN_UI_WorkSpaceControl)
+
+        replace_license = LicenseValidator.LicenseWin()
+        replace_license.show()
+
     # --------------------保存设置内容的函数 结束
 
 # 贴图管理器 使用QT库写的窗口！！！
