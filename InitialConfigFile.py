@@ -414,7 +414,7 @@ new_texture_processing_data_dict = {
     },
         'InputPortList': ["input", "passthrough"],
         'OutputPortList': ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"],
-        'GraysList' : ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'AO', 'Bump', 'Displacement'],
+        'GraysList' : ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'ao', 'bump', 'displacement'],
         'ColorList' : ['baseColor', 'specularColor', 'subsurfaceColor', 'subsurfaceRadius', 'emissionColor', 'opacity', 'normalCamera'],
         'MagicConnectionSetColorSpace' : True,
         'PathDetectionConnectionSetColorSpace' : True

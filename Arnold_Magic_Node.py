@@ -62,6 +62,8 @@ from Arnold_Magic_Node_lib import *  # 从自定义库中导入所有内容
 import DependenciesLibs  # 导入自定义的依赖管理模块
 DependenciesLibs.importLibs()  # 调用自定义模块中的函数，动态导入和初始化所需的依赖库
 
+import InitialConfigFile
+
 # 10. 初始化变量
 # 创建初始化变量
 LicenseV_device_fingerprint = None
@@ -904,7 +906,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 创建“重置数据”动作
         self.reset_data_action = QAction('重置设置数据', self)
         # 连接“重置数据”动作的触发信号到对应的槽函数
-        self.reset_data_action.triggered.connect(lambda :os.remove(os.path.join(settings_path, 'texture_processing_data.bin')))
+        self.reset_data_action.triggered.connect(lambda :(os.remove(os.path.join(settings_path, 'texture_processing_data.bin')),
+                                                          InitialConfigFile.Main_program()))
         self.settings_menu.addAction(self.reset_data_action)
 
         # 许可证菜单及其动作
@@ -926,9 +929,12 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.sponsor_action = QAction('赞助', self)
         # 创建“联系/反馈”动作
         self.contact_feedback_action = QAction('联系/反馈', self)
+        self.contact_feedback_action.triggered.connect(
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
         # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
         self.help_document_action = QAction('帮助文档', self)
-        self.help_document_action.triggered.connect(lambda :QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://flowus.cn/amazingike/93cfb135-4ab3-4536-8a5b-9b3e53042b51')))
+        self.help_document_action.triggered.connect(
+            lambda :QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomePath)))
 
         # 将动作添加到关于菜单
         self.about_menu.addAction(self.sponsor_action)
@@ -1179,37 +1185,80 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
 
-        for channel in node_connection_config['Auto_Node_Connection_Options']:
+        for channel, value in node_connection_config['Auto_Node_Connection_Options'].items():
             item = QtWidgets.QListWidgetItem(channel.capitalize())  # 让名称的第一个字大写
             item.setSelected(True)
             item.setFont(font)
             self.auto_node_connection_list.addItem(item)
 
+            item.setSelected(value)
+
         # 设置大小
         self.auto_node_connection_list.setFixedHeight(530)
+
+        # 绑定修改自动连接处理界定啊配置函数
+        self.auto_node_connection_list.selectionModel().selectionChanged.connect(
+            lambda item:self.modify_auto_node_connection_config())
+
         layout.addWidget(self.auto_node_connection_list)
 
+        input_port_combo = {}
+        output_port_combo = {}
+        self.node_list_edit = {}
         # 动态创建节点连接设置
         for channel, data in node_connection_config['ProcessingNodeData'].items():
-            layout.addWidget(self.create_section_label(channel.upper()))
+
+            # 通道的名称标题
+            layout.addWidget(self.create_section_label(channel.capitalize()+':'))
+
+            # 创建一个横着的layout
             h_layout = QtWidgets.QHBoxLayout()
-            input_port_combo = QtWidgets.QComboBox()
-            input_port_combo.addItems(['color', 'normalCamera', 'specularColor'])  # 示例输入端口
-            input_port_combo.setCurrentText(data['InputPort'])
 
-            node_list_edit = QtWidgets.QLineEdit(", ".join(data['NodeList']))
+            # 输入端的多选
+            input_port_combo[channel] = QtWidgets.QComboBox()
+            input_port_combo[channel].addItems(node_connection_config['InputPortList'])  # 示例输入端口
+            input_port_combo[channel].setCurrentText(
+                node_connection_config['ProcessingNodeData'][channel]['InputPort'])
+            input_port_combo[channel].setFixedWidth(130)
+            input_port_combo[channel].currentIndexChanged.connect(
+                lambda _, ch=channel:
+                self.modify_nested_config(input_port_combo[ch].currentText(), ['ProcSet_Options',
+                                                                                        'ProcessingNodeData',
+                                                                                        ch, 'InputPort']))
 
-            output_port_combo = QtWidgets.QComboBox()
-            output_port_combo.addItems(['outColor', 'outNormal', 'outAlpha'])  # 示例输出端口
-            output_port_combo.setCurrentText(data['OutputPort'])
+            # 创建的节点输入列表
+            self.node_list_edit[channel] = QtWidgets.QLineEdit()
+            self.node_list_edit[channel].setText(
+                str(node_connection_config['ProcessingNodeData'][channel]['NodeList'])
+                .replace('[', '')
+                .replace(']', '')
+                .replace("'", "")
+                .replace(",", " , "))
+            self.node_list_edit[channel].textChanged.connect(
+                lambda text, ch=channel: self.modify_pro_node_list_config(ch, text)
+            )
 
+            # 输出端的多选
+            output_port_combo[channel] = QtWidgets.QComboBox()
+            output_port_combo[channel].addItems(node_connection_config['OutputPortList'])  # 示例输出端口
+            output_port_combo[channel].setCurrentText(
+                node_connection_config['ProcessingNodeData'][channel]['OutputPort'])
+            output_port_combo[channel].setFixedWidth(130)
+            output_port_combo[channel].currentIndexChanged.connect(
+                lambda _, ch=channel:
+                self.modify_nested_config(output_port_combo[ch].currentText(), ['ProcSet_Options',
+                                                                                        'ProcessingNodeData',
+                                                                                        ch, 'OutputPort']))
+            # 加入到创建节点的列表中
             add_node_button = QtWidgets.QPushButton("<")
             add_node_button.setFixedWidth(30)
-            add_node_button.clicked.connect(lambda _, c=channel: self.add_node_to_list(c))
+            add_node_button.setFixedHeight(28)
+            # add_node_button.clicked.connect(lambda _, c=channel: self.add_node_to_list(c))
 
-            h_layout.addWidget(input_port_combo)
-            h_layout.addWidget(node_list_edit)
-            h_layout.addWidget(output_port_combo)
+            # 全部加入到layout中
+            h_layout.addWidget(input_port_combo[channel])
+            h_layout.addWidget(self.node_list_edit[channel])
+            h_layout.addWidget(output_port_combo[channel])
             h_layout.addWidget(add_node_button)
 
             layout.addLayout(h_layout)
@@ -1283,15 +1332,14 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(path_matching_widget, "节点路径匹配")
 
-
-
-
-
     # 创建标签
     def create_section_label(self, text):
         label = QtWidgets.QLabel(text)
         label.setStyleSheet("font-weight: bold;")
         return label
+
+
+
 
 
     # --------------------保存设置内容的函数 开始
@@ -1405,9 +1453,50 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         #     .replace("'", "")
         #     .replace(",", " , "))
 
+    def modify_auto_node_connection_config(self):
+        def main():
+            # 获取选中的项
+            selected_items = self.auto_node_connection_list.selectedItems()
 
+            # 如果没有选中项，则直接返回
+            if not selected_items:
+                return
 
+            # 提取选中的内容
+            selected_values = [item.text() for item in selected_items]
+            # 将选中的内容转换为全大写
+            selected_values_uppercase = [s.upper() for s in selected_values]
 
+            # 遍历处理数据中的每个通道
+            for channel in self.texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options']:
+                # 检查当前通道（大写）是否在选中的大写值中
+                if channel.upper() in selected_values_uppercase:
+                    # 如果匹配，更新配置文件为真
+                    self.modify_nested_config(True, ['ProcSet_Options', 'Auto_Node_Connection_Options', channel])
+                else:
+                    # 如果不匹配，更新配置文件为假
+                    self.modify_nested_config(False, ['ProcSet_Options', 'Auto_Node_Connection_Options', channel])
+
+            # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
+
+        QtCore.QTimer.singleShot(0, main)
+
+    def modify_pro_node_list_config(self, channel, val):
+        # 处理写入值，并强制转为大写
+        output_list = [item.strip() for item in val.split(",")]
+
+        # 保存修改值
+        self.modify_nested_config(output_list, ['ProcSet_Options',
+                                                'ProcessingNodeData',
+                                                channel, 'NodeList'])
+
+        # 刷新输入框
+        self.node_list_edit[channel].setText(
+            str(output_list)
+            .replace('[', '')
+            .replace(']', '')
+            .replace("'", "")
+            .replace(",", " , "))
     # --------------------保存设置内容的函数 结束
 
 # 贴图管理器 使用QT库写的窗口！！！
