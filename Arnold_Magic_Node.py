@@ -78,7 +78,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.5.6"
+SoftwareVersion = "0.5.7"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -132,7 +132,6 @@ TM_ImageProcessing_config_dict = {
     "convert_format" : True,
     "scale_texture" : False,
 }
-
 
 TextureManagerWin_config_dict = {
     'listwidget_data' : 50 ,
@@ -331,525 +330,6 @@ class Arnold_Magic_Node_UI(object):
         self.dataM.bin_save_data(os.path.join(settings_path, 'render_preset_config.bin'),
                                  new_render_preset_config)
 
-# 插件设置按钮
-class  Arnold_Magic_Node_Settings_Panel_old(object):
-    def __init__(self):
-        WIN_TITLE = "Arnold_Magic_Node_Settings_Panel"
-
-        # 判断窗口是否存在，如果存在则删除
-        if cmds.window(WIN_TITLE, exists=True):
-            cmds.deleteUI(WIN_TITLE)
-
-
-        # 创建主窗口
-        self.window = cmds.window(WIN_TITLE, title=WIN_TITLE,sizeable=False, widthHeight=(530, 600))
-
-
-        # 加载初始全局数据
-        self.initial_global_config()
-
-        self.create_widgets()
-
-
-
-        # 显示窗口
-        cmds.showWindow(self.window)
-
-    def initial_global_config(self):
-        ### 实例各种模块
-        self.dataM = DataManager()  # 数据管理模块
-        self.feedback = FeedbackPrompt()  # 错误提示模块
-        self.pathD = PathDetection()  # 数据检测模块
-        ### 初始化配置数据
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
-
-    def create_widgets(self):
-
-
-        # 创建菜单栏
-        menu_bar_layout = cmds.menuBarLayout()
-
-
-        Setting_menu = cmds.menu(label='设置')
-        cmds.menuItem(label='重置数据', c=lambda *args:self.resetData())
-
-        # 许可证的菜单
-        license_menu = cmds.menu(label='许可证')
-
-        cmds.menuItem(label='更换许可证')
-        cmds.menuItem(label='详细信息')
-
-
-        # 关于的菜单
-        about_menu = cmds.menu(label='关于')
-
-        # 添加菜单项到关于菜单
-        cmds.menuItem(label='赞助')
-        cmds.menuItem(label='联系/反馈')
-        cmds.menuItem(label='帮助文档', c=lambda *args:webbrowser.open('https://flowus.cn/amazingike/93cfb135-4ab3-4536-8a5b-9b3e53042b51'))
-
-
-
-
-
-        # 创建多标签的布局
-        tab_layout = cmds.tabLayout(innerMarginWidth=5, innerMarginHeight=5)
-
-
-
-        #------------------------>自定义过滤名字   开始
-        texture_filter_dict = self.texture_processing_data['TexFirstFilter']
-
-        TexFirstFilter_Options =  self.texture_processing_data['ProcSet_Options']['TexFirstFilter_Options']
-
-        # 这个是存下来的控件信息
-        self.TexFirstFilter_widgets_name = {}
-        self.TexSoloFilter_widgets_name = {}
-
-        # 创建滚动布局
-        TexFirstFilter_scroll_layout = cmds.scrollLayout(horizontalScrollBarThickness=16, verticalScrollBarThickness=16, parent=tab_layout)
-
-
-
-
-        cmds.text(label = " [1] ---------->连接设置:", fn="smallBoldLabelFont", h= 35)
-
-        ModifyMagicConnectionSetColorSpace = cmds.checkBox(l='连接时开启自动色彩空间',
-                                                                            value = self.texture_processing_data["ProcSet_Options"]["MagicConnectionSetColorSpace"],
-                                                                            cc = lambda *args:self.ModifyConfigurationFile(cmds.checkBox(ModifyMagicConnectionSetColorSpace, query=True, value=True), ["ProcSet_Options","MagicConnectionSetColorSpace"]))
-
-
-
-
-        cmds.text(label = " [2] ---------->自定义连接的贴图:", fn="smallBoldLabelFont", h= 35)
-        # 创建TexFirstFilter_Options列表
-        TexFirstFilter_Options_scroll_list = cmds.textScrollList(allowMultiSelection=True,w = 500, h= 275, sc= lambda *args:self.SetTexFirstFilterOptions(cmds.textScrollList(TexFirstFilter_Options_scroll_list, query=True, selectItem=True)))
-        for name, value in TexFirstFilter_Options.items():
-            #new_name = name.capitalize()
-            cmds.textScrollList(TexFirstFilter_Options_scroll_list, edit=True, append= name)
-            if value:  # 如果值为True，则将键添加到选中项列表中
-                cmds.textScrollList(TexFirstFilter_Options_scroll_list, edit=True, selectItem= name)
-
-
-
-
-
-
-        cmds.text(label = " [3] ---------->自定义过滤名字:", fn="smallBoldLabelFont", h= 35)
-        # 创建texture_filter_dict输入框
-
-        for channel in texture_filter_dict:
-
-            # 将每个输入框添加到滚动布局中
-            cmds.text(label = channel.capitalize()+" :", parent = TexFirstFilter_scroll_layout, fn="smallBoldLabelFont")
-            self.TexFirstFilter_widgets_name[channel] = cmds.textField(parent=TexFirstFilter_scroll_layout,
-                                                #...删除掉[]还有双引号
-                                                text= str((texture_filter_dict[channel])).replace('[', '').replace(']', '').replace("'", ""),
-                                                ed= True,
-                                                fn= "smallBoldLabelFont",
-                                                w= 500,
-                                                h= 35,
-                                                tcc= lambda _, channel=channel: self.TexFirstFilterData_modify(channel))
-
-
-
-
-
-
-        #------------------------>自定义过滤名字   结束
-
-
-
-
-
-
-
-
-
-
-
-        #------------------------>颜色空间设置   开始
-
-
-        ColorSpaceData = load_data('TEX_PROCESSING_DATA')["ColorSpace"][0]["ColorSpaceData"]
-
-        ColorSpace_scroll_layout = cmds.scrollLayout(horizontalScrollBarThickness=16, verticalScrollBarThickness=16, parent=tab_layout)
-
-
-        # cmds.text(label = " [1] ---------->一些色彩空间相关的设置:", fn="smallBoldLabelFont", h= 35)
-
-
-        cmds.text(label = " [1] ---------->自定义色彩空间:", fn="smallBoldLabelFont", h= 35)
-        color_space_preset_input_control = cmds.scrollField(parent = ColorSpace_scroll_layout,
-                                                            tx= str(ColorSpaceData).replace('[', '').replace(']', '').replace("'", "").replace(",", " , "),
-                                                            ed=True,
-                                                            fn="smallBoldLabelFont",
-                                                            wordWrap= True,
-                                                            w = 510,
-                                                            h = 300,
-                                                            fns= 10,
-                                                            cc = lambda *args:self.ColorSpaceData_modify(cmds.scrollField(color_space_preset_input_control , query=True, tx=True)),
-                                                            kpc = lambda *args:self.ColorSpaceData_modify(cmds.scrollField(color_space_preset_input_control , query=True, tx=True)))
-        cmds.text(label = " ", fn="smallBoldLabelFont")
-        cmds.text(label = " [2] ---------->自动设置色彩空间:", fn="smallBoldLabelFont", h= 35)
-
-        AutoSetColorSpaceMenuName = {}
-
-        for i in load_data('TEX_PROCESSING_DATA')["ColorSpace"][1]['AutoSetColorSpaceConfig']:
-            AutoSetColorSpaceMenuName[i] = cmds.optionMenu(mvi = 20, w=480, l=f'{i.capitalize()}:', h= 25)
-            for ColorSpaceName in load_data('TEX_PROCESSING_DATA')["ColorSpace"][0]['ColorSpaceData']:
-                cmds.menuItem(label=ColorSpaceName)
-            cmds.optionMenu(AutoSetColorSpaceMenuName[i], edit= True, value= load_data('TEX_PROCESSING_DATA')["ColorSpace"][1]['AutoSetColorSpaceConfig'][i])
-            cmds.optionMenu(AutoSetColorSpaceMenuName[i], edit= True, cc= lambda _, channel= AutoSetColorSpaceMenuName[i],sl_optionMenu= i : self.ModifyConfigurationFile(cmds.optionMenu(channel, query=True, value=True), ["ColorSpace", 1, 'AutoSetColorSpaceConfig', f"{sl_optionMenu}"]))
-        cmds.text(label = " ", fn="smallBoldLabelFont")
-
-        #------------------------>颜色空间设置   结束
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        #------------------------>节点连接   开始
-        Auto_Node_Connection_Options = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["Auto_Node_Connection_Options"]
-
-        Node_Connection_layout = cmds.scrollLayout(horizontalScrollBarThickness=16, verticalScrollBarThickness=16, parent=tab_layout)
-
-        cmds.text(label = " [1] ---------->自定义连接的节点:", fn="smallBoldLabelFont", h= 35)
-        # Auto_Node_Connection_Options
-        Auto_Node_Connection_Options_scroll_list = cmds.textScrollList(allowMultiSelection=True,w = 500, h= 275, sc= lambda *args:self.SetAuto_Node_Connection_Options(cmds.textScrollList(Auto_Node_Connection_Options_scroll_list, query=True, selectItem=True)))
-        for name, value in Auto_Node_Connection_Options.items():
-            #new_name = name.capitalize()
-            cmds.textScrollList(Auto_Node_Connection_Options_scroll_list, edit=True, append= name)
-            if value:  # 如果值为True，则将键添加到选中项列表中
-                cmds.textScrollList(Auto_Node_Connection_Options_scroll_list, edit=True, selectItem= name)
-
-        ProcessingNodeData = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["ProcessingNodeData"]
-        ProcSet_Options = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]
-
-        NodeInputPortOptionName = {}
-        NodeOutputPortOptionName = {}
-        NodeListFieldName = {}
-        # 遍历 ProcessingNodeData 字典的每个 Channel
-        for Channel in ProcessingNodeData:
-            # 将当前布局的父布局设置为 Node_Connection_layout
-            cmds.setParent(Node_Connection_layout)
-
-            # 创建一个可调节列布局，用于组合相关控件
-            column_layout = cmds.columnLayout(adjustableColumn=True)
-
-            # 在列布局中添加 Channel 的标签文本控件
-            # Channel 的标签文本内容是大写的
-            cmds.text(label=Channel.upper(), fn="smallBoldLabelFont", h=25)
-
-            # 在列布局中创建一个行布局，包含三个控件
-            row_layout = cmds.rowLayout(numberOfColumns=10, adjustableColumn=2)
-
-            # 创建一个输入端口选择菜单
-            NodeInputPortOptionName[Channel] = cmds.optionMenu(h=25)
-
-            # 遍历 InputPortList 列表，并将每个输入端口作为菜单项添加到 NodeInputPortOption
-            for InputPort in ProcSet_Options["InputPortList"]:
-                cmds.menuItem(label=InputPort, parent=NodeInputPortOptionName[Channel])
-
-            # 设置NodeInputPortOptionName默认值
-            cmds.optionMenu(NodeInputPortOptionName[Channel], edit= True, value= ProcessingNodeData[Channel]['InputPort'])
-            cmds.optionMenu(NodeInputPortOptionName[Channel],
-                            edit= True,
-                            cc = lambda _, channel=Channel: self.ModifyConfigurationFile(cmds.optionMenu(NodeInputPortOptionName[channel], query=True, value=True), ["ProcSet_Options", "ProcessingNodeData", f"{channel}", "InputPort"]))
-
-            # 创建一个文本输入框，用于显示和输入 NodeList 的内容
-            # 初始文本内容来自 ProcessingNodeData[Channel]["NodeList"] 并进行格式化
-            NodeListFieldName[Channel] = cmds.textField(
-                placeholderText="Enter text here",
-                w=268,
-                h=25,
-                text=str(ProcessingNodeData[Channel]["NodeList"])
-                .replace('[', '')
-                .replace(']', '')
-                .replace("'", "")
-                .replace(",", " , "),
-                tcc = lambda _, channel=Channel: self.NodeListField_modify(channel, cmds.textField(NodeListFieldName[channel], query=True, text=True)),
-            )
-
-            # 创建一个输出端口选择菜单
-            NodeOutputPortOptionName[Channel] = cmds.optionMenu(h=25)
-
-            # 遍历 OutputPortList 列表，并将每个输出端口作为菜单项添加到 NodeOutputPortOption
-            for OutputPort in ProcSet_Options["OutputPortList"]:
-                cmds.menuItem(label=OutputPort, parent=NodeOutputPortOptionName[Channel])
-
-            # 设置NodeOutputPortOptionName默认值
-            cmds.optionMenu(NodeOutputPortOptionName[Channel], edit= True, value= ProcessingNodeData[Channel]['OutputPort'])
-            cmds.optionMenu(NodeOutputPortOptionName[Channel],
-                            edit= True,
-                            cc = lambda _, channel=Channel: self.ModifyConfigurationFile(cmds.optionMenu(NodeOutputPortOptionName[channel], query=True, value=True), ["ProcSet_Options", "ProcessingNodeData", f"{channel}", "OutputPort"]))
-            # 创建一个按钮控件，标签为 "<" 并设置高度
-            AddNodeButton = cmds.button(label="<", h=25, c = lambda _, channel=Channel, NodeListFieldName = NodeListFieldName[Channel]: self.AddNodeButton_modify(channel, cmds.textField(NodeListFieldName, query=True, text=True), NodeListFieldName))
-
-
-
-
-        #------------------------>节点连接   结束
-
-
-
-
-
-
-
-
-
-
-
-        #------------------------>节点路径匹配   开始
-        Node_Path_Matching_layout = cmds.scrollLayout(horizontalScrollBarThickness=16, verticalScrollBarThickness=16, parent=tab_layout)
-        cmds.text(label = " [1] ---------->连接时相关设置:", fn="smallBoldLabelFont", h= 35)
-        ModifyPathDetectionConnectionSetColorSpace = cmds.checkBoxGrp(l='连接时开启自动色彩空间',
-                                                                    v1 = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["MagicConnectionSetColorSpace"],
-                                                                    cc = lambda *args:self.ModifyConfigurationFile(cmds.checkBoxGrp(ModifyPathDetectionConnectionSetColorSpace, query=True, v1=True), ["ProcSet_Options","PathDetectionConnectionSetColorSpace"]))
-
-
-        cmds.text(label = " [2] ---------->排除名称:", fn="smallBoldLabelFont", h= 35)
-
-        exclude_list = load_data('TEX_PROCESSING_DATA')["Path_Detection"]["exclude_list"]
-
-        exclude_list_input_control = cmds.scrollField(parent = Node_Path_Matching_layout,
-                                                            tx= str(exclude_list).replace('[', '').replace(']', '').replace("'", "").replace(",", " , "),
-                                                            ed=True,
-                                                            fn="smallBoldLabelFont",
-                                                            wordWrap= True,
-                                                            w = 510,
-                                                            h = 100,
-                                                            fns= 10,
-                                                            cc = lambda *args:self.exclude_list_modify(cmds.scrollField(exclude_list_input_control , query=True, tx=True)),
-                                                            kpc = lambda *args:self.exclude_list_modify(cmds.scrollField(exclude_list_input_control , query=True, tx=True)))
-        cmds.text(label = " ", fn="smallBoldLabelFont")
-
-        cmds.text(label = " [3] ---------->格式名称:", fn="smallBoldLabelFont", h= 35)
-
-        format_list = load_data('TEX_PROCESSING_DATA')["Path_Detection"]["format_list"]
-
-        format_list_input_control = cmds.scrollField(parent = Node_Path_Matching_layout,
-                                                            tx= str(format_list).replace('[', '').replace(']', '').replace("'", "").replace(",", " , "),
-                                                            ed=True,
-                                                            fn="smallBoldLabelFont",
-                                                            wordWrap= True,
-                                                            w = 510,
-                                                            h = 100,
-                                                            fns= 10,
-                                                            cc = lambda *args:self.format_list_modify(cmds.scrollField(format_list_input_control , query=True, tx=True)),
-                                                            kpc = lambda *args:self.format_list_modify(cmds.scrollField(format_list_input_control , query=True, tx=True)))
-        cmds.text(label = " ", fn="smallBoldLabelFont")
-
-        cmds.text(label = " [4] ---------->匹配时相关设置:", fn="smallBoldLabelFont", h= 35)
-        # 创建一个整数滑块控件
-        case_sensitive_checkBox = cmds.checkBoxGrp(l='是否根据大小写进行判断:',
-                                                 cc = lambda *args :self.ModifyConfigurationFile(cmds.checkBoxGrp(case_sensitive_checkBox, query=True, v1=True), ["Path_Detection", "case_sensitive"]),
-                                                 v1 = load_data('TEX_PROCESSING_DATA')["Path_Detection"]["case_sensitive"])
-
-        near_one_value_checkBox = cmds.checkBoxGrp(l='获取到接近1的值:',
-                                                 cc = lambda *args :self.ModifyConfigurationFile(cmds.checkBoxGrp(near_one_value_checkBox, query=True, v1=True), ["Path_Detection", "near_one_value"]),
-                                                 v1 = load_data('TEX_PROCESSING_DATA')["Path_Detection"]["near_one_value"])
-
-        auto_max_val_checkBox = cmds.checkBoxGrp(l='自动获取最大值:',
-                                                 cc = lambda *args :self.ModifyConfigurationFile(cmds.checkBoxGrp(auto_max_val_checkBox, query=True, v1=True), ["Path_Detection", "auto_max_val"] ),
-                                                 v1 = load_data('TEX_PROCESSING_DATA')["Path_Detection"]["auto_max_val"])
-
-        similarity_max_slider = cmds.floatSliderGrp(label="相似度判断值:", field=True, min=0, max=1, value=load_data('TEX_PROCESSING_DATA')["Path_Detection"]["similarity_max"] ,
-                                                    precision=5,
-                                                    p=Node_Path_Matching_layout, width= 500,
-                                                    cc = lambda *args :self.ModifyConfigurationFile(cmds.floatSliderGrp(similarity_max_slider, query=True, value=True), ["Path_Detection", "similarity_max"]),
-                                                    dc = lambda *args :self.ModifyConfigurationFile(cmds.floatSliderGrp(similarity_max_slider, query=True, value=True), ["Path_Detection", "similarity_max"]))
-
-        similarity_range_slider = cmds.floatSliderGrp(label="相似度差异值:", field=True, min=0, max=1, value=load_data('TEX_PROCESSING_DATA')["Path_Detection"]["similarity_range"] ,
-                                                      precision=5,
-                                                      p=Node_Path_Matching_layout, width= 500,
-                                                    cc = lambda *args :self.ModifyConfigurationFile(cmds.floatSliderGrp(similarity_range_slider, query=True, value=True), ["Path_Detection", "similarity_range"]),
-                                                    dc = lambda *args :self.ModifyConfigurationFile(cmds.floatSliderGrp(similarity_range_slider, query=True, value=True), ["Path_Detection", "similarity_range"]))
-
-        length_weight_slider = cmds.floatSliderGrp(label="内容相似/长度判断权重:", field=True, min=0, max=1, value=load_data('TEX_PROCESSING_DATA')["Path_Detection"]["length_weight"] ,
-                                                   precision=5,
-                                                   p=Node_Path_Matching_layout, width= 500,
-                                                    cc = lambda *args :self.ModifyConfigurationFile(cmds.floatSliderGrp(length_weight_slider, query=True, value=True), ["Path_Detection", "length_weight"]),
-                                                    dc = lambda *args :self.ModifyConfigurationFile(cmds.floatSliderGrp(length_weight_slider, query=True, value=True), ["Path_Detection", "length_weight"]))
-        #------------------------>节点路径匹配   结束
-        cmds.setParent(tab_layout)
-        cmds.tabLayout(tab_layout, edit=True, tabLabel=((TexFirstFilter_scroll_layout, '魔法连接')))
-        cmds.tabLayout(tab_layout, edit=True, tabLabel=((ColorSpace_scroll_layout, '颜色空间')))
-        cmds.tabLayout(tab_layout, edit=True, tabLabel=((Node_Connection_layout, '节点连接')))
-        cmds.tabLayout(tab_layout, edit=True, tabLabel=((Node_Path_Matching_layout, '节点路径匹配')))
-
-    def TexFirstFilterData_modify(self, channel):
-        for i in self.TexFirstFilter_widgets_name:
-            if channel == i:
-                #...读取文件
-                TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-                #...处理写入值，并强制转为大写
-                input_str = "['" + "','".join(cmds.textField(self.TexFirstFilter_widgets_name[i], query=True, text=True).split(",")) + "']"
-                input_str = input_str.upper()
-                output_list = ast.literal_eval(input_str)
-
-                #...并修改
-                TexFirstFilterData["TexFirstFilter"][0]["TexFirstFilterData"][channel] = output_list
-                write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-    def TexSoloFilterData_modify(self, channel):
-        for i in self.TexSoloFilter_widgets_name:
-            if channel == i:
-                #...读取文件
-                TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-                #...处理写入值，并强制转为大写
-                input_str = "['" + "','".join(cmds.textField(self.TexSoloFilter_widgets_name[i], query=True, text=True).split(",")) + "']"
-                input_str = input_str.upper()
-                output_list = ast.literal_eval(input_str)
-
-                #...并修改
-                TexFirstFilterData["TexFirstFilter"][1]["TexSoloFilterData"][channel] = output_list
-                write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-    def ColorSpaceData_modify(self, tx_val):
-        #...读取文件
-        TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-
-        #...处理写入值
-        input_str = "['" + "','".join(tx_val.split(",")) + "']" # 转为列表字符串
-        output_list = ast.literal_eval(input_str) # 转为列表
-        output_list = [s.strip() for s in output_list] # 删除所有的空格
-        #...并修改
-        TexFirstFilterData["ColorSpace"][0]["ColorSpaceData"] = output_list
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-    def SetTexFirstFilterOptions(self, selected_items):
-
-        TEX_PROCESSING_DATA = load_data('TEX_PROCESSING_DATA')
-        for key , val in TEX_PROCESSING_DATA["ProcSet_Options"]["TexFirstFilter_Options"].items():
-            # 先把所有值改为False
-            TEX_PROCESSING_DATA["ProcSet_Options"]["TexFirstFilter_Options"][key] = False
-            for i in selected_items:
-                if i == key:
-                    TEX_PROCESSING_DATA["ProcSet_Options"]["TexFirstFilter_Options"][key] = True
-
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
-
-    def SetAuto_Node_Connection_Options(self, selected_items):
-
-        TEX_PROCESSING_DATA = load_data('TEX_PROCESSING_DATA')
-        for key , val in TEX_PROCESSING_DATA["ProcSet_Options"]["Auto_Node_Connection_Options"].items():
-            # 先把所有值改为False
-            TEX_PROCESSING_DATA["ProcSet_Options"]["Auto_Node_Connection_Options"][key] = False
-            for i in selected_items:
-                if i == key:
-                    TEX_PROCESSING_DATA["ProcSet_Options"]["Auto_Node_Connection_Options"][key] = True
-
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
-
-    def exclude_list_modify(self, tx_val):
-        #...读取文件
-        TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-
-        #...处理写入值
-        input_str = "['" + "','".join(tx_val.split(",")) + "']" # 转为列表字符串
-        output_list = ast.literal_eval(input_str) # 转为列表
-        output_list = [s.strip() for s in output_list] # 删除所有的空格
-        #...并修改
-        TexFirstFilterData["Path_Detection"]["exclude_list"] = output_list
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-    def format_list_modify(self, tx_val):
-        #...读取文件
-        TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-
-        #...处理写入值
-        input_str = "['" + "','".join(tx_val.split(",")) + "']" # 转为列表字符串
-        output_list = ast.literal_eval(input_str) # 转为列表
-        output_list = [s.strip() for s in output_list] # 删除所有的空格
-        #...并修改
-        TexFirstFilterData["Path_Detection"]["format_list"] = output_list
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-    def NodeListField_modify(self, Channel ,tx_val):
-        #...读取文件
-        TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-
-        #...处理写入值
-        input_str = "['" + "','".join(tx_val.split(",")) + "']" # 转为列表字符串
-        output_list = ast.literal_eval(input_str) # 转为列表
-        output_list = [s.strip() for s in output_list] # 删除所有的空格
-        #...并修改
-        TexFirstFilterData["ProcSet_Options"]["ProcessingNodeData"][Channel]["NodeList"] = output_list
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-
-    def AddNodeButton_modify(self, Channel ,tx_val, textField_Name):
-        SlNode = list(process_sl_data().keys())[0]
-        #...读取文件
-        TexFirstFilterData = load_data('TEX_PROCESSING_DATA')
-        if keyboard.is_pressed('alt'):
-            output_list = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["ProcessingNodeData"][Channel]["NodeList"]
-            output_list.pop()
-        else:
-            cont = tx_val +',' +SlNode
-            #...处理写入值
-            input_str = "['" + "','".join(cont.split(",")) + "']" # 转为列表字符串
-            output_list = ast.literal_eval(input_str) # 转为列表
-            output_list = [s.strip() for s in output_list] # 删除所有的空格
-        #...并修改
-
-        TexFirstFilterData["ProcSet_Options"]["ProcessingNodeData"][Channel]["NodeList"] = output_list
-        write_data(SCRIPT_PATH+ '\TEX_PROCESSING_DATA.json', TexFirstFilterData)
-
-        ProcessingNodeData = load_data('TEX_PROCESSING_DATA')["ProcSet_Options"]["ProcessingNodeData"]
-        cmds.textField(textField_Name, edit= True, text=str(ProcessingNodeData[Channel]["NodeList"])
-                .replace('[', '')
-                .replace(']', '')
-                .replace("'", "")
-                .replace(",", " , "))
-
-    # ...设置一些参数的函数
-
-    # def ProcessInputString(self):
-    # pass
-
-    def ModifyConfigurationFile(self, value, key_path):
-            """
-            修改配置文件函数。
-
-            参数:
-            value -- 要设置的新值
-            key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
-            """
-
-            # 加载数据
-            texture_processing_data = self.dataM.bin_load_data(
-                os.path.join(settings_path, 'texture_processing_data.bin'))
-
-            # 根据给定的键路径设置值
-            current_level = texture_processing_data
-            for key in key_path[:-1]:  # 迭代到倒数第二个键
-                current_level = current_level[key]  # 进入下一层级
-            current_level[key_path[-1]] = value  # 设置最终键的值
-
-            self.dataM.bin_save_data(os.path.join(settings_path, 'texture_processing_data.bin'), texture_processing_data)
-
-
-    # 设置菜单的函数
-
-    # resetData删除配置文件
-    def resetData(self):
-        os.remove(SCRIPT_PATH+'\RENDERING_WRITE_OPTION_DATA.json')
-        os.remove(SCRIPT_PATH+'\TEX_PROCESSING_DATA.json')
-
 
 # 插件设置按钮qt写
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
@@ -897,7 +377,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         #...窗口长宽
-        self.setMinimumHeight(530)
+        self.setMinimumHeight(800)
         self.setMinimumWidth(700)
 
 
@@ -921,18 +401,16 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 创建“更换许可证”动作
         self.change_license_action = QAction('更换许可证', self)
         self.change_license_action.triggered.connect(lambda :self.replace_license())
-        # 创建“许可证详细信息”动作
-        self.license_info_action = QAction('详细信息', self)
 
         # 将动作添加到许可证菜单
         self.license_menu.addAction(self.change_license_action)
-        self.license_menu.addAction(self.license_info_action)
+
 
         # 关于菜单及其动作
         self.about_menu = self.main_menu_bar.addMenu('关于')
 
         # 创建“赞助”动作
-        self.sponsor_action = QAction('赞助', self)
+
         # 创建“联系/反馈”动作
         self.contact_feedback_action = QAction('联系/反馈', self)
         self.contact_feedback_action.triggered.connect(
@@ -943,7 +421,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             lambda :QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomePath)))
 
         # 将动作添加到关于菜单
-        self.about_menu.addAction(self.sponsor_action)
+
         self.about_menu.addAction(self.contact_feedback_action)
         self.about_menu.addAction(self.help_document_action)
 
@@ -1278,65 +756,152 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 节点路径匹配页面
     def create_path_matching_tab(self):
+
+        # 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
+        font.setBold(True)  # 设置加粗
+
+        # 定义一个通用的更新函数
+        def update_slider_value(slider_name, value):
+            adjusted_value = value * 0.001
+            self.modify_config(slider_name, adjusted_value, 'path_detection_config.bin')
+            # 动态获取对应的标签并更新显示
+            label = getattr(self, f"{slider_name}_label")
+            label.setText("{:.3f}".format(adjusted_value))
+
+        path_detection_config = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'path_detection_config.bin')
+        )
+
         # 节点路径匹配选项卡
+        # 使用QScrollArea实现滚动
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
         path_matching_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(path_matching_widget)
 
         # [1] 连接时相关设置
         layout.addWidget(self.create_section_label("[1] ---------->连接时相关设置:"))
         self.path_matching_checkbox = QtWidgets.QCheckBox('连接时开启自动色彩空间')
-        self.path_matching_checkbox.setChecked(True)
+        self.path_matching_checkbox.setChecked(path_detection_config['PathDetectionConnectionSetColorSpace'])
+        # path_matching_checkbox 连接修改配置函数
+        self.path_matching_checkbox.stateChanged.connect(lambda: self.modify_config(
+            self.path_matching_checkbox.isChecked(), 'PathDetectionConnectionSetColorSpace'))
+
         layout.addWidget(self.path_matching_checkbox)
 
         # [2] 排除名称
         layout.addWidget(self.create_section_label("[2] ---------->排除名称:"))
         self.exclude_list_text = QtWidgets.QPlainTextEdit()
-        self.exclude_list_text.setPlainText("exclude1, exclude2")
+        self.exclude_list_text.setPlainText(str(path_detection_config['exclude_list'])
+                                            .replace('[', '')
+                                            .replace(']', '')
+                                            .replace("'", "")
+                                            .replace(",", " , "))
+        self.exclude_list_text.setFont(font)
+
+        self.exclude_list_text.textChanged.connect(
+            lambda: self.modify_config(
+                'exclude_list',
+                [item.replace(' ', '') for item in self.exclude_list_text.toPlainText().split(",")]
+                , 'path_detection_config.bin'))
+
         layout.addWidget(self.exclude_list_text)
 
         # [3] 格式名称
         layout.addWidget(self.create_section_label("[3] ---------->格式名称:"))
         self.format_list_text = QtWidgets.QPlainTextEdit()
-        self.format_list_text.setPlainText("format1, format2")
+        # 设置默认值
+        self.format_list_text.setPlainText(str(path_detection_config['format_list'])
+                                           .replace('[', '')
+                                           .replace(']', '')
+                                           .replace("'", "")
+                                           .replace(",", " , "))
+        self.format_list_text.setFont(font)
+
+        self.format_list_text.textChanged.connect(
+            lambda: self.modify_config(
+                'format_list',
+                [item.replace(' ', '') for item in self.format_list_text.toPlainText().split(",")]
+                , 'path_detection_config.bin'))
+
         layout.addWidget(self.format_list_text)
 
         # [4] 匹配时相关设置
         layout.addWidget(self.create_section_label("[4] ---------->匹配时相关设置:"))
         self.case_sensitive_checkbox = QtWidgets.QCheckBox('是否根据大小写进行判断')
-        self.case_sensitive_checkbox.setChecked(False)
+        self.case_sensitive_checkbox.setChecked(path_detection_config['case_sensitive'])
+        self.case_sensitive_checkbox.stateChanged.connect(lambda: self.modify_config(
+            'case_sensitive', self.case_sensitive_checkbox.isChecked(), 'path_detection_config.bin'))
         layout.addWidget(self.case_sensitive_checkbox)
 
         self.near_one_value_checkbox = QtWidgets.QCheckBox('获取到接近1的值')
-        self.near_one_value_checkbox.setChecked(True)
+        self.near_one_value_checkbox.setChecked(path_detection_config['near_one_value'])
+        self.near_one_value_checkbox.stateChanged.connect(lambda: self.modify_config(
+            'near_one_value', self.near_one_value_checkbox.isChecked(), 'path_detection_config.bin'))
         layout.addWidget(self.near_one_value_checkbox)
 
         self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动获取最大值')
-        self.auto_max_val_checkbox.setChecked(True)
+        self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
+        self.auto_max_val_checkbox.stateChanged.connect(lambda: self.modify_config(
+            'auto_max_val', self.auto_max_val_checkbox.isChecked(), 'path_detection_config.bin'))
         layout.addWidget(self.auto_max_val_checkbox)
 
+        # 相似度判断值滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("相似度判断值:"))
+        similarity_max_layout = QtWidgets.QHBoxLayout()
         self.similarity_max_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_max_slider.setMinimum(0)
-        self.similarity_max_slider.setMaximum(100)
-        self.similarity_max_slider.setValue(80)  # 示例值
-        layout.addWidget(QtWidgets.QLabel("相似度判断值:"))
-        layout.addWidget(self.similarity_max_slider)
+        self.similarity_max_slider.setMaximum(1000)
+        self.similarity_max_slider.setValue(int(path_detection_config['similarity_max'] * 1000))
+        similarity_max_layout.addWidget(self.similarity_max_slider)
+        self.similarity_max_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_max']))
+        similarity_max_layout.addWidget(self.similarity_max_label)
+        layout.addLayout(similarity_max_layout)
 
+        # 使用lambda函数传递参数
+        self.similarity_max_slider.valueChanged.connect(
+            lambda value: update_slider_value('similarity_max', value)
+        )
+
+        # 相似度差异值滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("相似度差异值:"))
+        similarity_range_layout = QtWidgets.QHBoxLayout()
         self.similarity_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_range_slider.setMinimum(0)
-        self.similarity_range_slider.setMaximum(100)
-        self.similarity_range_slider.setValue(20)  # 示例值
-        layout.addWidget(QtWidgets.QLabel("相似度差异值:"))
-        layout.addWidget(self.similarity_range_slider)
+        self.similarity_range_slider.setMaximum(1000)
+        self.similarity_range_slider.setValue(int(path_detection_config['similarity_range'] * 1000))
+        similarity_range_layout.addWidget(self.similarity_range_slider)
+        self.similarity_range_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_range']))
+        similarity_range_layout.addWidget(self.similarity_range_label)
+        layout.addLayout(similarity_range_layout)
 
+        self.similarity_range_slider.valueChanged.connect(
+            lambda value: update_slider_value('similarity_range', value)
+        )
+
+        # 内容相似/长度判断权重滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("内容相似/长度判断权重:"))
+        length_weight_layout = QtWidgets.QHBoxLayout()
         self.length_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.length_weight_slider.setMinimum(0)
-        self.length_weight_slider.setMaximum(100)
-        self.length_weight_slider.setValue(50)  # 示例值
-        layout.addWidget(QtWidgets.QLabel("内容相似/长度判断权重:"))
-        layout.addWidget(self.length_weight_slider)
+        self.length_weight_slider.setMaximum(1000)
+        self.length_weight_slider.setValue(int(path_detection_config['length_weight'] * 1000))
+        length_weight_layout.addWidget(self.length_weight_slider)
+        self.length_weight_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['length_weight']))
+        length_weight_layout.addWidget(self.length_weight_label)
+        layout.addLayout(length_weight_layout)
+
+        self.length_weight_slider.valueChanged.connect(
+            lambda value: update_slider_value('length_weight', value)
+        )
+
+        # 将path_matching_widget设置为scroll_area的子组件
+        scroll_area.setWidget(path_matching_widget)
 
         # 添加到选项卡
-        self.tab_widget.addTab(path_matching_widget, "节点路径匹配")
+        self.tab_widget.addTab(scroll_area, "节点路径匹配")
 
     # 创建标签
     def create_section_label(self, text):
@@ -1351,14 +916,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # --------------------保存设置内容的函数 开始
 
     # -----通用
-    def modify_config(self, key, cont):
+    def modify_config(self, key, cont, file_name = 'texture_processing_data.bin'):
+
         config = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
+            os.path.join(settings_path, file_name))
 
         config[key] = cont
 
         self.dataM.bin_save_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'), config)
+            os.path.join(settings_path, file_name), config)
 
     def modify_nested_config(self, value, key_path):
         """
@@ -1642,8 +1208,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.setWindowTitle(self.WINDOWS_NAME)
         self.setWindowIcon(QtGui.QIcon(icon_path + "\\TXManagerShelf_200.png"))
         #...窗口长宽
-        self.setMinimumHeight(1050)
-        self.setMinimumWidth(2500)
+        self.setMinimumHeight(700)
+        self.setMinimumWidth(1000)
 
 
 
@@ -3546,8 +3112,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.TM_repath_files_config_FilePath, config)
     # --------------------保存设置内容的函数
 
-# 贴图管理器的图像处理界面
-# 支持转换格式和压缩图像
+# 贴图管理器的图像处理界面 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
     new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
 
