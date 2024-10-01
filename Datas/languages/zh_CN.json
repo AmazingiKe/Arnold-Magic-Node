@@ -56,6 +56,16 @@
         "ignore_case_checkbox": "忽略大小写",
         "fix_path_button": "开始修复路径"
       }
+    },
+    "licenses_name" : {
+        "free_license": "免费版",
+        "standard_license": "标准版",
+        "premium_license": "高级版",
+        "developer_license": "开发者许可证",
+        "educational_license": "教育许可证",
+        "permanent_standard_license": "永久标准版",
+        "permanent_premium_license": "永久高级版",
+        "expiry_date_01" : "永久"
     }
   },
   "ArnoldMagicNodeLibs": {

@@ -70,6 +70,8 @@ LicenseV_device_fingerprint = None
 LicenseV_public_key = None
 LicenseV_public_password = None
 LicenseV_remaining_time = None
+LicenseV_type = None
+LicenseV_type_name = None
 
 # 这个是默认窗口的名称记录函数
 AMN_UI_WorkSpaceControl = None
@@ -78,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.5.7"
+SoftwareVersion = "0.5.8"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -149,7 +151,7 @@ def MayaMainWindows():
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
         global AMN_UI_WorkSpaceControl
-        WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}    许可证剩余时间 : {str(LicenseV_remaining_time)}天"
+        WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}   {LicenseV_type_name} : {str(LicenseV_remaining_time)}"
 
         # 判断窗口是否存在，如果存在则删除
         if cmds.window(WIN_TITLE, exists=True):
@@ -182,23 +184,23 @@ class Arnold_Magic_Node_UI(object):
         cmds.menuItem(label= '贴图管理器', c=lambda *args:TextureManagerWinInstance(),
                       i = icon_path + "\\TXManagerShelf_200.png")
 
-        cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(),
-                      i = icon_path + "\\RenderToTextureShelf_200.png")
-
-        cmds.menuItem(label= '渲染预设设置',
-                      divider=True) # 添加分割线
-
-        cmds.menuItem(label= '添加渲染预设',
-                      c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
-
-        cmds.menuItem(label= '修改渲染预设',
-                      c= lambda *args:modify_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
-
-        cmds.menuItem(label= '删除渲染预设',
-                      c= lambda *args:delete_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
-
-        cmds.menuItem(label= '打开渲染预设文件夹',
-                      c= lambda *args:os.startfile(SCRIPT_PATH + "\Data\Render_settings"))
+        # cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(),
+        #               i = icon_path + "\\RenderToTextureShelf_200.png")
+        #
+        # cmds.menuItem(label= '渲染预设设置',
+        #               divider=True) # 添加分割线
+        #
+        # cmds.menuItem(label= '添加渲染预设',
+        #               c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+        #
+        # cmds.menuItem(label= '修改渲染预设',
+        #               c= lambda *args:modify_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
+        #
+        # cmds.menuItem(label= '删除渲染预设',
+        #               c= lambda *args:delete_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
+        #
+        # cmds.menuItem(label= '打开渲染预设文件夹',
+        #               c= lambda *args:os.startfile(SCRIPT_PATH + "\Data\Render_settings"))
 
         cmds.menuItem(divider=True)
 
@@ -280,21 +282,21 @@ class Arnold_Magic_Node_UI(object):
         self.ai_aov_switch = cmds.button(label="AOV开关",c=lambda *args:ai_aov_switch_button())
 
         # 渲染预设的菜单 —————————————————— 开始
-        self.rendering_preset_name = {}
-        self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
-        # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
-
-
-        renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
-
-        # 获取文件名字
-        file_names = os.listdir(renderer_data_path)
-
-        # 删除文件名中的 ".json" 部分并存储在列表中
-        file_names_without_json_list = [file_name.replace(".json", "") for file_name in file_names]
-
-        for renderer_data_mode_name in file_names_without_json_list:
-            self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
+        # self.rendering_preset_name = {}
+        # self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
+        # # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+        #
+        #
+        # renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
+        #
+        # # 获取文件名字
+        # file_names = os.listdir(renderer_data_path)
+        #
+        # # 删除文件名中的 ".json" 部分并存储在列表中
+        # file_names_without_json_list = [file_name.replace(".json", "") for file_name in file_names]
+        #
+        # for renderer_data_mode_name in file_names_without_json_list:
+        #     self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
 
 
         # 渲染预设的菜单 —————————————————— 结束
@@ -329,7 +331,6 @@ class Arnold_Magic_Node_UI(object):
         # 保存修改完的渲染预设配置
         self.dataM.bin_save_data(os.path.join(settings_path, 'render_preset_config.bin'),
                                  new_render_preset_config)
-
 
 # 插件设置按钮qt写
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
@@ -368,7 +369,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     def initialize_window_config(self):
 
-        WINDOWS_NAME = f'插件设置  {SoftwareState} : {SoftwareVersion} 许可证剩余时间 : {str(LicenseV_remaining_time)}天'  # Win名称
+        WINDOWS_NAME = f'插件设置  {SoftwareState} : {SoftwareVersion}  {LicenseV_type_name} : {str(LicenseV_remaining_time)}'  # Win名称
 
         delete_window_if_existe('ArnoldMagicNodeSettingsPanel')
 
@@ -4004,10 +4005,10 @@ class rendering_preset_menu(object):
     def __init__(self,menu_sl_val):
 
         self.feedback = FeedbackPrompt() # 错误提示模块
-
+        self.dataM = DataManager()
         self.attribute_types = ["bool", "int", "float", "string"]
         self.rederer_attribute_types = ["bool", "float", "string"]
-        self.Render_settings_Data =  load_data(f"\Datas\Render_settings\{menu_sl_val}" )
+        self.Render_settings_Data =  self.dataM.bin_load_data(f"\Datas\Render_settings\{menu_sl_val}" )
 
         RENDERING_WRITE_OPTION_DICT =  load_data("RENDERING_WRITE_OPTION_DATA") # 读取渲染文件
 
@@ -4501,8 +4502,14 @@ def modify_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
 
 # 开关AOV函数
 def ai_aov_switch_button():
+
+    feedback = FeedbackPrompt()  # 错误提示模块
+
     # 获取连接到 AovList 端口的所有节点
-    connections = cmds.listConnections("defaultArnoldRenderOptions.aovList", source=True)
+    if cmds.objExists("defaultArnoldRenderOptions.aovList"):
+        connections = cmds.listConnections("defaultArnoldRenderOptions.aovList", source=True)
+    else:
+        return feedback.CP("未创建AOV")
 
     for aov in connections:
         # 获取当前属性状态
@@ -4701,42 +4708,60 @@ def path_detection_connection_button():
 
 # 自动设置颜色空间
 def AutoSet_TexColorSpace():
-    TexFirstFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][0]["TexFirstFilterData"]
-    TexSoloFilterData = load_data('TEX_PROCESSING_DATA')["TexFirstFilter"][1]['TexSoloFilterData']
-    FilterData = TexFirstFilterData
-    FilterData.update(TexSoloFilterData)
-
-    SlNode = process_sl_data()
+    ### 实例模块
+    dataM = DataManager() # 数据管理模块
     NodePro = NodeProcessor()
-    NodePro.AutoSetTexColorSpace(SlNode['file'], FilterData)
+    # 加载数据
+    texture_processing_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    FilterData = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
+
+    select_node = process_sl_data()
+
+    if select_node == None:
+        return
+
+    NodePro.AutoSetTexColorSpace(select_node['file'], FilterData)
 
 # -----------------------自动连接的一些功能-end
 
 
 
-def Main_program():
+def Main_program(cached_device_fingerprint, public_key, public_password, validating):
     # cached_device_fingerprint, public_key, public_password, remaining_time
-    global LicenseV_device_fingerprint, LicenseV_public_key, LicenseV_public_password, LicenseV_remaining_time
+    global LicenseV_device_fingerprint, LicenseV_public_key, LicenseV_public_password, LicenseV_type, LicenseV_type_name,  LicenseV_remaining_time
 
-    # # 把验证完的相关信息传回主程序，备着使用
-    # LicenseV_device_fingerprint = cached_device_fingerprint
-    # LicenseV_public_key = public_key
-    # LicenseV_public_password = public_password
-    # LicenseV_remaining_time = remaining_time
+    dataM = DataManager()  # 数据管理
+
+    language_config = dataM.ascii_load_data(
+        os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+
+    language = dataM.ascii_load_data(
+        os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['licenses_name']
 
 
 
-    # dataM = DataManager()   # 实例一个数据库
-    #
-    # # 判断脚本路径下也没有这个文件
-    # if not os.path.exists(os.path.join(SCRIPT_PATH,'TEX_PROCESSING_DATA.json')):
-    #   #创建这个文件TexFirstFilterData
-    #   save_data(os.path.join(SCRIPT_PATH,'TEX_PROCESSING_DATA.json'),TEX_PROCESSING_DATA)
-    #
-    # if not os.path.exists(os.path.join(SCRIPT_PATH,'RENDERING_WRITE_OPTION_DATA.json')):
-    #   #创建这个文件TexFirstFilterData
-    #   save_data(os.path.join(SCRIPT_PATH,'RENDERING_WRITE_OPTION_DATA.json'),RENDERING_WRITE_OPTION_DATA)
+    # 把验证完的相关信息传回主程序，备着使用
+    LicenseV_device_fingerprint = cached_device_fingerprint
+    LicenseV_public_key = public_key
+    LicenseV_public_password = public_password
+    LicenseV_type = validating['license_type']
+    LicenseV_type_name = language[LicenseV_type]
+
+    if validating['expiry_date'] == None:
+        LicenseV_remaining_time = language['expiry_date_01']
+    else:
+        current_time = datetime.utcnow()
+
+
+        remaining_time = validating['expiry_date'] - current_time
+
+        LicenseV_remaining_time = remaining_time.days
+
+
+
 
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
-    # TextureManagerWinInstance()
+

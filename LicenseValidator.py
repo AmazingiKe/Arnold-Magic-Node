@@ -272,42 +272,61 @@ def verify_license(public_key_pem, license_b64, current_device_fingerprint, curr
         # 将解密后的许可证信息转换为字典
         license_data = json.loads(decrypted_license.decode())
 
+
+
+
+
+
+        # 验证步骤------------
+        # [0]获取许可证内容
+        # 获取到期日
+        expiry_date = license_data.get("expiry_date")
+
+        # [1]验证指纹锁
         # 检查设备标识符是否匹配：如果提供了当前设备的标识符，确保它与许可证中的设备指纹匹配
         if current_device_fingerprint and license_data["device_fingerprint"] != current_device_fingerprint:
             feedback.CP(LT['02'])
             return False
 
-        # 检查许可证是否过期：如果到期日期为 None 或 "permanent"，则认为许可证永不过期
-        expiry_date = license_data.get("expiry_date")
+        # [2]特殊许可证通过
+        # 如果是开发者模式的话跳过其他所有的检查
+        if license_data['license_type'] == "developer_license":
+            return {'validate': True, 'license_type': license_data['license_type'], 'expiry_date' : expiry_date}
 
-        # 将 current_timestamp 从时间戳转为datatime类型
-        current_time = datetime.fromtimestamp(current_timestamp)
-        # 将 expiry_date 从字符串转为datatime类型
-        expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d %H:%M:%S')
+        # [3]永久许可证不需要验证时间
+        # 如果是永久的许可将不需要验证时间
+        if license_data['license_type'] in ['free_license', 'permanent_standard_license', 'permanent_premium_license']:
+            return {'validate': True, 'license_type': license_data['license_type'], 'expiry_date': expiry_date}
+        else:
+            # 以下是非永久许可认证时间
 
+            # 将 current_timestamp 从时间戳转为datatime类型
+            current_time = datetime.fromtimestamp(current_timestamp)
 
-        # 如果 expiry_date 不为 None 且不等于 "permanent"，则需要进行过期检查
-        if expiry_date is not None and expiry_date != "permanent":
+            # 将 expiry_date 从字符串转为datatime类型
+            expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d %H:%M:%S')
+
             # 确保 expiry_date 已被转换为 datetime 对象，以便进行时间比较
             if current_time > expiry_date:
                 # 如果当前时间大于到期时间，则许可证已过期
                 feedback.CP(LT['03'])
                 return False
-
-
-        # 如果所有检查通过，返回True，表示许可证有效 并返回许可时间
-        return True , expiry_date
-
-
-    except InvalidSignature:
-        feedback.CPW(LT['04'])
-        return False
-    except ValueError:
-        feedback.CPW(LT['05'])
-        return False
+            else:
+                # 如果所有检查通过，返回True，表示许可证有效 并返回许可时间
+                return {'validate': True, 'license_type': license_data['license_type'], 'expiry_date': expiry_date}
     except Exception as e:
-        feedback.CPE(LT['06'])
         return False
+        print(e)
+
+    # except InvalidSignature:
+    #     feedback.CPW(LT['04'])
+    #     return False
+    # except ValueError:
+    #     feedback.CPW(LT['05'])
+    #     return False
+    # except Exception as e:
+    #     feedback.CPE(LT['06'])
+    #     return False
 
 #   获取许可证剩余时间
 def get_license_remaining_time(license_package_b64, password=public_password):
@@ -468,14 +487,15 @@ class LicenseWin(QtWidgets.QDialog):
             return
 
         validating = verify_license(public_key, license, cached_device_fingerprint, current_timestamp, public_password)
+        print(validating)
 
-        if validating[0] == True:
+        if validating['validate'] == True:
             #   写出许可证文件
             dataM.bin_save_data(os.path.join(Script_path, "Datas", "keys", "license.bin"), license)
             #   关闭验证窗口
             cmds.deleteUI(LicenseWin.WINDOWS_NAME)
             #   打开主程序
-            MainStart(cached_device_fingerprint, public_key, public_password, datetime.fromtimestamp(current_timestamp), validating[1])
+            MainStart(cached_device_fingerprint, public_key, public_password, validating)
 #-------------------------------------------------------验证窗口
 
 
@@ -488,12 +508,11 @@ class LicenseWin(QtWidgets.QDialog):
 
 
 
-def MainStart(cached_device_fingerprint, public_key, public_password, current_time, expiry_date):
-    remaining_time = expiry_date - current_time
+def MainStart(cached_device_fingerprint, public_key, public_password, validating):
 
     import Arnold_Magic_Node
     importlib.reload(Arnold_Magic_Node)
-    Arnold_Magic_Node.Main_program(cached_device_fingerprint, public_key, public_password, remaining_time.days)
+    Arnold_Magic_Node.Main_program(cached_device_fingerprint, public_key, public_password, validating)
 
 
 
@@ -531,8 +550,8 @@ def Main_program():
 
         validating = verify_license(public_key, license, cached_device_fingerprint, current_timestamp, public_password)
 
-        if validating[0] == True:
-            MainStart(cached_device_fingerprint, public_key, public_password, datetime.fromtimestamp(current_timestamp), validating[1])
+        if validating['validate'] == True:
+            MainStart(cached_device_fingerprint, public_key, public_password, validating)
         else:
             LicenseM = LicenseWin()
             LicenseM.show()

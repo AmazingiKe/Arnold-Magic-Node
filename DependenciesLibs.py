@@ -19,8 +19,8 @@ PreferencesPath = cmds.about(preferences=True)  # 配置文件的地方
 MayaInstallDir = os.environ.get('MAYA_LOCATION')    # Maya安装的地方
 ScriptPath = os.path.join(os.path.dirname(__file__)) # 脚本路径
 
-LibsPath = ScriptPath + '\\Libs\\maya' + str(MayaVersion)
-MayapyPath = MayaInstallDir + '\\bin\\Mayapy.exe'
+LibsPath =  os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVersion)}')
+MayapyPath = os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe')
 
 LibsFilesDict = {
     'cv2': 'opencv-python',
@@ -95,6 +95,7 @@ def detection_libs():
     feedback.cp(language["DL"]["03"]) # "好棒！！！！环境配置没有任何问题♪（＾∀＾●）ﾉｼ "
 
 def importLibs():
+    print(LibsPath)
     for libName in LibsFilesDict:
         libNamePro = libName.replace(".pyd", "").replace(".py", "")
         importlib.import_module(libNamePro)
@@ -119,6 +120,8 @@ def Main_program():
     # 配置库路径
     sys.path.append(LibsPath)  # 将库路径追加到系统路径
     sys.path.insert(0, LibsPath)  # 确保库路径被优先检索
+
+    sys.path = list(set(sys.path))  # 去重路径
 
     # 创建版本文件夹
     create_version_folder()  # 根据需要创建版本文件夹
