@@ -95,7 +95,6 @@ def detection_libs():
     feedback.cp(language["DL"]["03"]) # "好棒！！！！环境配置没有任何问题♪（＾∀＾●）ﾉｼ "
 
 def importLibs():
-    print(LibsPath)
     for libName in LibsFilesDict:
         libNamePro = libName.replace(".pyd", "").replace(".py", "")
         importlib.import_module(libNamePro)

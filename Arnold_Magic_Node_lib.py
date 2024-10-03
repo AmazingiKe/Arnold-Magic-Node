@@ -427,7 +427,7 @@ class NodeProcessor(object):
 
         该函数接受一个贴图文件的路径（`TextureName`），对其名称进行以下处理：
         - 获取贴图文件的基本名称（去除路径部分）。
-        - 删除下划线和所有非字母数字字符（包括标点符号）。
+        - 删除所有标点符号。
         - 将名称转换为大写字母。
         - 返回处理后的贴图名称。
 
@@ -435,17 +435,17 @@ class NodeProcessor(object):
             TextureName (str): 贴图文件的完整路径。
 
         返回:
-            str: 处理后的贴图名称，仅包括文件名部分，删除了下划线和标点符号，并转换为大写。
+            str: 处理后的贴图名称，仅包括文件名部分，删除了标点符号，并转换为大写。
         """
         # 获取贴图文件的基本名称（去除路径部分）
         BaseName = os.path.basename(TextureName)
 
-        # 删除下划线和所有非字母数字字符
-        ProcessedName = re.sub(r'[\W_]+', ' ', BaseName)
-        
+        # 删除所有标点符号
+        ProcessedName = re.sub(r'[^\w\s]', '', BaseName)
+
         # 将名称转换为大写
         ProcessedName = ProcessedName.upper()
-        
+
         return ProcessedName
     
     #   匹配贴图节点的通道
@@ -471,6 +471,7 @@ class NodeProcessor(object):
             FileTexNameOri = cmds.getAttr(NodeName + '.fileTextureName')
             FileTexNamePro = self.ProcessTextureName(FileTexNameOri)
             MatchingChannels = self.FilterData(FileTexNamePro, FilterData)
+
             MatchingChannelsDict[NodeName] = MatchingChannels
 
         # 返回匹配的通道名称
@@ -479,31 +480,39 @@ class NodeProcessor(object):
     #   把名字筛选出正确的通道
     def FilterData(self, NewTexName, FilterData):
         """
-        根据处理后的贴图名称进行通道过滤。
+        使用Aho-Corasick算法根据通道过滤贴图名称。
 
-        该函数接收处理后的贴图名称（`NewTexName`）和通道值字典（`TexFirstFilterData`）。
-        它遍历字典中的每个通道和值列表，并使用正则表达式在处理后的贴图名称中查找匹配项。
-        如果找到匹配项，函数返回相应的通道名称。
+        参数：
+            NewTexName (str)：处理后的贴图名称。
+            FilterData (dict)：包含通道名称和关联值列表的字典。
 
-        参数:
-            NewTexName (str): 处理后的贴图名称。
-            TexFirstFilterData (dict): 包含通道名称和值列表的字典。
-                键为通道名称（例如 'baseColor'），值为与通道相关联的值列表。
-
-        返回:
-            str: 匹配的通道名称。如果没有找到匹配项，则返回 None。
+        返回：
+            str：匹配的通道名称；如果没有找到匹配项，则返回None。
         """
-        # 遍历字典中的通道名称和值列表
+        from ahocorapy.keywordtree import KeywordTree
+
+        # 构建关键词到通道的映射
+        value_to_channel = {}
         for channel, value_list in FilterData.items():
             for value in value_list:
-                # 使用正则表达式在处理后的贴图名称中查找匹配项
-                searchObj = re.search(value, NewTexName, re.IGNORECASE)
-                
-                # 如果找到匹配项，返回相应的通道名称
-                if searchObj:
-                    return channel
-        
-        # 如果没有找到匹配项，返回 None
+                value_to_channel[value.lower()] = channel
+
+        # 构建关键词树
+        kwtree = KeywordTree(case_insensitive=True)
+        for value in value_to_channel.keys():
+            kwtree.add(value)
+        kwtree.finalize()
+
+        # 在NewTexName中搜索模式
+        for keyword, index in kwtree.search_all(NewTexName):
+            # 打印match对象，调试用
+            # print(f"Match: keyword={keyword}, index={index}")
+            matched_value_lower = keyword.lower()
+            channel = value_to_channel.get(matched_value_lower)
+            if channel:
+                return channel  # 返回第一个匹配的通道
+
+        return None  # 未找到匹配项
     
     #   根据给定的优先级列表 PriorityList 重新排序字典 MatchingDict。
     def ReorderdictionaryByPriority(self, MatchingDict, PriorityList=None):
@@ -529,8 +538,8 @@ class NodeProcessor(object):
             PriorityList = [
                 'base', 'baseColor', 'diffuseRoughness', 'metalness', 'specular', 'specularColor',
                 'specularRoughness', 'specularAnisotropy', 'specularRotation', 'subsurface', 'subsurfaceColor',
-                'subsurfaceRadius', 'emission', 'emissionColor', 'opacity', 'normalCamera', 'AO', 'Bump',
-                'Displacement'
+                'subsurfaceRadius', 'emission', 'emissionColor', 'opacity', 'normalCamera', 'ao', 'bump',
+                'displacement'
             ]
         
         # 创建一个空的有序字典来存储按优先级排序的键值对
@@ -575,7 +584,7 @@ class NodeProcessor(object):
         - 在尝试连接节点时，可能会发生异常。如果发生异常，会在尝试列表中进行循环尝试。
         """
         # 定义灰色和彩色列表
-        GraysList = ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'AO', 'Bump', 'Displacement']
+        GraysList = ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'ao', 'bump', 'displacement']
         ColorList = ['baseColor', 'specularColor', 'subsurfaceColor', 'subsurfaceRadius', 'emissionColor', 'opacity', 'normalCamera']
 
         # 如果没有提供输入端口列表，则设置默认值
@@ -696,7 +705,7 @@ class NodeProcessor(object):
                 ContToNode(aiNormalMap, MaterialName, 'normalCamera')
 
             # 处理 AO 通道
-            elif MatChannel == "AO":
+            elif MatChannel == "ao":
                 if 'baseColor' in MatchingDict.values():
                     # 创建 aiMultiply 节点
                     aiMultiply = cmds.createNode("aiMultiply", name=NodeName + "_aiMultiply")
@@ -715,7 +724,7 @@ class NodeProcessor(object):
                     ContToNode(aiMultiply, MaterialName, 'baseColor')
                     
             # 处理 Bump 通道
-            elif MatChannel == "Bump":
+            elif MatChannel == "bump":
                 # 创建 aiBump2d 节点
                 aiBump2d = cmds.createNode("aiBump2d", name=NodeName + "_aiBump2d")
                 
@@ -735,7 +744,7 @@ class NodeProcessor(object):
                     ContToNode(aiBump2d, aiNormalMap, 'normal')
                 
             # 处理 Displacement 通道
-            elif MatChannel == "Displacement":
+            elif MatChannel == "displacement":
                 # 创建 displacementShader 节点
                 displacementShader = cmds.createNode("displacementShader", name=NodeName + "displacementShader")
                 
@@ -851,6 +860,7 @@ class NodeProcessor(object):
         # 3.重新排序贴图顺序
         MatchingDict = self.ReorderdictionaryByPriority(self.MatchingChannels(SlNode['file'], FilterData))
 
+
         LastNodeDict = {}
     
         # 4.连接并创建相应的处理节点
@@ -863,7 +873,7 @@ class NodeProcessor(object):
                                                                         ProcessingNodeData[MatChannel]["NodeList"],
                                                                         ProcessingNodeData[MatChannel]["InputPort"],
                                                                         MatChannel)
-            
+
         # 5.连接至材质球
         if 'shadingEngine' in SlNode:
             DisplacementShader = SlNode['shadingEngine'][0]
@@ -875,7 +885,7 @@ class NodeProcessor(object):
         self.feedback.CP(f'完成{MatName}材质球连接')
     
     #   自动匹配色彩空间并设置
-    def AutoSetTexColorSpace(self, NodeList, FilterData, MatchingChannel = None):
+    def AutoSetTexColorSpace(self, AutoSetColorSpaceConfig,  NodeList, FilterData, MatchingChannel = None):
         """
         输入节点自动匹配色彩空间
         
@@ -886,8 +896,7 @@ class NodeProcessor(object):
 
         
         """
-        # 0, 获取颜色空间配置文件
-        AutoSetColorSpaceConfig = load_data('TEX_PROCESSING_DATA')["ColorSpace"][1]['AutoSetColorSpaceConfig']
+
 
         # 1, 使用MatchingChannels函数匹配通道
         if MatchingChannel == None:

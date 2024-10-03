@@ -4588,7 +4588,7 @@ def magic_connection_button():
 
     # 5.设置色彩空间 如果自动色彩空间开启了就会设置
     if MagicConnectionSetColorSpace == True:
-        NodePro.AutoSetTexColorSpace(SlNode['file'], FilterData)
+        NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , SlNode['file'], FilterData)
 
 
 def path_detection_connection_button():
@@ -4663,7 +4663,7 @@ def path_detection_connection_button():
                     cmds.delete(originalUvName)
 
             # 创建节点
-            node_name_list = path_detection_instance.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
+            node_name_list = pathD.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
             node_name_list.append(node_name)
 
             # 创建 NodeProcessor 类的实例
@@ -4674,9 +4674,8 @@ def path_detection_connection_button():
             node_name_dict['file'] = node_name_list
 
             # 设置色彩空间 如果自动色彩空间开启了就会设置
-            MagicConnectionSetColorSpace = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['PathDetectionConnectionSetColorSpace'] # 魔法连接启用色彩空间
-            if MagicConnectionSetColorSpace == True:
-                NodePro.AutoSetTexColorSpace(node_name_list, FilterData)
+            if path_detection_data['PathDetectionConnectionSetColorSpace'] == True:
+                NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , node_name_list, texture_filter_dict)
 
 
 
@@ -4687,9 +4686,9 @@ def path_detection_connection_button():
                 return
 
             # 0.获取初始变量
-            ProcessingNodeData = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
-            ContOptions = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['TexFirstFilter_Options'] # 相应贴图是否要连接的参数
-            Auto_Node_Connection_Options = load_data('TEX_PROCESSING_DATA')['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
+            ProcessingNodeData = texture_processing_data['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
+            ContOptions = texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接的参数
+            Auto_Node_Connection_Options = texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
 
             # 1.获取选择节点
             SlNode = process_sl_data(node_name_list)
@@ -4702,7 +4701,7 @@ def path_detection_connection_button():
             MatName = SlNode['file'][0].split('_')[0]
 
             # 4.执行匹配 连接创建处理节点并连接到材质球的操作
-            NodePro.AutoNodeConnect(SlNode, MatName, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
+            NodePro.AutoNodeConnect(SlNode, MatName, texture_filter_dict, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
 
 
 
@@ -4722,7 +4721,7 @@ def AutoSet_TexColorSpace():
     if select_node == None:
         return
 
-    NodePro.AutoSetTexColorSpace(select_node['file'], FilterData)
+    NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , select_node['file'], FilterData)
 
 # -----------------------自动连接的一些功能-end
 
