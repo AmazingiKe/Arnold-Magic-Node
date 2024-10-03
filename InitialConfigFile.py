@@ -206,13 +206,15 @@ path_detection_config_dict =  {
     'PathDetectionConnectionSetColorSpace': True,
     'exclude_list': ['.tx', '_PREVIEW', '_preview', 'LOD1', 'LOD2', 'LOD3', 'LOD4', 'LOD5', 'LOD6', 'LOD7', 'LOD8',
                      'LOD9', 'LOD10'],
-    'format_list': ['jpg', 'png', 'tiff', 'exr', 'tif', 'ex', "psd", "raw"],
+    'detection_excluded_list': [],
     'similarity_range': 0.1,
     'similarity_max': 1,
-    'length_weight': 0.3,
+    'name_weight' : 0.4,
+    'resolution_weight' : 0.15,
+    'format_weight' : 0.05,
+    'creation_time_weight' : 0.3,
     'auto_max_val': True,
     'near_one_value': False,
-    'case_sensitive': True
 }
 
 

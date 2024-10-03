@@ -464,7 +464,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(content_widget)
 
         # [1] 连接设置
-        layout.addWidget(self.create_section_label("[1] ---------->连接设置:"))
+        
+        self.add_line_with_text(layout , "连接设置")
+         
         self.auto_color_space_connection = QtWidgets.QCheckBox('连接时开启自动色彩空间')
 
         # auto_color_space_connection 连接修改配置函数
@@ -474,8 +476,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.auto_color_space_connection)
 
+        
         # [2] 自定义连接的贴图
-        layout.addWidget(self.create_section_label("[2] ---------->自定义连接的贴图:"))
+        self.add_line_with_text(layout , "自定义连接的贴图")
+         
         self.tex_first_filter_options_list = QtWidgets.QListWidget()
 
         ## 设置tex_first_filter_options_list参数
@@ -499,8 +503,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.tex_first_filter_options_list)
 
+        
         # [3] 自定义过滤名字
-        layout.addWidget(self.create_section_label("[3] ---------->自定义过滤名字:"))
+        self.add_line_with_text(layout , "自定义过滤名字")
+         
 
         self.texture_filter_fields = {}
 
@@ -560,13 +566,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         content_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(content_widget)
 
-
-
-
-
+        
         # [1] 自定义色彩空间
-        layout.addWidget(self.create_section_label("[1] ---------->自定义色彩空间:"))
-
+        self.add_line_with_text(layout , "自定义色彩空间")
+         
         self.color_space_text = QtWidgets.QPlainTextEdit()
 
 
@@ -591,9 +594,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         layout.addWidget(self.color_space_text)
-
+         
         # [2] 自动设置色彩空间
-        layout.addWidget(self.create_section_label("[2] ---------->自动设置色彩空间:"))
+        self.add_line_with_text(layout , "自动设置色彩空间")
+        
         self.auto_color_space_options = {}
 
         # 用来储存图标变量
@@ -666,7 +670,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(scroll_content_widget)
 
         # [1] 自定义连接的节点
-        layout.addWidget(self.create_section_label("[1] ---------->自定义连接的节点:"))
+        
+        self.add_line_with_text(layout , "自定义连接的节点")
+         
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
 
@@ -686,6 +692,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             lambda item:self.modify_auto_node_connection_config())
 
         layout.addWidget(self.auto_node_connection_list)
+
+        self.add_line_with_text(layout, "自定义连接节点")
 
         input_port_combo = {}
         output_port_combo = {}
@@ -757,44 +765,49 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 节点路径匹配页面
     def create_path_matching_tab(self):
-
         # 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
         font.setBold(True)  # 设置加粗
 
-        # 定义一个通用的更新函数
+        # 定义一个通用的更新函数，用于更新滑杆的值和配置
         def update_slider_value(slider_name, value):
-            adjusted_value = value * 0.001
-            self.modify_config(slider_name, adjusted_value, 'path_detection_config.bin')
+            adjusted_value = value * 0.001  # 将滑杆的整数值转换为小数
+            self.modify_config(slider_name, adjusted_value, 'path_detection_config.bin')  # 更新配置文件
             # 动态获取对应的标签并更新显示
             label = getattr(self, f"{slider_name}_label")
             label.setText("{:.3f}".format(adjusted_value))
 
+        # 加载路径检测配置
         path_detection_config = self.dataM.bin_load_data(
             os.path.join(settings_path, 'path_detection_config.bin')
         )
 
-        # 节点路径匹配选项卡
-        # 使用QScrollArea实现滚动
+        # 创建节点路径匹配选项卡，使用QScrollArea实现滚动
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)
         path_matching_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(path_matching_widget)
 
+        
         # [1] 连接时相关设置
-        layout.addWidget(self.create_section_label("[1] ---------->连接时相关设置:"))
+        self.add_line_with_text(layout , "连接时相关设置")
+         
+
         self.path_matching_checkbox = QtWidgets.QCheckBox('连接时开启自动色彩空间')
         self.path_matching_checkbox.setChecked(path_detection_config['PathDetectionConnectionSetColorSpace'])
-        # path_matching_checkbox 连接修改配置函数
+        # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_checkbox.stateChanged.connect(lambda: self.modify_config(
             self.path_matching_checkbox.isChecked(), 'PathDetectionConnectionSetColorSpace'))
 
         layout.addWidget(self.path_matching_checkbox)
 
+         
         # [2] 排除名称
-        layout.addWidget(self.create_section_label("[2] ---------->排除名称:"))
+        self.add_line_with_text(layout , "筛选过程中排除含有文字的文件")
+        
         self.exclude_list_text = QtWidgets.QPlainTextEdit()
+        # 设置默认排除列表，并格式化显示
         self.exclude_list_text.setPlainText(str(path_detection_config['exclude_list'])
                                             .replace('[', '')
                                             .replace(']', '')
@@ -802,6 +815,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                                             .replace(",", " , "))
         self.exclude_list_text.setFont(font)
 
+        # 当排除列表文本发生变化时，更新配置文件
         self.exclude_list_text.textChanged.connect(
             lambda: self.modify_config(
                 'exclude_list',
@@ -810,47 +824,179 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.exclude_list_text)
 
+         
         # [3] 格式名称
-        layout.addWidget(self.create_section_label("[3] ---------->格式名称:"))
-        self.format_list_text = QtWidgets.QPlainTextEdit()
-        # 设置默认值
-        self.format_list_text.setPlainText(str(path_detection_config['format_list'])
+        self.add_line_with_text(layout , "在进行相似度检测时移除字符串中的特定内容")
+        
+        self.detection_excluded_list = QtWidgets.QPlainTextEdit()
+        # 设置默认格式列表，并格式化显示
+        self.detection_excluded_list.setPlainText(str(path_detection_config['detection_excluded_list'])
                                            .replace('[', '')
                                            .replace(']', '')
                                            .replace("'", "")
                                            .replace(",", " , "))
-        self.format_list_text.setFont(font)
+        self.detection_excluded_list.setFont(font)
 
-        self.format_list_text.textChanged.connect(
+        # 当格式列表文本发生变化时，更新配置文件
+        self.detection_excluded_list.textChanged.connect(
             lambda: self.modify_config(
-                'format_list',
-                [item.replace(' ', '') for item in self.format_list_text.toPlainText().split(",")]
+                'detection_excluded_list',
+                [item.replace(' ', '') for item in self.detection_excluded_list.toPlainText().split(",")]
                 , 'path_detection_config.bin'))
 
-        layout.addWidget(self.format_list_text)
+        layout.addWidget(self.detection_excluded_list)
 
+         
         # [4] 匹配时相关设置
-        layout.addWidget(self.create_section_label("[4] ---------->匹配时相关设置:"))
-        self.case_sensitive_checkbox = QtWidgets.QCheckBox('是否根据大小写进行判断')
-        self.case_sensitive_checkbox.setChecked(path_detection_config['case_sensitive'])
-        self.case_sensitive_checkbox.stateChanged.connect(lambda: self.modify_config(
-            'case_sensitive', self.case_sensitive_checkbox.isChecked(), 'path_detection_config.bin'))
-        layout.addWidget(self.case_sensitive_checkbox)
+        self.add_line_with_text(layout , "匹配时相关设置")
+        
 
-        self.near_one_value_checkbox = QtWidgets.QCheckBox('获取到接近1的值')
+        self.near_one_value_checkbox = QtWidgets.QCheckBox('仅匹配最高相似度结果')
         self.near_one_value_checkbox.setChecked(path_detection_config['near_one_value'])
         self.near_one_value_checkbox.stateChanged.connect(lambda: self.modify_config(
             'near_one_value', self.near_one_value_checkbox.isChecked(), 'path_detection_config.bin'))
         layout.addWidget(self.near_one_value_checkbox)
+        self.near_one_value_checkbox.setToolTip(
+            '如果选中，程序将仅返回相似度等于阈值的匹配结果，忽略其他相似度较低的结果。')
 
-        self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动获取最大值')
+        self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动选择最佳匹配')
         self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
         self.auto_max_val_checkbox.stateChanged.connect(lambda: self.modify_config(
             'auto_max_val', self.auto_max_val_checkbox.isChecked(), 'path_detection_config.bin'))
         layout.addWidget(self.auto_max_val_checkbox)
+        self.auto_max_val_checkbox.setToolTip('如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。')
+
+        self.add_line_with_text(layout, '匹配元素权重')
+
+        # 初始化滑杆的权重值
+        slider_values = {
+            'name_weight': path_detection_config.get('name_weight', 0.25),  # 默认值为0.25
+            'resolution_weight': path_detection_config.get('resolution_weight', 0.25),
+            'format_weight': path_detection_config.get('format_weight', 0.25),
+            'creation_time_weight': path_detection_config.get('creation_time_weight', 0.25),
+        }
+
+        # 定义更新权重的函数
+        def update_weight(slider_name, value):
+            # 更新当前滑杆的值
+            current_value = value / 1000.0
+            slider_values[slider_name] = current_value
+
+            # 计算剩余的值
+            remaining = 1.0 - current_value
+
+            # 获取其他滑杆的名称和当前值
+            other_sliders = {k: v for k, v in slider_values.items() if k != slider_name}
+
+            # 计算其他滑杆的总值
+            total_other_values = sum(other_sliders.values())
+
+            # 防止除以零的情况
+            if total_other_values == 0:
+                # 如果其他滑杆的总值为0，平均分配剩余的值
+                for key in other_sliders:
+                    slider_values[key] = remaining / len(other_sliders)
+            else:
+                # 按比例调整其他滑杆的值，保持它们之间的相对比例
+                for key in other_sliders:
+                    proportion = other_sliders[key] / total_other_values
+                    slider_values[key] = remaining * proportion
+
+            # 更新UI和配置
+            update_ui_and_config()
+
+        # 定义更新UI和配置文件的函数
+        def update_ui_and_config():
+            # 阻断信号以防止递归调用
+            self.name_weight_slider.blockSignals(True)
+            self.resolution_weight_slider.blockSignals(True)
+            self.format_weight_slider.blockSignals(True)
+            self.creation_time_weight_slider.blockSignals(True)
+
+            # 更新滑杆和标签显示
+            self.name_weight_slider.setValue(int(slider_values['name_weight'] * 1000))
+            self.name_weight_label.setText("{:.3f}".format(slider_values['name_weight']))
+
+            self.resolution_weight_slider.setValue(int(slider_values['resolution_weight'] * 1000))
+            self.resolution_weight_label.setText("{:.3f}".format(slider_values['resolution_weight']))
+
+            self.format_weight_slider.setValue(int(slider_values['format_weight'] * 1000))
+            self.format_weight_label.setText("{:.3f}".format(slider_values['format_weight']))
+
+            self.creation_time_weight_slider.setValue(int(slider_values['creation_time_weight'] * 1000))
+            self.creation_time_weight_label.setText("{:.3f}".format(slider_values['creation_time_weight']))
+
+            # 解除信号阻断
+            self.name_weight_slider.blockSignals(False)
+            self.resolution_weight_slider.blockSignals(False)
+            self.format_weight_slider.blockSignals(False)
+            self.creation_time_weight_slider.blockSignals(False)
+
+            # 保存更新后的权重值到配置文件
+            self.modify_config('name_weight', slider_values['name_weight'], 'path_detection_config.bin')
+            self.modify_config('resolution_weight', slider_values['resolution_weight'], 'path_detection_config.bin')
+            self.modify_config('format_weight', slider_values['format_weight'], 'path_detection_config.bin')
+            self.modify_config('creation_time_weight', slider_values['creation_time_weight'],
+                               'path_detection_config.bin')
+
+        # 名字权重滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("名字权重:"))
+        name_weight_layout = QtWidgets.QHBoxLayout()
+        self.name_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.name_weight_slider.setMinimum(0)
+        self.name_weight_slider.setMaximum(1000)
+        self.name_weight_slider.setValue(int(slider_values['name_weight'] * 1000))
+        name_weight_layout.addWidget(self.name_weight_slider)
+        self.name_weight_label = QtWidgets.QLabel("{:.3f}".format(slider_values['name_weight']))
+        name_weight_layout.addWidget(self.name_weight_label)
+        layout.addLayout(name_weight_layout)
+        # 连接滑杆的值变化信号到更新权重函数
+        self.name_weight_slider.valueChanged.connect(lambda value: update_weight('name_weight', value))
+
+        # 分辨率权重滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("分辨率权重:"))
+        resolution_weight_layout = QtWidgets.QHBoxLayout()
+        self.resolution_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.resolution_weight_slider.setMinimum(0)
+        self.resolution_weight_slider.setMaximum(1000)
+        self.resolution_weight_slider.setValue(int(slider_values['resolution_weight'] * 1000))
+        resolution_weight_layout.addWidget(self.resolution_weight_slider)
+        self.resolution_weight_label = QtWidgets.QLabel("{:.3f}".format(slider_values['resolution_weight']))
+        resolution_weight_layout.addWidget(self.resolution_weight_label)
+        layout.addLayout(resolution_weight_layout)
+        self.resolution_weight_slider.valueChanged.connect(lambda value: update_weight('resolution_weight', value))
+
+        # 格式权重滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("格式权重:"))
+        format_weight_layout = QtWidgets.QHBoxLayout()
+        self.format_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.format_weight_slider.setMinimum(0)
+        self.format_weight_slider.setMaximum(1000)
+        self.format_weight_slider.setValue(int(slider_values['format_weight'] * 1000))
+        format_weight_layout.addWidget(self.format_weight_slider)
+        self.format_weight_label = QtWidgets.QLabel("{:.3f}".format(slider_values['format_weight']))
+        format_weight_layout.addWidget(self.format_weight_label)
+        layout.addLayout(format_weight_layout)
+        self.format_weight_slider.valueChanged.connect(lambda value: update_weight('format_weight', value))
+
+        # 创建时间权重滑杆和标签
+        layout.addWidget(QtWidgets.QLabel("创建时间权重:"))
+        creation_time_weight_layout = QtWidgets.QHBoxLayout()
+        self.creation_time_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.creation_time_weight_slider.setMinimum(0)
+        self.creation_time_weight_slider.setMaximum(1000)
+        self.creation_time_weight_slider.setValue(int(slider_values['creation_time_weight'] * 1000))
+        creation_time_weight_layout.addWidget(self.creation_time_weight_slider)
+        self.creation_time_weight_label = QtWidgets.QLabel("{:.3f}".format(slider_values['creation_time_weight']))
+        creation_time_weight_layout.addWidget(self.creation_time_weight_label)
+        layout.addLayout(creation_time_weight_layout)
+        self.creation_time_weight_slider.valueChanged.connect(
+            lambda value: update_weight('creation_time_weight', value))
+
+        self.add_line_with_text(layout, "相似度的计算")
 
         # 相似度判断值滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("相似度判断值:"))
+        layout.addWidget(QtWidgets.QLabel("自定义相似度阈值:"))
         similarity_max_layout = QtWidgets.QHBoxLayout()
         self.similarity_max_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_max_slider.setMinimum(0)
@@ -860,14 +1006,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.similarity_max_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_max']))
         similarity_max_layout.addWidget(self.similarity_max_label)
         layout.addLayout(similarity_max_layout)
+        self.similarity_max_label.setToolTip('请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。')
 
-        # 使用lambda函数传递参数
+        # 连接滑杆的值变化信号到更新函数
         self.similarity_max_slider.valueChanged.connect(
             lambda value: update_slider_value('similarity_max', value)
         )
 
         # 相似度差异值滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("相似度差异值:"))
+        layout.addWidget(QtWidgets.QLabel("相似度容差范围:"))
         similarity_range_layout = QtWidgets.QHBoxLayout()
         self.similarity_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_range_slider.setMinimum(0)
@@ -877,26 +1024,18 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.similarity_range_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_range']))
         similarity_range_layout.addWidget(self.similarity_range_label)
         layout.addLayout(similarity_range_layout)
+        self.similarity_range_label.setToolTip(
+            '设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。')
 
         self.similarity_range_slider.valueChanged.connect(
             lambda value: update_slider_value('similarity_range', value)
         )
 
-        # 内容相似/长度判断权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("内容相似/长度判断权重:"))
-        length_weight_layout = QtWidgets.QHBoxLayout()
-        self.length_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.length_weight_slider.setMinimum(0)
-        self.length_weight_slider.setMaximum(1000)
-        self.length_weight_slider.setValue(int(path_detection_config['length_weight'] * 1000))
-        length_weight_layout.addWidget(self.length_weight_slider)
-        self.length_weight_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['length_weight']))
-        length_weight_layout.addWidget(self.length_weight_label)
-        layout.addLayout(length_weight_layout)
 
-        self.length_weight_slider.valueChanged.connect(
-            lambda value: update_slider_value('length_weight', value)
-        )
+
+
+
+
 
         # 将path_matching_widget设置为scroll_area的子组件
         scroll_area.setWidget(path_matching_widget)
@@ -906,13 +1045,54 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 创建标签
     def create_section_label(self, text):
+        # 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(11)  # 设置字体大小
+        font.setBold(True)  # 设置加粗
+
         label = QtWidgets.QLabel(text)
-        label.setStyleSheet("font-weight: bold;")
+        label.setFont(font)
         return label
 
 
+    def add_line_with_text(self, layout, text):
+        # 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
 
+        layout.addSpacing(4)
+        # 创建一个水平布局，用于放置分割线和文字
+        h_layout = QtWidgets.QHBoxLayout()
 
+        # 设置内边距和间距，减少分割线和文字之间的距离
+        h_layout.setContentsMargins(0, 0, 0, 0)
+        h_layout.setSpacing(5)  # 设置分割线和文字的间距
+
+        # 创建左边的分割线
+        left_line = QtWidgets.QFrame()
+        left_line.setFrameShape(QtWidgets.QFrame.HLine)
+        left_line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        h_layout.addWidget(left_line)
+
+        # 添加文字
+        label = QtWidgets.QLabel(text)
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setFont(font)
+        h_layout.addWidget(label)
+
+        # 创建右边的分割线
+        right_line = QtWidgets.QFrame()
+        right_line.setFrameShape(QtWidgets.QFrame.HLine)
+        right_line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        h_layout.addWidget(right_line)
+
+        # 设置左侧和右侧分割线的伸缩因子，使它们与文字等宽
+        h_layout.setStretch(0, 1)
+        h_layout.setStretch(2, 1)
+
+        # 将水平布局添加到主布局中
+        layout.addLayout(h_layout)
+        layout.addSpacing(8)
 
     # --------------------保存设置内容的函数 开始
 
@@ -1157,8 +1337,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM = DataManager() # 储存模块
         self.dataP = DataProcessor() # 数据处理模块
 
-        self.TextureManager_texture_table_data_temp_path = SCRIPT_PATH + "\\Temp\\TM_texture_table.bin"
-        self.TextureManager_config_path = SCRIPT_PATH + "\\Datas\\texture_manager\\TM_config.bin"
+        self.TextureManager_texture_table_data_temp_path = os.path.join(SCRIPT_PATH, 'Temp', 'TM_texture_table.bin')
+        self.TextureManager_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_config.bin')
 
         # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
         # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
@@ -4591,7 +4771,7 @@ def magic_connection_button():
         NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , SlNode['file'], FilterData)
 
 
-def path_detection_connection_button():
+def path_detection_connection_button_old():
     ### 实例各种模块
     dataM = DataManager() # 数据管理模块
     feedback = FeedbackPrompt()  # 错误提示模块
@@ -4702,6 +4882,111 @@ def path_detection_connection_button():
 
             # 4.执行匹配 连接创建处理节点并连接到材质球的操作
             NodePro.AutoNodeConnect(SlNode, MatName, texture_filter_dict, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
+
+
+def path_detection_connection_button():
+    ### 实例各种模块
+    dataM = DataManager() # 数据管理模块
+    feedback = FeedbackPrompt()  # 错误提示模块
+    pathD = PathDetection() # 数据检测模块
+
+    ### 初始化配置数据
+    texture_processing_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    path_detection_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'path_detection_config.bin'))
+
+    texture_filter_dict = texture_processing_data["TexFirstFilter"]  # 过滤贴图的数据
+    exclude_list = path_detection_data['exclude_list'] # 前期需要排除的名称列表
+
+    # 获取选择的节点数据
+    select_node_data = process_sl_data()  # 调用函数获取处理后的节点数据
+
+
+    # 如果没有返回有效的数据，直接退出
+    if select_node_data is None:
+        return
+
+    # 检查数据中是否包含 'file' 键
+    if 'file' not in select_node_data:
+        return feedback.CPW('请选择贴图节点哦')
+
+
+    for node_name in select_node_data['file']:
+        # 1.获取节点路径
+        target_object, target_dirname = pathD.get_node_path(node_name)
+
+        # 2.寻找子路径下的文件并排除不需要参加匹配的格式
+        dir_name_path = pathD.detection_path_content(target_dirname, exclude_list)
+
+        # 3.获取文件的元属性
+        dir_tex_info = pathD.get_file_info(dir_name_path)
+        target_object_info = pathD.get_file_info(target_object)
+
+        # 4.处理匹配名称
+        processed_dir_tex_info = pathD.process_dict_key_name(dir_tex_info,
+                                                             path_detection_data['detection_excluded_list'],
+                                                             texture_filter_dict)
+
+        processed_target_object_info = pathD.process_dict_key_name(target_object_info,
+                                                                   path_detection_data['detection_excluded_list'],
+                                                                   texture_filter_dict)
+
+        # 删除原本选择的
+        original_name = list(target_object.keys())[0] # 获取原始名称
+        del processed_dir_tex_info[original_name]
+
+        similarity_dict = pathD.calculate_similarity(processed_target_object_info, processed_dir_tex_info, path_detection_data)
+
+        feedback.CP("===================================匹配相似度=================================")
+        for tex_name, similarity in similarity_dict.items():
+            formatted_similarity = "{:.5f}".format(similarity)
+            feedback.CP(f"匹配源：{original_name}，匹配目标：{tex_name}，相似度：{formatted_similarity}")
+
+
+        # 判断数据匹配数据
+        auto_max_val =  path_detection_data['auto_max_val']
+        similarity_max =  path_detection_data['similarity_max']
+        similarity_range = path_detection_data['similarity_range']
+        near_one_value = path_detection_data['near_one_value']
+        matching_list = pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value)
+
+        feedback.CP("===================================完成匹配列表=================================")
+        feedback.CP(f'匹配的对象|{original_name}')
+        for target, similarity in matching_list:
+            formatted_similarity = "{:.5f}".format(similarity)
+            feedback.CP(f"完成匹配| {target}，相似度：{formatted_similarity}")
+
+        return
+        # 删除掉选择的节点
+        matching_list_pro = pathD.remove_matching_elements(os.path.basename(node_attr[node_name]['path']), matching_list)
+
+
+
+
+
+
+        # 如果测试模式开启下面的节点就不会执行
+        if matching_test_mode == True:
+            return
+
+        # 删除原本UV节点
+        originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
+        if originalUvName:
+            if originalUvName != 'defaultColorMgtGlobals':
+                cmds.delete(originalUvName)
+
+        # 创建节点
+        node_name_list = pathD.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
+        node_name_list.append(node_name)
+
+
+
+
+
+
+
 
 
 

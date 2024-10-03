@@ -24,7 +24,7 @@ import difflib  # 用于比较文本差异，生成差异报告或补丁，适�
 
 # 5. 图像处理
 import imghdr  # 用于识别图像文件的类型，如 JPEG、PNG、GIF 等
-from PIL import Image  # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
+from PIL import Image , UnidentifiedImageError # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
 import cv2
 
 # 6. 时间管理
@@ -78,182 +78,68 @@ class PathDetection(object):
             - `self.node_attr` 是一个字典，存储节点的属性。
             - 使用 `os.path.normpath` 对文件路径进行规范化，以便在不同操作系统上保持一致性。
         """
-        self.node_attr[node_name] = {}
-        self.node_attr[node_name]['path'] = os.path.normpath(cmds.getAttr(f"{node_name}.fileTextureName"))
+        self.node_attr = {}
 
-        return self.node_attr
+        path = cmds.getAttr(f"{node_name}.fileTextureName")
+
+        file_name = os.path.basename(path)
+        self.node_attr[file_name] = os.path.normpath(path)
+
+        return self.node_attr , os.path.dirname(path)
 
     # 获取对饮节点路径下的内容并且过滤
-    def detection_path_content(self, node_name, exclude_list):
+    def detection_path_content(self, target_dirname, exclude_list):
         """
-        检测节点路径下的文件内容，并过滤文件列表。
+        检测指定节点路径下的图像文件，并过滤掉包含特定关键字的文件。
 
-        该函数接收一个节点名称（`node_name`）和一个要排除的元素列表（`exclude_list`），
-        并返回一个过滤后的文件列表，其中只包含图像文件且不包含要排除的元素。
+        该函数从给定节点的目录中检索所有图像文件，排除文件名中包含 `exclude_list` 中任何关键字的文件。
 
         参数:
-            node_name (str): 节点的名称。必须是文件类型节点。
-            exclude_list (list): 要排除的元素列表。
+            node_name (str): 节点的名称。必须是文件类型节点，包含路径信息。
+            exclude_list (list of str): 要排除的关键字列表。文件名中包含任何一个关键字的文件都会被过滤掉。
 
         返回:
-            list: 过滤后的文件列表，其中只包含图像文件且不包含 `exclude_list` 中的元素。
+            dict: 过滤后的图像文件字典，键为贴图名称，值为完整路径。
 
         注意:
-            - 使用 `os.listdir` 获取节点路径目录下的文件列表。
+            - 使用 `os.listdir` 获取节点路径目录下的所有文件。
             - 使用 `imghdr.what` 检查文件是否为图像类型。
-            - 使用列表推导式过滤掉包含要排除的元素的字符串。
-            - 如果文件没有访问权限，函数将捕获异常，并输出错误信息。
+            - 使用 Aho-Corasick 算法（通过 `ahocorapy` 库）高效地过滤文件名中包含特定关键字的文件。
+            - 如果无法访问目录或文件，函数将捕获异常，并通过 `self.feedback.CP` 输出错误信息。
         """
 
-        
         # 获取目录中的文件列表
-        dirname_list = os.listdir(os.path.dirname(self.node_attr[node_name]['path']))
+        try:
+            dirname_list = os.listdir(target_dirname)
+        except Exception as e:
+            self.feedback.CP(f'无法访问目录 {target_dirname}，详细报错:[{e}]')
+            return {}
 
-        # 储存过滤出来的文件名字变量
-        tex_name_list = []
-        
+        # 储存过滤后的文件字典
+        tex_dict = {}
+
+        # 使用 Aho-Corasick 算法构建关键字树
+        kwtree = KeywordTree(case_insensitive=True)
+        for exclude in exclude_list:
+            kwtree.add(exclude)
+        kwtree.finalize()
+
         # 遍历文件列表
         for file_name in dirname_list:
             # 构建完整的文件路径
-            directory = os.path.dirname(self.node_attr[node_name]['path'])
-            file_path = os.path.join(directory, file_name)
-            
+            file_path = os.path.join(target_dirname, file_name)
+
             # 判断文件是否为图像类型
             try:
                 if imghdr.what(file_path):
-                    tex_name_list.append(file_name)
+                    # 检查文件名是否包含排除关键字
+                    if not kwtree.search(file_name):
+                        tex_dict[file_name] = file_path
             except Exception as e:
-                self.feedback.CP(f'{file_name}:此贴图没有权限访问 无法获得更高权限访问 详细报错:[{e}]')
-                
-        # 使用列表推导式过滤掉包含要排除的元素的字符串
-        tex_name_list = [name for name in tex_name_list if all(exclude not in name for exclude in exclude_list)]
-        
-        return tex_name_list
+                self.feedback.CP(f'{file_name}: 此贴图文件没有权限访问，无法获得更高权限访问。详细报错:[{e}]')
 
-    # 匹配零时组建数据库的文件
-    def process_name_data(self, node_name, tex_name_list, length_weight, format_list, filter_dict, case_sensitive):
-        """
-        处理文件名并计算相似度。
+        return tex_dict
 
-        该函数接受节点名称、文件名列表、长度权重、格式列表、过滤器字典以及其他过滤器数据，
-        用于处理和过滤文件名，并计算源文件名和目标文件名之间的相似度。
-
-        参数:
-            node_name (str): 节点的名称。
-            tex_name_list (list): 包含文件名的列表。
-            length_weight (float): 长度相似度的权重。取值范围应为 [0, 1]。
-            format_list (list): 文件格式列表，用于过滤文件名后缀。
-            filter_dict (dict): 过滤器字典，包含过滤器名称和值。
-            TexFirstFilterData (dict): 第一批过滤器数据。
-            TexSoloFilterData (dict): 单个过滤器数据。
-
-        返回:
-            dict: 相似度字典，其中键是目标文件名，值是与源文件名的相似度。
-
-        注意:
-            - 函数首先根据过滤器字典对文件名列表进行过滤。
-            - 接着对源文件名和目标文件名进行处理和切片。
-            - 然后使用 `calculate_similarity` 方法计算源文件名和目标文件名之间的相似度。
-            - 最终返回一个字典 `similarity_dict`，其中包含源文件名和目标文件名的相似度。
-
-        """
-        
-        new_file_list = []
-
-        # 1，处理列表，只能是标准的PBR命名等贴图
-        for file in tex_name_list:
-            # 对于每个文件名，检查是否有任何过滤器的值出现在文件名中
-            for filter_name, filter_values in filter_dict.items():
-                for value in filter_values:
-                    if value.lower() in file.lower():
-                        new_file_list.append(file)
-                        break  # 如果找到匹配项，则不再继续查找其他过滤器值
-                else:
-                    continue  # 如果在当前过滤器名称中未找到匹配项，则继续查找下一个过滤器名称
-                break  # 如果找到匹配项，则不再继续查找其他过滤器名称
-
-        # 2，进行匹配源名字进行处理
-        sl_node_texname = os.path.basename(self.node_attr[node_name]['path'])
-        pattern = '|'.join(format_list) # 构建正则表达式，匹配任何格式列表中的格式
-        sl_node_texname_pro = re.sub(r'\.(' + pattern + ')$', '', sl_node_texname) # 使用正则表达式进行匹配和替换
-        
-        # 3，进行匹配名字进行处理
-        tex_name_list_pro = self.remove_formats(new_file_list, format_list)
-        
-        # 4，进行匹配源名字进行切片
-        sl_node_texname_dict_pro = {sl_node_texname_pro: sl_node_texname_pro.split('_')}
-        sl_node_texname_dict_lastpro = self.match_and_remove_dict(sl_node_texname_dict_pro, filter_dict)
-        # 5，进行匹配源名字进行切片    
-        tex_name_dict_pro= {key: key.split('_') for key in tex_name_list_pro}
-        tex_name_dict_lastpro = self.match_and_remove_dict(tex_name_dict_pro, filter_dict)
-
-        similarity_dict = {}
-        # 6。匹配相似度
-        self.feedback.CP("===================================匹配相似度=================================")
-        for key1, value1 in sl_node_texname_dict_lastpro.items():
-            for key2, value2 in tex_name_dict_lastpro.items():
-                # 计算相似度
-                similarity = self.calculate_similarity(value1, value2, length_weight, case_sensitive)
-                similarity_dict[key2] = similarity
-                self.feedback.CP(f"匹配源：{key1}，匹配目标：{key2}，相似度：{similarity}")
-        
-        return similarity_dict
-    
-    # 判断数据匹配数据
-    def determine_connection(self, similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value):
-        """
-        判断数据匹配数据，并返回匹配列表。
-
-        该函数接收一个相似度字典（`similarity_dict`）和其他参数，
-        根据给定条件判断数据匹配情况，并返回匹配目标的列表。
-
-        参数:
-            similarity_dict (dict): 相似度字典，键是目标，值是相似度。
-            auto_max_val (bool): 是否自动获取最大相似值。
-            similarity_max (float): 用户指定的最大相似值。
-            similarity_range (float): 相似度范围，用于过滤匹配目标。
-            near_one_value (bool): 是否只考虑接近相似度最大值的匹配目标。
-
-        返回:
-            list: 匹配目标列表。
-
-        注意:
-            - `similarity_dict` 是一个字典，包含目标和相似度。
-            - `auto_max_val` 为 `True` 时，函数会自动获取最大相似值作为阈值，否则使用用户指定的 `similarity_max`。
-            - 使用列表推导式过滤匹配目标，根据相似度范围或是否接近最大相似值。
-            - 结果通过 `self.feedback.CP` 输出日志信息。
-        """
-        matching_list = []
-        
-        # 0. 制作相似度列表
-        similarity_list = []
-        for key in similarity_dict:
-            similarity_list.append(similarity_dict[key])
-         
-        # 1. 获取最大相似值
-        if auto_max_val == True:
-            similarity_threshold = max(similarity_list)
-        else:
-            similarity_threshold = similarity_max
-            
-        # 2. 过滤匹配目标
-        if near_one_value == True:
-            filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items() 
-                                if similarity >= similarity_threshold]
-        else:
-            filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items() 
-                                if similarity >= similarity_threshold - similarity_range 
-                                and similarity <= similarity_threshold + similarity_range]
-        
-
-        # 输出匹配结果
-        self.feedback.CP("===================================完成匹配列表=================================")
-        for target, similarity in filtered_matches:
-            matching_list.append(target)
-            self.feedback.CP(f"完成匹配| 匹配目标：{target}，相似度：{similarity}")
-            
-        return matching_list
-    
     # 从给定的文件名列表中删除与指定格式列表中任何格式相匹配的部分，并返回新的文件名列表
     def remove_formats(self, file_list, format_list):
         """
@@ -274,43 +160,6 @@ class PathDetection(object):
             
         return new_file_list  # 返回处理后的新文件名列表
     
-    # 计算相似度函数
-    def calculate_similarity(self, value1, value2, length_weight, case_sensitive):
-        """
-        计算两个字符串之间的相似度。
-
-        该函数接收两个字符串（`value1` 和 `value2`）以及一个权重参数 `length_weight`，
-        计算两个字符串之间的内容相似度和长度相似度，并返回综合相似度。
-
-        参数:
-            value1 (str): 第一个字符串。
-            value2 (str): 第二个字符串。
-            length_weight (float): 长度相似度的权重。取值范围应为 [0, 1]。
-
-        返回:
-            float: 综合相似度。取值范围在 [0, 1] 之间。
-
-        注意:
-            - 使用 `difflib.SequenceMatcher` 计算两个字符串之间的内容相似度。
-            - 计算长度相似度为两个字符串长度的较小值与较大值的比值。
-            - 综合相似度是内容相似度和长度相似度的加权平均。
-        """
-        # 计算内容相似度
-        
-        # 将 value1 和 value2 都转换为小写
-        if case_sensitive == False :
-            value1 = [item.lower() for item in value1]
-            value2 = [item.lower() for item in value2]
-        
-        content_similarity = difflib.SequenceMatcher(None, value1, value2).ratio()
-        
-        # 计算长度相似度
-        length_similarity = min(len(value1), len(value2)) / max(len(value1), len(value2))
-        
-        # 结合内容相似度和长度相似度计算综合相似度
-        similarity = (1 - length_weight) * content_similarity + length_weight * length_similarity
-        
-        return similarity
 
     # 从 dict1 中删除与 dict2 中值匹配的元素
     def match_and_remove_dict(self, dict1, dict2):
@@ -414,6 +263,199 @@ class PathDetection(object):
         # 返回创建的节点列表
         return node_name_list
 
+    # 获取图像的元属性，有创建时间、分辨率和文件类型
+    def get_file_info(self, tex_dict):
+        info_dict = {}
+        temp_resolution = []
+        for filename, filepath in tex_dict.items():
+            file_info = {}
+
+            # 获取创建时间
+            creation_time = os.path.getctime(filepath)
+            # 格式化创建时间
+            creation_time_formatted = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(creation_time))
+            file_info['creation_time'] = creation_time_formatted
+
+            # 获取文件类型
+            file_extension = os.path.splitext(filepath)[1]
+            file_info['file_type'] = file_extension
+
+            # 获取分辨率
+            try:
+                with Image.open(filepath) as img:
+                    width, height = img.size
+                file_info['resolution'] = [width, height]
+                temp_resolution = file_info['resolution']
+            except UnidentifiedImageError:
+                file_info['resolution'] = temp_resolution
+            except Exception as e:
+                self.feedback.CP('在查询贴图元属性的时候报错，报错原因: ' + e)
+
+
+            info_dict[filename] = file_info
+
+
+        return info_dict
+
+    # 处理文件名并添加_namePro_key
+    def process_dict_key_name(self, dir_file_dict, input_list_of_strings, TexFirstFilter):
+        """
+        按照以下步骤处理 dir_file_dict 中的键：
+        1. 将所有键转换为大写。
+        2. 使用 TexFirstFilter 删除专业名词。
+        3. 使用输入的字符串列表删除其中的所有字符串。
+        4. 使用字典中 'file_type' 的元素删除处理过的键。
+        在字典的值中添加一个新的键 'processed_name'，其值为处理后的键。
+
+        :param dir_file_dict: 以文件名为键，属性为值的字典。
+        :param input_list_of_strings: 需要从键中删除的字符串列表。
+        :param TexFirstFilter: 包含专业名词的字典。
+        :return: 无。dir_file_dict 在原地被修改。
+        """
+        # 从 TexFirstFilter 中提取所有专业名词
+        technical_terms = set()
+        for key, terms in TexFirstFilter.items():
+            technical_terms.add(key.upper())
+            for term in terms:
+                technical_terms.add(term.upper())
+
+        # 合并专业名词和输入的字符串列表
+        remove_words = technical_terms.union(set(s.upper() for s in input_list_of_strings))
+
+        for original_key, value in dir_file_dict.items():
+
+            # 将键转换为大写
+            key_upper = original_key.upper()
+            # 用空格替换分隔符（使用正则表达式）
+            key_upper = re.sub(r'[_\-.]', ' ', key_upper)
+            # 删除多余的空格
+            key_upper = ' '.join(key_upper.split())
+            # 分割成单词列表
+            words = key_upper.split()
+            # 删除专业名词和输入的字符串
+            words = [word for word in words if word not in remove_words]
+            # 根据 'file_type' 删除文件扩展名
+            file_type = value['file_type'].upper().replace('.', '')
+            words = [word for word in words if word != file_type]
+            # 重新组合成 'namePro'
+            namePro = ' '.join(words)
+            # 在字典中添加 'namePro'
+            dir_file_dict[original_key]['processed_name'] = namePro
+
+        return dir_file_dict
+
+    # 计算 processed_name 的相似度（Jaccard 相似系数）
+    def processed_name_similarity(self, name1, name2):
+        set1 = set(name1.split())
+        set2 = set(name2.split())
+        if not set1 or not set2:
+            return 0.0
+        intersection = set1.intersection(set2)
+        union = set1.union(set2)
+        return len(intersection) / len(union)
+
+    # 计算分辨率相似度
+    def resolution_similarity(self, res1, res2):
+        if res1 == res2:
+            return 1.0
+        else:
+            res_diff = abs((res1[0] * res1[1]) - (res2[0] * res2[1]))
+            max_res = max(res1[0] * res1[1], res2[0] * res2[1])
+            return 1 - (res_diff / max_res)
+
+    # 计算文件类型相似度z
+    def file_type_similarity(self, type1, type2):
+        return 1.0 if type1.lower() == type2.lower() else 0.0
+
+    # 计算创建时间相似度
+    def creation_time_similarity(self, time1, time2, max_diff=3600 * 24 * 30):
+        fmt = "%Y-%m-%d %H:%M:%S"
+        t1 = datetime.strptime(time1, fmt)
+        t2 = datetime.strptime(time2, fmt)
+        time_diff = abs((t1 - t2).total_seconds())
+        return 1 - min(time_diff / max_diff, 1.0)
+
+    # 总体相似度计算函数
+    def calculate_similarity(self, target_info, dir_info, weights):
+        results = {}
+        target_filename = list(target_info.keys())[0]
+        target = list(target_info.values())[0]
+        target_processed_name = target['processed_name']
+
+        for filename, info in dir_info.items():
+            sim_scores = {}
+            # processed_name 相似度
+            dir_processed_name = info['processed_name']
+            name_sim = self.processed_name_similarity(target_processed_name, dir_processed_name)
+            sim_scores['name'] = name_sim
+
+            # 分辨率相似度
+            res_sim = self.resolution_similarity(target['resolution'], info['resolution'])
+            sim_scores['resolution'] = res_sim
+
+            # 文件类型相似度
+            type_sim = self.file_type_similarity(target['file_type'], info['file_type'])
+            sim_scores['type'] = type_sim
+
+            # 创建时间相似度
+            time_sim = self.creation_time_similarity(target['creation_time'], info['creation_time'])
+            sim_scores['time'] = time_sim
+
+            # 总相似度
+            overall_sim = (
+                    weights['name_weight'] * sim_scores['name'] +
+                    weights['resolution_weight'] * sim_scores['resolution'] +
+                    weights['format_weight'] * sim_scores['type'] +
+                    weights['creation_time_weight'] * sim_scores['time']
+            )
+            results[filename] = overall_sim
+
+        return results
+
+    # 判断数据匹配数据
+    def determine_connection(self, similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value):
+        """
+         判断数据匹配情况，并返回匹配列表。
+
+         参数:
+             similarity_dict (dict): 相似度字典，键是目标，值是相似度 (0.0 - 1.0)。
+             auto_max_val (bool): 是否自动获取最大相似值作为阈值。默认为 True。
+             similarity_max (float): 用户指定的相似度阈值，当 auto_max_val 为 False 时使用。
+             similarity_range (float): 相似度范围，用于过滤匹配目标。
+             near_one_value (bool): 是否只考虑等于最大相似度的匹配目标。默认为 False。
+
+         返回:
+             list: 匹配目标的列表，每个元素为 (target, similarity) 的元组。
+
+         示例:
+             similarity_dict = {'A': 0.9, 'B': 0.85, 'C': 0.95}
+             matches = determine_connection(similarity_dict, auto_max_val=True, similarity_range=0.05)
+             # 返回 [('C', 0.95), ('A', 0.9)]
+         """
+
+        # 1. 获取相似度阈值
+        if auto_max_val:
+            similarity_threshold = max(similarity_dict.values())
+        else:
+            similarity_threshold = similarity_max
+
+        # 2. 过滤匹配目标
+        if near_one_value:
+            # 只选择相似度等于阈值的目标
+            filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items()
+                                if similarity == similarity_threshold]
+        else:
+            # 选择相似度在阈值附近的目标
+            min_threshold = max(similarity_threshold - similarity_range, 0.0)
+            max_threshold = min(similarity_threshold + similarity_range, 1.0)
+            filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items()
+                                if min_threshold <= similarity <= max_threshold]
+
+        # 按相似度从高到低排序
+        filtered_matches.sort(key=lambda x: x[1], reverse=True)
+
+        # 返回匹配列表
+        return filtered_matches
 #   节点处理的库
 class NodeProcessor(object):
     def __init__(self):
@@ -1722,7 +1764,7 @@ def process_sl_data(sl_data = None):
 
     # 判断是否有选择数据
     if sl_data == []:
-        feedback.CP('请你先选择相应的节点哦！')
+        feedback.CPW('请你先选择相应的节点哦！')
         return None
 
     # 创建一个字典并存储节点的类型
