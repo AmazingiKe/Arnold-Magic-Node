@@ -206,7 +206,7 @@ path_detection_config_dict =  {
     'PathDetectionConnectionSetColorSpace': True,
     'exclude_list': ['.tx', '_PREVIEW', '_preview', 'LOD1', 'LOD2', 'LOD3', 'LOD4', 'LOD5', 'LOD6', 'LOD7', 'LOD8',
                      'LOD9', 'LOD10'],
-    'detection_excluded_list': [],
+    'detection_excluded_list': ['Texture' ,  'sRGB' ,  'Raw'],
     'similarity_range': 0.1,
     'similarity_max': 1,
     'name_weight' : 0.4,

@@ -217,48 +217,31 @@ class PathDetection(object):
         return new_list
 
     # 创建纹理节点并设置文件纹理路径。
-    def create_node(self, path, node_list, format_list):
-        """
-        创建纹理节点并设置文件纹理路径。
+    def create_node(self, tex_name_list, path):
 
-        该函数接受一个文件路径、文件名列表和格式列表作为参数，
-        创建纹理节点，并根据文件名列表和格式列表在指定路径下查找文件，
-        将找到的文件设置为节点的文件纹理。
-
-        参数:
-            path (str): 文件路径，用于查找文件。
-            node_list (list): 文件名列表，用于创建节点和查找文件。
-            format_list (list): 文件格式列表，用于查找文件。
-
-        返回:
-            list: 创建的纹理节点列表。
-
-        注意:
-            - 函数使用 `cmds.shadingNode` 创建名为 `tex_name` 的文件纹理节点。
-            - 在节点创建后，函数根据格式列表在指定路径下查找文件，并将文件路径设置为节点的 `fileTextureName` 属性。
-            - 使用 `os.path.exists()` 检查文件是否存在于指定路径。
-
-        """
         # 创建纹理节点列表
         node_name_list = []
         
         # 遍历文件名列表
-        for tex_name in node_list:
+        for tex_name in tex_name_list:
+            # 去除格式名称
+            node_name_processing = os.path.splitext(tex_name)[0]
+
             # 创建文件纹理节点
-            node_name = cmds.shadingNode('file', asTexture=True, name=tex_name)
+            node_name = cmds.shadingNode('file', asTexture=True, name=node_name_processing)
+
             # 将节点添加到节点列表中
             node_name_list.append(node_name)
-            
-            # 遍历格式列表
-            for format_name in format_list:
-                # 构建文件路径
-                file_path = os.path.join(path, tex_name + '.' + format_name)
-                
-                # 检查文件是否存在
-                if os.path.exists(file_path):
-                    # 将文件路径设置为节点的 fileTextureName 属性
-                    cmds.setAttr(node_name + '.fileTextureName', file_path, type='string')
-                    break  # 找到文件后退出循环
+
+            file_path = os.path.join(path, tex_name)
+            file_path_norm = os.path.normpath(file_path)
+
+            # 检查文件是否存在
+            if os.path.exists(file_path_norm):
+                # 将文件路径设置为节点的 fileTextureName 属性
+                cmds.setAttr(node_name + '.fileTextureName', file_path_norm, type='string')
+            else:
+                self.feedback.CPW('此路径无法连接：'+ file_path_norm)
         
         # 返回创建的节点列表
         return node_name_list
@@ -733,7 +716,7 @@ class NodeProcessor(object):
         # 如果没有提供 OutputPortList，则使用默认值
         if OutputPortList is None:
             OutputPortList = ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB", "displacement"]
-            
+
         def ContToNode(Node, NodeName, NodeChannel):
             """
             将一个节点的输出端口连接到另一个节点的输入端口。
@@ -815,7 +798,7 @@ class NodeProcessor(object):
             elif MatChannel == "displacement":
                 # 创建 displacementShader 节点
                 displacementShader = cmds.createNode("displacementShader", name=NodeName + "displacementShader")
-                
+
                 # 将 displacementShader 连接到材质球的 Displacement 通道
                 try:
                     ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'Displacement')], displacementShader, "displacement")
@@ -910,7 +893,7 @@ class NodeProcessor(object):
             self.NodeConnect(new_uv_node, 'outUvFilterSize', file_tex_node, 'uvFilterSize', True)
 
     #   自动连接节点函数
-    def AutoNodeConnect(self, SlNode, MatName, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options):
+    def AutoNodeConnect(self, node_list, mat_name, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options, shading_engine_out = None):
         """
         自动连接贴图至材质球。（包括处理节点的连接）
         
@@ -926,7 +909,7 @@ class NodeProcessor(object):
         无
         """
         # 3.重新排序贴图顺序
-        MatchingDict = self.ReorderdictionaryByPriority(self.MatchingChannels(SlNode['file'], FilterData))
+        MatchingDict = self.ReorderdictionaryByPriority(self.MatchingChannels(node_list, FilterData))
 
 
         LastNodeDict = {}
@@ -934,7 +917,7 @@ class NodeProcessor(object):
         # 4.连接并创建相应的处理节点
         for NodeName, MatChannel in MatchingDict.items():
 
-            if Auto_Node_Connection_Options [MatChannel]== False:
+            if not Auto_Node_Connection_Options[MatChannel]:
                 continue
 
             LastNodeDict[NodeName] = self.ConnectTexFileNodeToProNode(NodeName,
@@ -943,14 +926,14 @@ class NodeProcessor(object):
                                                                         MatChannel)
 
         # 5.连接至材质球
-        if 'shadingEngine' in SlNode:
-            DisplacementShader = SlNode['shadingEngine'][0]
+        if shading_engine_out is None:
+            displacement_shader = shading_engine_out
         else:
-            DisplacementShader = None
+            displacement_shader = None
 
-        self.ConnectToMaterial(MatchingDict, LastNodeDict, ProcessingNodeData, MatName, DisplacementShader= DisplacementShader)
+        self.ConnectToMaterial(MatchingDict, LastNodeDict, ProcessingNodeData, mat_name, DisplacementShader= displacement_shader)
         
-        self.feedback.CP(f'完成{MatName}材质球连接')
+        self.feedback.CP(f'完成{mat_name}材质球连接')
     
     #   自动匹配色彩空间并设置
     def AutoSetTexColorSpace(self, AutoSetColorSpaceConfig,  NodeList, FilterData, MatchingChannel = None):

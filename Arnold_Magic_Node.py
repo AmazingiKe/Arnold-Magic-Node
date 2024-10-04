@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.5.8"
+SoftwareVersion = "0.5.9"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -4853,157 +4853,236 @@ def ai_aov_switch_button():
 
 
 
+class Path_Detection_Connection:
+    def __init__(self):
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.pathD = PathDetection()  # 数据检测模块
+        self.nodeP = NodeProcessor()
+        ### 初始化配置数据
+
+        # 如果路径检测配置文件不存在会再创建一次配置文件 （很保险的方法，保证不会用不了）
+        if os.path.exists(os.path.join(settings_path, 'texture_processing_data.bin')):
+            InitialConfigFile.Main_program()
+
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+        self.path_detection_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'path_detection_config.bin'))
+
+        self.texture_filter_dict = self.texture_processing_data["TexFirstFilter"]  # 过滤贴图的数据
+
+        self.exclude_list = self.path_detection_data['exclude_list'] # 前期需要排除的名称列表
+
+        self.select_node_data = process_sl_data()  # 调用函数获取处理后的节点数据
 
 
-# -----------------------自动连接的一些功能-start
 
-# 魔法自动连接
-def magic_connection_button():
-    ### 实例各种模块
-    dataM = DataManager() # 数据管理模块
-    feedback = FeedbackPrompt()  # 错误提示模块
+    def main(self):
 
-    ### 初始化配置数据
-    # 加载数据
-    texture_processing_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'texture_processing_data.bin'))
-
-
-    texture_filter_dict = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
-    ProcessingNodeData = texture_processing_data['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
-    ContOptions =  texture_processing_data['ProcSet_Options']['Magic_Connection_Options'] # 相应贴图是否要连接的参数
-    Auto_Node_Connection_Options =  texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
-    MagicConnectionSetColorSpace =  texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'] # 魔法连接启用色彩空间
-
-    # 1.获取选择节点
-    SlNode = process_sl_data()
-    if SlNode == None:
-        # 如果没有选择节点将会直接退出函数
-        return
-
-    if 'file' not in SlNode:
-        # 检查SlNode字典中是否有file key 如果没有直接退出函数
-        feedback.CP('没有<file>纹理节点，请选择纹理节点')
-        return
-
-    MatName = None
-    # 2.创建材质球。
-    # 1，如果点了Shift会自动创建一个材质球
-    # 2，如果没有的话会自己寻找选择的节点是否有材质球属性，如果没有会直接return
-    if keyboard.is_pressed('shift'):
-        MatName = cmds.shadingNode('aiStandardSurface', asShader=True)
-    else:
-        if 'aiStandardSurface' in SlNode:
-            # 检查 'aiStandardSurface' 键是否在字典中
-            if SlNode['aiStandardSurface'] is not None:
-                MatName = SlNode['aiStandardSurface'][0]
-        else:
-            feedback.CP('没有选择材质球')
+        # 如果没有返回有效的数据，直接退出
+        if self.select_node_data is None:
             return
 
+        # 检查数据中是否包含 'file' 键
+        if 'file' not in self.select_node_data:
+            return self.feedback.CPW('请选择贴图节点哦')
 
-    # 3.重置材质球名字
-    cmds.rename(MatName, SlNode['file'][0].split('_')[0])
-    MatName = SlNode['file'][0].split('_')[0]
+        matching_completed_dict = self.detect_and_calculate_similarity()
 
-    # 4.执行匹配 连接创建处理节点并连接到材质球的操作
-    NodePro = NodeProcessor()
-    NodePro.AutoNodeConnect(SlNode, MatName, texture_filter_dict, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
+        if keyboard.is_pressed('alt') or keyboard.is_pressed('shift'):
 
-    # 5.设置色彩空间 如果自动色彩空间开启了就会设置
-    if MagicConnectionSetColorSpace == True:
-        NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , SlNode['file'], FilterData)
+            need_connect_node_lists = self.create_nodes_from_list(matching_completed_dict)
 
-def path_detection_connection_button():
-    ### 实例各种模块
-    dataM = DataManager() # 数据管理模块
-    feedback = FeedbackPrompt()  # 错误提示模块
-    pathD = PathDetection() # 数据检测模块
+            if keyboard.is_pressed('shift'):
+                for need_connect_node_list in need_connect_node_lists:
 
-    ### 初始化配置数据
-    texture_processing_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'texture_processing_data.bin'))
+                    # 材质球名称会用列表的第一个索引的名称
+                    mat_name = need_connect_node_list[0]
+                    # 处理材质球名称，删除所有的数字
+                    mat_name_processing = re.sub(r'\d+', '', mat_name)
+                    # 创建材质球
+                    mat_node_name = cmds.shadingNode('aiStandardSurface', asShader=True)
 
-    path_detection_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'path_detection_config.bin'))
+                    # 重命名材质球名称
+                    new_mat_name = cmds.rename(mat_node_name, mat_name_processing)
 
-    texture_filter_dict = texture_processing_data["TexFirstFilter"]  # 过滤贴图的数据
-    exclude_list = path_detection_data['exclude_list'] # 前期需要排除的名称列表
-
-    # 获取选择的节点数据
-    select_node_data = process_sl_data()  # 调用函数获取处理后的节点数据
+                    self.nodeP.AutoNodeConnect(need_connect_node_list,
+                                               new_mat_name,
+                                               self.texture_processing_data["TexFirstFilter"], # 过滤贴图的数据
+                                               self.texture_processing_data['ProcSet_Options']['ProcessingNodeData'], # 相应贴图节点的参数
+                                               self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options'], # 相应贴图是否要连接的参数
+                                               self.texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options']) # 相应贴图是否要连接相应的节点
 
 
-    # 如果没有返回有效的数据，直接退出
-    if select_node_data is None:
-        return
+    def detect_and_calculate_similarity(self):
+        # 用来储存匹配完成的数据字典
+        matching_completed_dict = {}
 
-    # 检查数据中是否包含 'file' 键
-    if 'file' not in select_node_data:
-        return feedback.CPW('请选择贴图节点哦')
+        for node_name in self.select_node_data['file']:
+            # 1.获取节点路径
+            target_object, target_dirname = self.pathD.get_node_path(node_name)
+
+            # 2.寻找子路径下的文件并排除不需要参加匹配的格式
+            dir_name_path = self.pathD.detection_path_content(target_dirname, self.exclude_list)
+
+            # 3.获取文件的元属性
+            dir_tex_info = self.pathD.get_file_info(dir_name_path)
+            target_object_info = self.pathD.get_file_info(target_object)
+
+            # 4.处理匹配名称
+            processed_dir_tex_info = self.pathD.process_dict_key_name(dir_tex_info,
+                                                                 self.path_detection_data['detection_excluded_list'],
+                                                                 self.texture_filter_dict)
+
+            processed_target_object_info = self.pathD.process_dict_key_name(target_object_info,
+                                                                       self.path_detection_data['detection_excluded_list'],
+                                                                       self.texture_filter_dict)
+
+            # 删除原本选择的
+            original_name = list(target_object.keys())[0]  # 获取原始名称
+            del processed_dir_tex_info[original_name]
+
+            similarity_dict = self.pathD.calculate_similarity(processed_target_object_info,
+                                                         processed_dir_tex_info,
+                                                         self.path_detection_data,
+                                                         self.path_detection_data['creation_day_range_tolerance'])
 
 
-    for node_name in select_node_data['file']:
-        # 1.获取节点路径
-        target_object, target_dirname = pathD.get_node_path(node_name)
+            # 判断数据匹配数据
+            auto_max_val = self.path_detection_data['auto_max_val']
+            similarity_max = self.path_detection_data['similarity_max']
+            similarity_range = self.path_detection_data['similarity_range']
+            matching_list = self.pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range)
 
-        # 2.寻找子路径下的文件并排除不需要参加匹配的格式
-        dir_name_path = pathD.detection_path_content(target_dirname, exclude_list)
+            # 发出反馈提醒
+            self.feedback_prompt(similarity_dict, matching_list, original_name)
 
-        # 3.获取文件的元属性
-        dir_tex_info = pathD.get_file_info(dir_name_path)
-        target_object_info = pathD.get_file_info(target_object)
+            # 储存匹配好的数据
+            matching_completed_dict[node_name] = [matching_list, target_dirname]
 
-        # 4.处理匹配名称
-        processed_dir_tex_info = pathD.process_dict_key_name(dir_tex_info,
-                                                             path_detection_data['detection_excluded_list'],
-                                                             texture_filter_dict)
+        return matching_completed_dict
 
-        processed_target_object_info = pathD.process_dict_key_name(target_object_info,
-                                                                   path_detection_data['detection_excluded_list'],
-                                                                   texture_filter_dict)
-
-        # 删除原本选择的
-        original_name = list(target_object.keys())[0] # 获取原始名称
-        del processed_dir_tex_info[original_name]
-
-        similarity_dict = pathD.calculate_similarity(processed_target_object_info,
-                                                     processed_dir_tex_info,
-                                                     path_detection_data,
-                                                     path_detection_data['creation_day_range_tolerance'])
-
-        feedback.CP("===================================匹配相似度=================================")
+    def feedback_prompt(self, similarity_dict, matching_list, original_name):
+        self.feedback.CP("===================================匹配相似度=================================")
         for tex_name, similarity in similarity_dict.items():
             formatted_similarity = "{:.5f}".format(similarity)
-            feedback.CP(f"匹配源：{original_name}，匹配目标：{tex_name}，相似度：{formatted_similarity}")
+            self.feedback.CP(f"匹配源：{original_name}，匹配目标：{tex_name}，相似度：{formatted_similarity}")
 
-
-        # 判断数据匹配数据
-        auto_max_val =  path_detection_data['auto_max_val']
-        similarity_max =  path_detection_data['similarity_max']
-        similarity_range = path_detection_data['similarity_range']
-        matching_list = pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range)
-
-        feedback.CP("===================================完成匹配列表=================================")
-        feedback.CP(f'匹配的对象|{original_name}')
+        self.feedback.CP("===================================完成匹配列表=================================")
+        self.feedback.CP(f'匹配的对象|{original_name}')
         for target, similarity in matching_list:
             formatted_similarity = "{:.5f}".format(similarity)
-            feedback.CP(f"完成匹配| {target}，相似度：{formatted_similarity}")
+            self.feedback.CP(f"完成匹配| {target}，相似度：{formatted_similarity}")
 
-        # 删除原本UV节点
+    def remove_original_uv(self, node_name):
         originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
-        if originalUvName:
-            if originalUvName != 'defaultColorMgtGlobals':
-                cmds.delete(originalUvName)
+        if originalUvName and originalUvName != 'defaultColorMgtGlobals':
+            cmds.delete(originalUvName)
 
-        # 创建节点
-        # node_name_list = pathD.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
-        # node_name_list.append(node_name)
+    def create_nodes_from_list(self, matching_completed_dict):
+        need_connect_node_lists = []
+
+        for node_name, val in matching_completed_dict.items():
+
+            tex_name_list = []
+            path = val[1]
+
+            # 获取匹配完的字典中的数据
+            for tex_name in val[0]:
+                tex_name_list.append(tex_name[0])
+
+            # 创建对应的节点
+            new_create_node_list = self.pathD.create_node(tex_name_list, path)
+
+            # 把创建好的节点名称储存下来
+            new_create_node_list.append(node_name)
+            need_connect_node_lists.append(new_create_node_list)
+
+            # 删除原始uv系欸但
+            self.remove_original_uv(node_name)
+
+        # 把uv节点统一起来
+        for node_list in need_connect_node_lists:
+            self.nodeP.unify_uv_node(node_list)
+
+        return need_connect_node_lists
+
+class Magic_Node_Connection:
+    def __init__(self):
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.pathD = PathDetection()  # 数据检测模块
+        self.nodeP = NodeProcessor()
+
+        ### 初始化配置数据
+        # 加载数据
+        self.texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+        self.texture_filter_dict = self.texture_processing_data[
+            "TexFirstFilter"]  # 过滤贴图的数据
+        self.processing_node_data = self.texture_processing_data[
+            'ProcSet_Options'][
+            'ProcessingNodeData']  # 相应贴图节点的参数
+        self.magic_connection_options = self.texture_processing_data[
+            'ProcSet_Options'][
+            'Magic_Connection_Options']  # 相应贴图是否要连接的参数
+        self.auto_node_connection_options = self.texture_processing_data[
+            'ProcSet_Options'][
+            'Auto_Node_Connection_Options']  # 相应贴图是否要连接相应的节点
+        self.magic_connection_set_color_space = self.texture_processing_data[
+            'ProcSet_Options'][
+            'MagicConnectionSetColorSpace']  # 魔法连接启用色彩空间
+
+        # 获取选择节点
+        self.select_node = process_sl_data()
+
+    def main(self):
+
+        # 如果没有选择节点将会直接退出函数
+        if self.select_node is None:
+            return
+
+        # 检查SlNode字典中是否有file key 如果没有直接退出函数
+        if 'file' not in self.select_node:
+            return self.feedback.CPW('没有选择纹理节点，请选择纹理节点')
 
 
+        mat_name = self.detect_and_create_materials()
+        print(mat_name)
+        self.nodeP.AutoNodeConnect(self.select_node['file'],
+                                   mat_name,
+                                   self.texture_filter_dict,
+                                   self.processing_node_data,
+                                   self.magic_connection_options,
+                                   self.auto_node_connection_options)
+
+    def detect_and_create_materials(self):
+        mat_name = ''
+        # 检测有没有选择材质球
+        if 'aiStandardSurface' in self.select_node:
+            mat_name = self.select_node['aiStandardSurface'][0]
+        else:
+            if keyboard.is_pressed('shift'):
+                mat_name = cmds.shadingNode('aiStandardSurface', asShader=True)
+            else:
+                self.feedback('请选择材质球')
+
+        return mat_name
 
 
-# -----------------------自动连接的一些功能-end
+def path_detection_connection_button():
+    PDC = Path_Detection_Connection()
+    PDC.main()
+
+def magic_connection_button():
+    MC = Magic_Node_Connection()
+    MC.main()
+
 
 
 
