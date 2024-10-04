@@ -184,23 +184,27 @@ class Arnold_Magic_Node_UI(object):
         cmds.menuItem(label= '贴图管理器', c=lambda *args:TextureManagerWinInstance(),
                       i = icon_path + "\\TXManagerShelf_200.png")
 
-        # cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(),
-        #               i = icon_path + "\\RenderToTextureShelf_200.png")
-        #
-        # cmds.menuItem(label= '渲染预设设置',
-        #               divider=True) # 添加分割线
-        #
-        # cmds.menuItem(label= '添加渲染预设',
-        #               c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
-        #
-        # cmds.menuItem(label= '修改渲染预设',
-        #               c= lambda *args:modify_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
-        #
-        # cmds.menuItem(label= '删除渲染预设',
-        #               c= lambda *args:delete_rendering_preset_menuItem(cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True), cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
-        #
-        # cmds.menuItem(label= '打开渲染预设文件夹',
-        #               c= lambda *args:os.startfile(SCRIPT_PATH + "\Data\Render_settings"))
+        cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(),
+                      i = icon_path + "\\RenderToTextureShelf_200.png")
+
+        cmds.menuItem(label= '渲染预设设置',
+                      divider=True) # 添加分割线
+
+        cmds.menuItem(label= '添加渲染预设',
+                      c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+
+        cmds.menuItem(label= '修改渲染预设',
+                      c= lambda *args:modify_rendering_preset_menuItem(
+                          cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
+                          cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
+
+        cmds.menuItem(label= '删除渲染预设',
+                      c= lambda *args:delete_rendering_preset_menuItem(
+                          cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
+                          cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
+
+        cmds.menuItem(label= '打开渲染预设文件夹',
+                      c= lambda *args:os.startfile(os.path.join(SCRIPT_PATH, 'Datas', 'render_settings')))
 
         cmds.menuItem(divider=True)
 
@@ -282,21 +286,21 @@ class Arnold_Magic_Node_UI(object):
         self.ai_aov_switch = cmds.button(label="AOV开关",c=lambda *args:ai_aov_switch_button())
 
         # 渲染预设的菜单 —————————————————— 开始
-        # self.rendering_preset_name = {}
-        # self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
-        # # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
-        #
-        #
-        # renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
-        #
-        # # 获取文件名字
-        # file_names = os.listdir(renderer_data_path)
-        #
-        # # 删除文件名中的 ".json" 部分并存储在列表中
-        # file_names_without_json_list = [file_name.replace(".json", "") for file_name in file_names]
-        #
-        # for renderer_data_mode_name in file_names_without_json_list:
-        #     self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
+        self.rendering_preset_name = {}
+        self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
+        # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+
+
+        renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
+
+        # 获取文件名字
+        file_names = os.listdir(renderer_data_path)
+
+        # 删除文件名中的 ".json" 部分并存储在列表中
+        file_names_without_json_list = [file_name.replace(".json", "") for file_name in file_names]
+
+        for renderer_data_mode_name in file_names_without_json_list:
+            self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name.replace('.bin', ''))
 
 
         # 渲染预设的菜单 —————————————————— 结束
@@ -450,7 +454,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.auto_color_space_connection.setChecked(
             self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'])
 
-
+        self.update_similarity_max_slider_ui()
 
     # 魔法连接的标签页面
     def create_magic_connection_tab(self):
@@ -848,21 +852,13 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
          
         # [4] 匹配时相关设置
-        self.add_line_with_text(layout , "匹配时相关设置")
-        
 
-        self.near_one_value_checkbox = QtWidgets.QCheckBox('仅匹配最高相似度结果')
-        self.near_one_value_checkbox.setChecked(path_detection_config['near_one_value'])
-        self.near_one_value_checkbox.stateChanged.connect(lambda: self.modify_config(
-            'near_one_value', self.near_one_value_checkbox.isChecked(), 'path_detection_config.bin'))
-        layout.addWidget(self.near_one_value_checkbox)
-        self.near_one_value_checkbox.setToolTip(
-            '如果选中，程序将仅返回相似度等于阈值的匹配结果，忽略其他相似度较低的结果。')
+
+        self.add_line_with_text(layout , "匹配时相关设置")
 
         self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动选择最佳匹配')
         self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
-        self.auto_max_val_checkbox.stateChanged.connect(lambda: self.modify_config(
-            'auto_max_val', self.auto_max_val_checkbox.isChecked(), 'path_detection_config.bin'))
+        self.auto_max_val_checkbox.stateChanged.connect(lambda: (self.modify_config('auto_max_val', self.auto_max_val_checkbox.isChecked(), 'path_detection_config.bin'),self.update_similarity_max_slider_ui()))
         layout.addWidget(self.auto_max_val_checkbox)
         self.auto_max_val_checkbox.setToolTip('如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。')
 
@@ -1006,7 +1002,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.similarity_max_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_max']))
         similarity_max_layout.addWidget(self.similarity_max_label)
         layout.addLayout(similarity_max_layout)
-        self.similarity_max_label.setToolTip('请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。')
+        self.similarity_max_slider.setToolTip('请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。')
 
         # 连接滑杆的值变化信号到更新函数
         self.similarity_max_slider.valueChanged.connect(
@@ -1024,18 +1020,31 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.similarity_range_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_range']))
         similarity_range_layout.addWidget(self.similarity_range_label)
         layout.addLayout(similarity_range_layout)
-        self.similarity_range_label.setToolTip(
+        self.similarity_range_slider.setToolTip(
             '设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。')
 
         self.similarity_range_slider.valueChanged.connect(
             lambda value: update_slider_value('similarity_range', value)
         )
 
+        # 计算创建天数范围容差值
+        layout.addWidget(QtWidgets.QLabel("计算创建天数范围容差值:"))
+        day_range_layout = QtWidgets.QHBoxLayout()
+        self.day_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.day_range_slider.setMinimum(1)
+        self.day_range_slider.setMaximum(1000)
+        self.day_range_slider.setValue(int(path_detection_config['creation_day_range_tolerance']))
+        day_range_layout.addWidget(self.day_range_slider)
+        self.day_range_label = QtWidgets.QLabel(str(path_detection_config['creation_day_range_tolerance']))
+        day_range_layout.addWidget(self.day_range_label)
+        layout.addLayout(day_range_layout)
+        self.day_range_slider.setToolTip('test')
 
-
-
-
-
+        self.day_range_slider.valueChanged.connect(lambda value: (
+            self.day_range_label.setText(str(value)),
+            self.modify_config('creation_day_range_tolerance'
+                               , value,
+                               'path_detection_config.bin')))  # 更新配置文件
 
         # 将path_matching_widget设置为scroll_area的子组件
         scroll_area.setWidget(path_matching_widget)
@@ -1094,6 +1103,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addLayout(h_layout)
         layout.addSpacing(8)
 
+    def update_similarity_max_slider_ui(self):
+        ### 初始化配置数据 这个是为了实时获得最新的
+        path_detection_config = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'path_detection_config.bin'))
+
+        if path_detection_config['auto_max_val']:
+            self.similarity_max_slider.setEnabled(False)
+        else:
+            self.similarity_max_slider.setEnabled(True)
     # --------------------保存设置内容的函数 开始
 
     # -----通用
@@ -1378,7 +1396,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         #...窗口名字
 
-        self.WINDOWS_NAME = f"{self.language['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.language['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}{self.language['__init__']['day']}"
+        self.WINDOWS_NAME = f"{self.language['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.language['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}"
 
         # 判断窗口是否存在，如果存在则删除
         delete_window_if_existe('TextureManagerWin')
@@ -4076,21 +4094,41 @@ class uv_preset_menu(object):
                     self.feedback.CP('请你选择<file>节点！')
 
 # 设置颜色空间
-class color_space_preset_menu(object):
-    def __init__(self,color_space_preset):
-        self.feedback = FeedbackPrompt() # 错误提示模块
 
-        # 如果没有选择节点会返回None，返回None会关闭函数
-        if process_sl_data() == None:
-            return
-        else:
-            sl_data = process_sl_data()
+def color_space_preset_menu(color_space_preset):
+    feedback = FeedbackPrompt() # 错误提示模块
+    dataM = DataManager()
+    select_node = process_sl_data()
+    # 如果没有选择节点会返回None，返回None会关闭函数
+    if select_node is not None and 'file' not in select_node:
+        return feedback.CP('请选择贴图节点')
+    else:
+        sl_data = process_sl_data()
 
-        color_space_list = load_data('TEX_PROCESSING_DATA')["ColorSpace"][0]['ColorSpaceData']
+    for i in sl_data['file']:
+        cmds.setAttr(i + '.colorSpace', color_space_preset, type='string')
+        feedback.CP(f"已经把<{i}>设置成<{color_space_preset}>")
 
-        for i in sl_data['file']:
-            cmds.setAttr(i + '.colorSpace', color_space_preset, type='string')
-            self.feedback.CP(f"已经把<{i}>设置成<{color_space_preset}>")
+# 自动设置颜色空间
+def AutoSet_TexColorSpace():
+    ### 实例模块
+    dataM = DataManager() # 数据管理模块
+    NodePro = NodeProcessor()
+    # 加载数据
+    texture_processing_data = dataM.bin_load_data(
+        os.path.join(settings_path, 'texture_processing_data.bin'))
+
+    FilterData = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
+
+    select_node = process_sl_data()
+
+    if select_node == None:
+        return
+
+    if 'file' not in select_node:
+        return
+
+    NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , select_node['file'], FilterData)
 
 # !!!!!!!!!!如果要绑定到键位需要另外调整，需要让他有个写出路径，然后读取路径
 
@@ -4175,6 +4213,9 @@ def unify_uv_node_button():
         else:
             uv_list = process_sl_data()['place2dTexture']
 
+        if 'file' not in process_sl_data():
+            return
+
         node_pro.unify_uv_node(process_sl_data()['file'], uv_list)
 
 
@@ -4188,17 +4229,22 @@ class rendering_preset_menu(object):
         self.dataM = DataManager()
         self.attribute_types = ["bool", "int", "float", "string"]
         self.rederer_attribute_types = ["bool", "float", "string"]
-        self.Render_settings_Data =  self.dataM.bin_load_data(f"\Datas\Render_settings\{menu_sl_val}" )
 
-        RENDERING_WRITE_OPTION_DICT =  load_data("RENDERING_WRITE_OPTION_DATA") # 读取渲染文件
 
-        if RENDERING_WRITE_OPTION_DICT['default_rendering_properties_write_options'] == True:
+        self.Render_settings_Data =  self.dataM.bin_load_data(
+            os.path.join(SCRIPT_PATH, 'Datas', 'render_settings' , menu_sl_val+ '.bin')
+        )
+
+        rendering_write_option_dict = self.dataM.bin_load_data(
+            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'render_preset_config.bin')) # 读取渲染文件
+
+        if rendering_write_option_dict['default_rendering_properties_write_options'] == True:
             self.set_default_rendering_properties()
 
-        if RENDERING_WRITE_OPTION_DICT['rendering_properties_write_options'] == True:
+        if rendering_write_option_dict['rendering_properties_write_options'] == True:
             self.set_rendering_properties()
 
-        if RENDERING_WRITE_OPTION_DICT['AOV_properties_properties_write_options'] == True:
+        if rendering_write_option_dict['AOV_properties_properties_write_options'] == True:
             self.del_original_AOV()
 
             if self.Render_settings_Data['AOV_properties'] is not None:
@@ -4381,13 +4427,52 @@ class rendering_preset_settings_button():
         self.import_name_win(menu_name)
 
         self.feedback = FeedbackPrompt() # 错误提示模块
+        self.dataM = DataManager() # 数据管理模块
 
     # 获取默认渲染节点设置
     def get_default_rendering_properties(self):
 
-        defaultRenderGlobals_options = ["animation", "animationRange", "applyFogInPost", "binMembership", "bitDepth", "blur2DMemoryCap", "blurLength", "blurSharpness", "bottomRegion", "bufferName", "byFrameStep", "caching", "clipFinalShadedColor", "colorProfileEnabled", "comFrrt", "composite", "compositeThreshold", "createIprFile", "currentRenderer", "defaultTraversalSet", "enableDefaultLight", "enableDepthMaps", "enableStrokeRender", "evenFieldExt", "exrCompression", "exrPixelType", "extensionPadding", "fieldExtControl", "fogGeometry", "forceTileSize", "frozen", "gammaCorrection", "geometryVector", "hyperShadeBinList", "ignoreFilmGate", "imageFilePrefix", "imageFormat", "imfPluginKey", "inputColorProfile", "interruptFrequency", "iprRenderMotionBlur", "iprRenderShading", "iprRenderShadowMaps", "iprShadowPass", "isHistoricallyInteresting", "jitterFinalColor", "keepMotionVector", "leafPrimitives", "leftRegion", "logRenderPerformance", "macCodec", "macDepth", "macQual", "matteOpacityUsesTransparency", "maximumMemory", "message", "motionBlur", "motionBlurByFrame", "motionBlurShutterClose", "motionBlurShutterOpen", "motionBlurType", "motionBlurUseShutter", "multiCamNamingMode", "nodeState", "numCpusToUse", "oddFieldExt", "onlyRenderStrokes", "optimizeInstances", "outFormatControl", "outFormatExt", "outputColorProfile", "oversamplePaintEffects", "oversamplePfxPostFilter", "periodInExt", "postFogBlur", "postFurRenderMel", "postMel", "postRenderLayerMel", "postRenderMel", "preFurRenderMel", "preMel", "preRenderLayerMel", "preRenderMel", "putFrameBeforeExt", "quality", "raysSeeBackground", "recursionDepth", "renderAll", "renderLayerEnable", "renderVersion", "rendercallback", "renderedOutput", "renderingColorProfile", "resolution", "reuseTessellations", "rightRegion", "shadingVector", "shadowPass", "shadowsObeyLightLinking", "shadowsObeyShadowLinking", "skipExistingFrames", "smoothColor", "smoothValue", "strokesDepthFile", "subdivisionHashSize", "subdivisionPower", "swatchCamera", "tiffCompression", "tileHeight", "tileWidth", "topRegion", "useBlur2DMemoryCap", "useDisplacementBoundingBox", "useFileCache", "useFrameExt", "useMayaFileName", "useRenderRegion"]
-        defaultRenderQuality_options = ["binMembership", "blueThreshold", "caching", "coverageThreshold", "edgeAntiAliasing", "enableRaytracing", "frozen", "greenThreshold", "isHistoricallyInteresting", "maxShadingSamples", "maxVisibilitySamples", "message", "nodeState", "particleSamples", "pixelFilterType", "pixelFilterWidthX", "pixelFilterWidthY", "plugInFilterWeight", "rayTraceBias", "redThreshold", "reflections", "refractions", "renderSample", "shadingSamples", "shadows", "useMultiPixelFilter", "visibilitySamples", "volumeSamples"]
-        defaultResolution_options =  ["aspectLock", "binMembership", "caching", "deviceAspectRatio", "dotsPerInch", "fields", "frozen", "height", "imageSizeUnits", "isHistoricallyInteresting", "lockDeviceAspectRatio", "message", "nodeState", "oddFieldFirst", "pixelAspect", "pixelDensityUnits", "width", "zerothScanline"]
+        defaultRenderGlobals_options = ["animation", "animationRange", "applyFogInPost", "binMembership",
+                                        "bitDepth", "blur2DMemoryCap", "blurLength", "blurSharpness", "bottomRegion",
+                                        "bufferName", "byFrameStep", "caching", "clipFinalShadedColor",
+                                        "colorProfileEnabled", "comFrrt", "composite", "compositeThreshold",
+                                        "createIprFile", "currentRenderer", "defaultTraversalSet", "enableDefaultLight",
+                                        "enableDepthMaps", "enableStrokeRender", "evenFieldExt", "exrCompression",
+                                        "exrPixelType", "extensionPadding", "fieldExtControl", "fogGeometry",
+                                        "forceTileSize", "frozen", "gammaCorrection", "geometryVector", "hyperShadeBinList",
+                                        "ignoreFilmGate", "imageFilePrefix", "imageFormat", "imfPluginKey",
+                                        "inputColorProfile", "interruptFrequency", "iprRenderMotionBlur", "iprRenderShading",
+                                        "iprRenderShadowMaps", "iprShadowPass", "isHistoricallyInteresting",
+                                        "jitterFinalColor", "keepMotionVector", "leafPrimitives", "leftRegion",
+                                        "logRenderPerformance", "macCodec", "macDepth", "macQual",
+                                        "matteOpacityUsesTransparency", "maximumMemory", "message", "motionBlur",
+                                        "motionBlurByFrame", "motionBlurShutterClose", "motionBlurShutterOpen",
+                                        "motionBlurType", "motionBlurUseShutter", "multiCamNamingMode", "nodeState",
+                                        "numCpusToUse", "oddFieldExt", "onlyRenderStrokes", "optimizeInstances",
+                                        "outFormatControl", "outFormatExt", "outputColorProfile", "oversamplePaintEffects",
+                                        "oversamplePfxPostFilter", "periodInExt", "postFogBlur", "postFurRenderMel",
+                                        "postMel", "postRenderLayerMel", "postRenderMel", "preFurRenderMel", "preMel",
+                                        "preRenderLayerMel", "preRenderMel", "putFrameBeforeExt", "quality", "raysSeeBackground",
+                                        "recursionDepth", "renderAll", "renderLayerEnable", "renderVersion", "rendercallback",
+                                        "renderedOutput", "renderingColorProfile", "resolution", "reuseTessellations",
+                                        "rightRegion", "shadingVector", "shadowPass", "shadowsObeyLightLinking",
+                                        "shadowsObeyShadowLinking", "skipExistingFrames", "smoothColor", "smoothValue",
+                                        "strokesDepthFile", "subdivisionHashSize", "subdivisionPower", "swatchCamera",
+                                        "tiffCompression", "tileHeight", "tileWidth", "topRegion", "useBlur2DMemoryCap",
+                                        "useDisplacementBoundingBox", "useFileCache", "useFrameExt", "useMayaFileName",
+                                        "useRenderRegion"]
+        defaultRenderQuality_options = ["binMembership", "blueThreshold", "caching", "coverageThreshold",
+                                        "edgeAntiAliasing", "enableRaytracing", "frozen", "greenThreshold",
+                                        "isHistoricallyInteresting", "maxShadingSamples", "maxVisibilitySamples",
+                                        "message", "nodeState", "particleSamples", "pixelFilterType", "pixelFilterWidthX",
+                                        "pixelFilterWidthY", "plugInFilterWeight", "rayTraceBias", "redThreshold",
+                                        "reflections", "refractions", "renderSample", "shadingSamples", "shadows",
+                                        "useMultiPixelFilter", "visibilitySamples", "volumeSamples"]
+        defaultResolution_options =  ["aspectLock", "binMembership", "caching", "deviceAspectRatio",
+                                      "dotsPerInch", "fields", "frozen", "height", "imageSizeUnits",
+                                      "isHistoricallyInteresting", "lockDeviceAspectRatio", "message",
+                                      "nodeState", "oddFieldFirst", "pixelAspect", "pixelDensityUnits", "width",
+                                      "zerothScanline"]
 
         default_render_options_attribute = {
             'defaultRenderGlobals' : {},
@@ -4424,9 +4509,59 @@ class rendering_preset_settings_button():
 
     # 获取阿诺德渲染设置
     def get_rendering_properties(self):
-        defaultArnoldDriver = ["aiTranslator", "aiUserOptions", "alphaHalfPrecision", "alphaTolerance", "append", "autocrop", "binMembership", "caching", "colorManagement", "deepexrTiled", "depthHalfPrecision", "depthTolerance", "dither", "exrCompression", "exrTiled", "frozen", "halfPrecision", "input", "isHistoricallyInteresting", "mergeAOVs", "message", "multipart", "nodeState", "outputMode", "outputPadded", "pngFormat", "pngSkipAlpha", "pngUnpremultAlpha", "prefix", "preserveLayerName", "quality", "renderSession", "skipAlpha", "subpixelMerge", "tiffCompression", "tiffFormat", "tiffTiled", "unpremultAlpha", "useRGBOpacity"]
-        defaultArnoldFilter = ["aiFilterWeights", "aiTranslator", "aiUserOptions", "aiWidth", "binMembership", "caching", "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message", "minimum", "nodeState", "scalarMode", "width"]
-        defaultArnoldRenderOptions = ["AAAdaptiveThreshold", "AASampleClamp", "AASamples", "AASamplesMax", "AA_seed", "GIDiffuseDepth", "GIDiffuseSamples", "GISpecularDepth", "GISpecularSamples", "GISssSamples", "GITotalDepth", "GITransmissionDepth", "GITransmissionSamples", "GIVolumeDepth", "GIVolumeSamples", "GI_glossy_samples", "GI_refraction_samples", "IPRRefinementFinished", "IPRRefinementStarted", "IPRStepFinished", "IPRStepStarted", "PostTranslation", "abortOnError", "abortOnLicenseFail", "absoluteProceduralPaths", "absoluteTexturePaths", "aiUserOptions", "aovMode", "atmosphere", "autoTransparencyDepth", "autotile", "autotx", "avpRegionBottom", "avpRegionLeft", "avpRegionRight", "avpRegionTop", "background", "binMembership", "binaryAss", "bucketScanning", "bucketSize", "caching", "clear_before_render", "denoiseBeauty", "dielectricPriorities", "displayAOV", "driver", "enableAdaptiveSampling", "enableProgressiveRender", "enable_swatch_render", "errorColorBadPixel", "errorColorBadPixelB", "errorColorBadPixelG", "errorColorBadPixelR", "errorColorBadTexture", "errorColorBadTextureB", "errorColorBadTextureG", "errorColorBadTextureR", "expandProcedurals", "exportAllShadingGroups", "exportDagName", "exportFullPaths", "exportMayaUsd", "exportNamespace", "exportPrefix", "exportSeparator", "exportShadingEngine", "filter", "filterType", "forceTranslateShadingEngines", "force_scene_update_before_IPR_refresh", "force_texture_cache_flush_after_render", "frozen", "globalLightSamplesEnabled", "gpuDefaultMinMemoryMB", "gpuDefaultNames", "gpu_max_texture_resolution", "ignoreAtmosphere", "ignoreBump", "ignoreDisplacement", "ignoreDof", "ignoreImagers", "ignoreLights", "ignoreMotion", "ignoreMotionBlur", "ignoreOperators", "ignoreShaders", "ignoreShadows", "ignoreSmoothing", "ignoreSss", "ignoreSubdivision", "ignoreTextures", "ignore_list", "imageFormat", "indirectSampleClamp", "indirectSpecularBlur", "isHistoricallyInteresting", "kickRenderFlags", "lightLinking", "lightSamples", "lock_sampling_noise", "log_filename", "log_max_warnings", "log_to_console", "log_to_file", "log_verbosity", "lowLightThreshold", "manual_gpu_devices", "maxSubdivisions", "mb_camera_enable", "mb_lights_enable", "mb_object_deform_enable", "mb_objects_enable", "mb_shader_enable", "message", "motion_blur_enable", "motion_end", "motion_frames", "motion_start", "motion_steps", "mtoa_translation_info", "nodeState", "offsetOrigin", "operator", "origin", "outputAssBoundingBox", "outputOverscan", "outputVarianceAOVs", "output_ass_compressed", "output_ass_filename", "output_ass_mask", "plugin_searchpath", "plugins_path", "preserve_scene_data", "procedural_searchpath", "profile_enable", "profile_file", "progressive_initial_level", "progressive_rendering", "range_type", "referenceTime", "regionMaxX", "regionMaxY", "regionMinX", "regionMinY", "renderDevice", "renderGlobals", "renderType", "renderUnit", "render_device_fallback", "sceneScale", "shadowLinking", "skipLicenseCheck", "sssUseAutobump", "standinDrawOverride", "stats_enable", "stats_file", "stats_mode", "subdivDicingCamera", "subdivFrustumCulling", "subdivFrustumPadding", "textureAcceptUnmipped", "textureAcceptUntiled", "textureAutoTxPath", "textureAutotile", "textureConservativeLookups", "textureDiffuseBlur", "textureMaxMemoryMB", "textureMaxOpenFiles", "textureSpecularBlur", "texture_searchpath", "threads", "threads_autodetect", "use_existing_tiled_textures", "use_sample_clamp", "use_sample_clamp_AOVs", "version"]
+        defaultArnoldDriver = ["aiTranslator", "aiUserOptions", "alphaHalfPrecision", "alphaTolerance", "append",
+                               "autocrop", "binMembership", "caching", "colorManagement", "deepexrTiled",
+                               "depthHalfPrecision", "depthTolerance", "dither", "exrCompression", "exrTiled",
+                               "frozen", "halfPrecision", "input", "isHistoricallyInteresting", "mergeAOVs",
+                               "message", "multipart", "nodeState", "outputMode", "outputPadded", "pngFormat",
+                               "pngSkipAlpha", "pngUnpremultAlpha", "prefix", "preserveLayerName", "quality",
+                               "renderSession", "skipAlpha", "subpixelMerge", "tiffCompression", "tiffFormat",
+                               "tiffTiled", "unpremultAlpha", "useRGBOpacity"]
+        defaultArnoldFilter = ["aiFilterWeights", "aiTranslator", "aiUserOptions", "aiWidth", "binMembership", "caching",
+                               "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message",
+                               "minimum", "nodeState", "scalarMode", "width"]
+        defaultArnoldRenderOptions = ["AAAdaptiveThreshold", "AASampleClamp", "AASamples", "AASamplesMax", "AA_seed",
+                                      "GIDiffuseDepth", "GIDiffuseSamples", "GISpecularDepth", "GISpecularSamples",
+                                      "GISssSamples", "GITotalDepth", "GITransmissionDepth", "GITransmissionSamples",
+                                      "GIVolumeDepth", "GIVolumeSamples", "GI_glossy_samples", "GI_refraction_samples",
+                                      "IPRRefinementFinished", "IPRRefinementStarted", "IPRStepFinished", "IPRStepStarted",
+                                      "PostTranslation", "abortOnError", "abortOnLicenseFail", "absoluteProceduralPaths",
+                                      "absoluteTexturePaths", "aiUserOptions", "aovMode", "atmosphere",
+                                      "autoTransparencyDepth", "autotile", "autotx", "avpRegionBottom", "avpRegionLeft",
+                                      "avpRegionRight", "avpRegionTop", "background", "binMembership", "binaryAss",
+                                      "bucketScanning", "bucketSize", "caching", "clear_before_render", "denoiseBeauty",
+                                      "dielectricPriorities", "displayAOV", "driver", "enableAdaptiveSampling",
+                                      "enableProgressiveRender", "enable_swatch_render", "errorColorBadPixel",
+                                      "errorColorBadPixelB", "errorColorBadPixelG", "errorColorBadPixelR",
+                                      "errorColorBadTexture", "errorColorBadTextureB", "errorColorBadTextureG",
+                                      "errorColorBadTextureR", "expandProcedurals", "exportAllShadingGroups",
+                                      "exportDagName", "exportFullPaths", "exportMayaUsd", "exportNamespace",
+                                      "exportPrefix", "exportSeparator", "exportShadingEngine", "filter",
+                                      "filterType", "forceTranslateShadingEngines", "force_scene_update_before_IPR_refresh",
+                                      "force_texture_cache_flush_after_render", "frozen", "globalLightSamplesEnabled",
+                                      "gpuDefaultMinMemoryMB", "gpuDefaultNames", "gpu_max_texture_resolution",
+                                      "ignoreAtmosphere", "ignoreBump", "ignoreDisplacement", "ignoreDof", "ignoreImagers",
+                                      "ignoreLights", "ignoreMotion", "ignoreMotionBlur", "ignoreOperators", "ignoreShaders",
+                                      "ignoreShadows", "ignoreSmoothing", "ignoreSss", "ignoreSubdivision", "ignoreTextures",
+                                      "ignore_list", "imageFormat", "indirectSampleClamp", "indirectSpecularBlur",
+                                      "isHistoricallyInteresting", "kickRenderFlags", "lightLinking", "lightSamples",
+                                      "lock_sampling_noise", "log_filename", "log_max_warnings", "log_to_console",
+                                      "log_to_file", "log_verbosity", "lowLightThreshold", "manual_gpu_devices",
+                                      "maxSubdivisions", "mb_camera_enable", "mb_lights_enable", "mb_object_deform_enable",
+                                      "mb_objects_enable", "mb_shader_enable", "message", "motion_blur_enable", "motion_end",
+                                      "motion_frames", "motion_start", "motion_steps", "mtoa_translation_info", "nodeState",
+                                      "offsetOrigin", "operator", "origin", "outputAssBoundingBox", "outputOverscan",
+                                      "outputVarianceAOVs", "output_ass_compressed", "output_ass_filename", "output_ass_mask",
+                                      "plugin_searchpath", "plugins_path", "preserve_scene_data", "procedural_searchpath",
+                                      "profile_enable", "profile_file", "progressive_initial_level", "progressive_rendering",
+                                      "range_type", "referenceTime", "regionMaxX", "regionMaxY", "regionMinX", "regionMinY",
+                                      "renderDevice", "renderGlobals", "renderType", "renderUnit", "render_device_fallback",
+                                      "sceneScale", "shadowLinking", "skipLicenseCheck", "sssUseAutobump", "standinDrawOverride",
+                                      "stats_enable", "stats_file", "stats_mode", "subdivDicingCamera", "subdivFrustumCulling",
+                                      "subdivFrustumPadding", "textureAcceptUnmipped", "textureAcceptUntiled", "textureAutoTxPath",
+                                      "textureAutotile", "textureConservativeLookups", "textureDiffuseBlur", "textureMaxMemoryMB",
+                                      "textureMaxOpenFiles", "textureSpecularBlur", "texture_searchpath", "threads", "threads_autodetect",
+                                      "use_existing_tiled_textures", "use_sample_clamp", "use_sample_clamp_AOVs", "version"]
 
         arnold_render_options_attribute = {
             'defaultArnoldDriver' : {},
@@ -4464,11 +4599,21 @@ class rendering_preset_settings_button():
 
     # 获取AOV设置
     def get_AOV_properties(self):
-        aiAOV_att_list =  ["binMembership", "caching", "camera", "defaultValue", "denoise", "enabled", "filterType", "frozen", "globalAov", "imageFormat", "isHistoricallyInteresting", "lightGroups", "lightGroupsList", "lightPathExpression", "message", "name", "nodeState", "prefix", "type"]
+        aiAOV_att_list =  ["binMembership", "caching", "camera", "defaultValue", "denoise", "enabled", "filterType",
+                           "frozen", "globalAov", "imageFormat", "isHistoricallyInteresting", "lightGroups",
+                           "lightGroupsList", "lightPathExpression", "message", "name", "nodeState", "prefix", "type"]
         # 这是aiAOV中的所有属性
-        aiDriver_att_list = ["aiTranslator", "aiUserOptions", "alphaHalfPrecision", "alphaTolerance", "append", "autocrop", "binMembership", "caching", "colorManagement", "deepexrTiled", "depthHalfPrecision", "depthTolerance", "dither", "exrCompression", "exrTiled", "frozen", "halfPrecision", "input", "isHistoricallyInteresting", "mergeAOVs", "message", "multipart", "nodeState", "outputMode", "outputPadded", "pngFormat", "pngSkipAlpha", "pngUnpremultAlpha", "prefix", "preserveLayerName", "quality", "renderSession", "skipAlpha", "subpixelMerge", "tiffCompression", "tiffFormat", "tiffTiled", "unpremultAlpha", "useRGBOpacity"]
+        aiDriver_att_list = ["aiTranslator", "aiUserOptions", "alphaHalfPrecision", "alphaTolerance", "append",
+                             "autocrop", "binMembership", "caching", "colorManagement", "deepexrTiled",
+                             "depthHalfPrecision", "depthTolerance", "dither", "exrCompression", "exrTiled", "frozen",
+                             "halfPrecision", "input", "isHistoricallyInteresting", "mergeAOVs", "message", "multipart",
+                             "nodeState", "outputMode", "outputPadded", "pngFormat", "pngSkipAlpha", "pngUnpremultAlpha",
+                             "prefix", "preserveLayerName", "quality", "renderSession", "skipAlpha", "subpixelMerge",
+                             "tiffCompression", "tiffFormat", "tiffTiled", "unpremultAlpha", "useRGBOpacity"]
 
-        aiFilter_att_list = ["aiFilterWeights", "aiTranslator", "aiUserOptions", "aiWidth", "binMembership", "caching", "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message", "minimum", "nodeState", "scalarMode", "width"]
+        aiFilter_att_list = ["aiFilterWeights", "aiTranslator", "aiUserOptions", "aiWidth", "binMembership", "caching",
+                             "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message",
+                             "minimum", "nodeState", "scalarMode", "width"]
 
         aiAov_name_list = cmds.listConnections("defaultArnoldRenderOptions.aovList", source=True)
         # 这是所有aiAOV的名字
@@ -4575,7 +4720,6 @@ class rendering_preset_settings_button():
 
         return driver_node_name, filter_node_name
 
-
     # 输入窗口
     def import_name_win(self,menu_name):
 
@@ -4624,8 +4768,8 @@ class rendering_preset_settings_button():
             }
 
             # 03, 创建并写出渲染器属性
-            if not os.path.exists(os.path.join(write_data_path, self.import_val+".json")):
-                save_data(os.path.join(write_data_path, self.import_val+".json"), Render_settings)
+            if not os.path.exists(os.path.join(write_data_path, self.import_val+".bin")):
+                self.dataM.bin_save_data(os.path.join(write_data_path, self.import_val+".bin"), Render_settings)
 
             # 04, 给菜单增加新的元素
             edit_menu = menu_name  # 获取菜单的名字或者 ID
@@ -4770,120 +4914,6 @@ def magic_connection_button():
     if MagicConnectionSetColorSpace == True:
         NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , SlNode['file'], FilterData)
 
-
-def path_detection_connection_button_old():
-    ### 实例各种模块
-    dataM = DataManager() # 数据管理模块
-    feedback = FeedbackPrompt()  # 错误提示模块
-    pathD = PathDetection() # 数据检测模块
-    ### 初始化配置数据
-    # 加载数据
-    texture_processing_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'texture_processing_data.bin'))
-
-    path_detection_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'path_detection_config.bin'))
-
-    texture_filter_dict = texture_processing_data["TexFirstFilter"]  # 过滤贴图的数据
-    matching_test_mode = True
-    node_connection = False
-
-    if keyboard.is_pressed('shift'):
-        matching_test_mode = False
-    if keyboard.is_pressed('alt'):
-        matching_test_mode = False
-        node_connection = True
-
-    # 如果没有选择节点会返回None，返回None会关闭函数
-    if process_sl_data() == None:
-        return
-    else:
-        sl_data = process_sl_data()
-        for node_name in sl_data['file']:
-
-
-            # 获取对饮节点路径下的内容并且过滤
-            node_attr = pathD.get_node_path(node_name)
-
-            # 处理数据并匹配数据
-            exclude_list = path_detection_data['exclude_list']
-            tex_name_list = pathD.detection_path_content(node_name, exclude_list)
-
-            # 处理数据并匹配数据
-            length_weight = path_detection_data['length_weight']
-            format_list =  path_detection_data['format_list']
-
-
-            case_sensitive = path_detection_data['case_sensitive']
-            similarity_dict = pathD.process_name_data(node_name, tex_name_list, length_weight, format_list, texture_filter_dict, case_sensitive)
-
-            # 判断数据匹配数据
-            auto_max_val =  path_detection_data['auto_max_val']
-            similarity_max =  path_detection_data['similarity_max']
-            similarity_range = path_detection_data['similarity_range']
-            near_one_value = path_detection_data['near_one_value']
-            matching_list = pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value)
-
-            # 删除掉选择的节点
-            matching_list_pro = pathD.remove_matching_elements(os.path.basename(node_attr[node_name]['path']), matching_list)
-
-
-
-
-
-
-            # 如果测试模式开启下面的节点就不会执行
-            if matching_test_mode == True:
-                return
-
-            # 删除原本UV节点
-            originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
-            if originalUvName:
-                if originalUvName != 'defaultColorMgtGlobals':
-                    cmds.delete(originalUvName)
-
-            # 创建节点
-            node_name_list = pathD.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
-            node_name_list.append(node_name)
-
-            # 创建 NodeProcessor 类的实例
-            NodePro = NodeProcessor()
-            NodePro.unify_uv_node(node_name_list)
-
-            node_name_dict = {}
-            node_name_dict['file'] = node_name_list
-
-            # 设置色彩空间 如果自动色彩空间开启了就会设置
-            if path_detection_data['PathDetectionConnectionSetColorSpace'] == True:
-                NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , node_name_list, texture_filter_dict)
-
-
-
-
-
-
-            if node_connection == False:
-                return
-
-            # 0.获取初始变量
-            ProcessingNodeData = texture_processing_data['ProcSet_Options']['ProcessingNodeData'] # 相应贴图节点的参数
-            ContOptions = texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接的参数
-            Auto_Node_Connection_Options = texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options'] # 相应贴图是否要连接相应的节点
-
-            # 1.获取选择节点
-            SlNode = process_sl_data(node_name_list)
-
-            # 2.创建材质球
-            MatName = cmds.shadingNode('aiStandardSurface', asShader=True)
-
-            # 3.重置材质球名字
-            cmds.rename(MatName, SlNode['file'][0].split('_')[0])
-            MatName = SlNode['file'][0].split('_')[0]
-
-            # 4.执行匹配 连接创建处理节点并连接到材质球的操作
-            NodePro.AutoNodeConnect(SlNode, MatName, texture_filter_dict, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options)
-
-
 def path_detection_connection_button():
     ### 实例各种模块
     dataM = DataManager() # 数据管理模块
@@ -4937,7 +4967,10 @@ def path_detection_connection_button():
         original_name = list(target_object.keys())[0] # 获取原始名称
         del processed_dir_tex_info[original_name]
 
-        similarity_dict = pathD.calculate_similarity(processed_target_object_info, processed_dir_tex_info, path_detection_data)
+        similarity_dict = pathD.calculate_similarity(processed_target_object_info,
+                                                     processed_dir_tex_info,
+                                                     path_detection_data,
+                                                     path_detection_data['creation_day_range_tolerance'])
 
         feedback.CP("===================================匹配相似度=================================")
         for tex_name, similarity in similarity_dict.items():
@@ -4949,27 +4982,13 @@ def path_detection_connection_button():
         auto_max_val =  path_detection_data['auto_max_val']
         similarity_max =  path_detection_data['similarity_max']
         similarity_range = path_detection_data['similarity_range']
-        near_one_value = path_detection_data['near_one_value']
-        matching_list = pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value)
+        matching_list = pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range)
 
         feedback.CP("===================================完成匹配列表=================================")
         feedback.CP(f'匹配的对象|{original_name}')
         for target, similarity in matching_list:
             formatted_similarity = "{:.5f}".format(similarity)
             feedback.CP(f"完成匹配| {target}，相似度：{formatted_similarity}")
-
-        return
-        # 删除掉选择的节点
-        matching_list_pro = pathD.remove_matching_elements(os.path.basename(node_attr[node_name]['path']), matching_list)
-
-
-
-
-
-
-        # 如果测试模式开启下面的节点就不会执行
-        if matching_test_mode == True:
-            return
 
         # 删除原本UV节点
         originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
@@ -4978,35 +4997,11 @@ def path_detection_connection_button():
                 cmds.delete(originalUvName)
 
         # 创建节点
-        node_name_list = pathD.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
-        node_name_list.append(node_name)
+        # node_name_list = pathD.create_node(os.path.dirname(node_attr[node_name]['path']), matching_list_pro, format_list)
+        # node_name_list.append(node_name)
 
 
 
-
-
-
-
-
-
-
-# 自动设置颜色空间
-def AutoSet_TexColorSpace():
-    ### 实例模块
-    dataM = DataManager() # 数据管理模块
-    NodePro = NodeProcessor()
-    # 加载数据
-    texture_processing_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'texture_processing_data.bin'))
-
-    FilterData = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
-
-    select_node = process_sl_data()
-
-    if select_node == None:
-        return
-
-    NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , select_node['file'], FilterData)
 
 # -----------------------自动连接的一些功能-end
 

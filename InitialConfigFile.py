@@ -213,8 +213,8 @@ path_detection_config_dict =  {
     'resolution_weight' : 0.15,
     'format_weight' : 0.05,
     'creation_time_weight' : 0.3,
+    'creation_day_range_tolerance' : 30,
     'auto_max_val': True,
-    'near_one_value': False,
 }
 
 

@@ -346,13 +346,31 @@ class PathDetection(object):
 
     # 计算 processed_name 的相似度（Jaccard 相似系数）
     def processed_name_similarity(self, name1, name2):
-        set1 = set(name1.split())
-        set2 = set(name2.split())
-        if not set1 or not set2:
+        """
+        计算两个文件名的相似度（基于 Jaccard 系数）。
+
+        Args:
+            name1 (str): 第一个文件名。
+            name2 (str): 第二个文件名。
+
+        Returns:
+            float: 两个文件名的相似度（0-1 之间）。
+        """
+        if not name1 or not name2:
             return 0.0
+        set1 = set(name1.lower().split())
+        set2 = set(name2.lower().split())
         intersection = set1.intersection(set2)
         union = set1.union(set2)
-        return len(intersection) / len(union)
+        return len(intersection) / len(union) if union else 0.0
+
+        # set1 = set(name1.split())
+        # set2 = set(name2.split())
+        # if not set1 or not set2:
+        #     return 0.0
+        # intersection = set1.intersection(set2)
+        # union = set1.union(set2)
+        # return len(intersection) / len(union)
 
     # 计算分辨率相似度
     def resolution_similarity(self, res1, res2):
@@ -365,18 +383,33 @@ class PathDetection(object):
 
     # 计算文件类型相似度z
     def file_type_similarity(self, type1, type2):
+        """
+        计算两个文件类型的相似度。
+
+        Args:
+            type1 (str): 第一个文件类型。
+            type2 (str): 第二个文件类型。
+
+        Returns:
+            float: 文件类型相同则返回 1.0，否则返回 0.0。
+        """
         return 1.0 if type1.lower() == type2.lower() else 0.0
 
     # 计算创建时间相似度
-    def creation_time_similarity(self, time1, time2, max_diff=3600 * 24 * 30):
+    def creation_time_similarity(self, time1, time2, creation_day_range_tolerance):
+
+        # 转为天数
+        max_diff = 3600 * 24 * creation_day_range_tolerance
         fmt = "%Y-%m-%d %H:%M:%S"
+
         t1 = datetime.strptime(time1, fmt)
         t2 = datetime.strptime(time2, fmt)
         time_diff = abs((t1 - t2).total_seconds())
         return 1 - min(time_diff / max_diff, 1.0)
 
     # 总体相似度计算函数
-    def calculate_similarity(self, target_info, dir_info, weights):
+    def calculate_similarity(self, target_info, dir_info, weights, max_diff=30):
+
         results = {}
         target_filename = list(target_info.keys())[0]
         target = list(target_info.values())[0]
@@ -398,7 +431,7 @@ class PathDetection(object):
             sim_scores['type'] = type_sim
 
             # 创建时间相似度
-            time_sim = self.creation_time_similarity(target['creation_time'], info['creation_time'])
+            time_sim = self.creation_time_similarity(target['creation_time'], info['creation_time'], max_diff)
             sim_scores['time'] = time_sim
 
             # 总相似度
@@ -413,25 +446,24 @@ class PathDetection(object):
         return results
 
     # 判断数据匹配数据
-    def determine_connection(self, similarity_dict, auto_max_val, similarity_max, similarity_range, near_one_value):
+    def determine_connection(self, similarity_dict, auto_max_val, similarity_max, similarity_range):
         """
-         判断数据匹配情况，并返回匹配列表。
+        判断数据匹配情况，并返回匹配列表。
 
-         参数:
-             similarity_dict (dict): 相似度字典，键是目标，值是相似度 (0.0 - 1.0)。
-             auto_max_val (bool): 是否自动获取最大相似值作为阈值。默认为 True。
-             similarity_max (float): 用户指定的相似度阈值，当 auto_max_val 为 False 时使用。
-             similarity_range (float): 相似度范围，用于过滤匹配目标。
-             near_one_value (bool): 是否只考虑等于最大相似度的匹配目标。默认为 False。
+        参数:
+            similarity_dict (dict): 相似度字典，键是目标，值是相似度 (0.0 - 1.0)。
+            auto_max_val (bool): 是否自动获取最大相似值作为阈值。默认为 True。
+            similarity_max (float): 用户指定的相似度阈值，当 auto_max_val 为 False 时使用。
+            similarity_range (float): 相似度范围，用于过滤匹配目标。
 
-         返回:
-             list: 匹配目标的列表，每个元素为 (target, similarity) 的元组。
+        返回:
+            list: 匹配目标的列表，每个元素为 (target, similarity) 的元组。
 
-         示例:
-             similarity_dict = {'A': 0.9, 'B': 0.85, 'C': 0.95}
-             matches = determine_connection(similarity_dict, auto_max_val=True, similarity_range=0.05)
-             # 返回 [('C', 0.95), ('A', 0.9)]
-         """
+        示例:
+            similarity_dict = {'A': 0.9, 'B': 0.85, 'C': 0.95}
+            matches = determine_connection(similarity_dict, auto_max_val=True, similarity_range=0.05)
+            # 返回 [('C', 0.95), ('A', 0.9)]
+        """
 
         # 1. 获取相似度阈值
         if auto_max_val:
@@ -439,19 +471,13 @@ class PathDetection(object):
         else:
             similarity_threshold = similarity_max
 
-        # 2. 过滤匹配目标
-        if near_one_value:
-            # 只选择相似度等于阈值的目标
-            filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items()
-                                if similarity == similarity_threshold]
-        else:
-            # 选择相似度在阈值附近的目标
-            min_threshold = max(similarity_threshold - similarity_range, 0.0)
-            max_threshold = min(similarity_threshold + similarity_range, 1.0)
-            filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items()
-                                if min_threshold <= similarity <= max_threshold]
+        # 2. 选择相似度在阈值附近的目标
+        min_threshold = max(similarity_threshold - similarity_range, 0.0)
+        max_threshold = min(similarity_threshold + similarity_range, 1.0)
+        filtered_matches = [(target, similarity) for target, similarity in similarity_dict.items()
+                            if min_threshold <= similarity <= max_threshold]
 
-        # 按相似度从高到低排序
+        # 3. 按相似度从高到低排序
         filtered_matches.sort(key=lambda x: x[1], reverse=True)
 
         # 返回匹配列表
@@ -1679,27 +1705,6 @@ class ImageProcessor():
 
 
 
-
-
-
-
-# 正确的结构应类似于以下
-# 参考字典 = {
-#     'mat_name': {
-#         'node_01': {
-#             'Path': 'xxxx',
-#             'isLoaded': True,
-#             'Size': 13.21,
-#             'Format': 'jpg',
-#             'Dimensions': [1024, 1024],
-#             'usageCount': 3,
-#             'filename' : 'texture_diffuse.jpg'
-#         },
-#         'node_02': {
-#             # 其他节点的属性
-#         }
-#     }
-# }
 
 
 
