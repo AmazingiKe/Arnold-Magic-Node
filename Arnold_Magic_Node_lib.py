@@ -472,7 +472,7 @@ class NodeProcessor(object):
         self.feedback = FeedbackPrompt() # 错误提示模块
 
     #   对贴图文件的名称进行处理
-    def ProcessTextureName(self, TextureName):
+    def processed_texture_name(self, file_name):
         """
         对贴图文件的名称进行处理。
 
@@ -488,16 +488,20 @@ class NodeProcessor(object):
         返回:
             str: 处理后的贴图名称，仅包括文件名部分，删除了标点符号，并转换为大写。
         """
-        # 获取贴图文件的基本名称（去除路径部分）
-        BaseName = os.path.basename(TextureName)
+
+        # 分离后缀名称
+        name, ext = os.path.splitext(file_name)
 
         # 删除所有标点符号
-        ProcessedName = re.sub(r'[^\w\s]', '', BaseName)
+        processed_name = re.sub(r'[^\w\s]', '', name)
+
+        # 清理下划线
+        cleaned_name = re.sub(r'_+', ' ', processed_name)
 
         # 将名称转换为大写
-        ProcessedName = ProcessedName.upper()
+        cleaned_name = cleaned_name.upper()
 
-        return ProcessedName
+        return cleaned_name
     
     #   匹配贴图节点的通道
     def MatchingChannels(self, NodeList, FilterData):
@@ -519,9 +523,18 @@ class NodeProcessor(object):
         
         # 1. 获取节点的贴图文件名称并进行处理
         for NodeName in NodeList:
-            FileTexNameOri = cmds.getAttr(NodeName + '.fileTextureName')
-            FileTexNamePro = self.ProcessTextureName(FileTexNameOri)
-            MatchingChannels = self.FilterData(FileTexNamePro, FilterData)
+            # 获取路径
+            file_path = cmds.getAttr(NodeName + '.fileTextureName')
+
+            # 路径转成名称
+            file_name = os.path.basename(file_path)
+
+
+            # 处理贴图名称
+            processed_name = self.processed_texture_name(file_name)
+
+            # 匹配通道
+            MatchingChannels = self.FilterData(processed_name, FilterData)
 
             MatchingChannelsDict[NodeName] = MatchingChannels
 
@@ -540,7 +553,6 @@ class NodeProcessor(object):
         返回：
             str：匹配的通道名称；如果没有找到匹配项，则返回None。
         """
-        from ahocorapy.keywordtree import KeywordTree
 
         # 构建关键词到通道的映射
         value_to_channel = {}
@@ -554,14 +566,26 @@ class NodeProcessor(object):
             kwtree.add(value)
         kwtree.finalize()
 
+        # 保存所有匹配的结果
+        matches = []
+
+        # print(f"NewTexName: {NewTexName}")  # 打印调试信息，查看输入的名称
+
         # 在NewTexName中搜索模式
         for keyword, index in kwtree.search_all(NewTexName):
-            # 打印match对象，调试用
-            # print(f"Match: keyword={keyword}, index={index}")
             matched_value_lower = keyword.lower()
             channel = value_to_channel.get(matched_value_lower)
-            if channel:
-                return channel  # 返回第一个匹配的通道
+            # print(f"Matched keyword: {keyword}, Channel: {channel}, Index: {index}")  # 打印每次匹配到的关键词和通道
+
+            # 使用正则表达式匹配完整的单词
+            pattern = re.compile(r'\b' + re.escape(keyword.lower()) + r'\b', re.IGNORECASE)
+            if pattern.search(NewTexName.lower()):
+                matches.append((channel, index))  # 保存匹配的通道和索引
+
+        # 根据索引返回最早匹配的通道
+        if matches:
+            matches.sort(key=lambda x: x[1])  # 按索引排序
+            return matches[0][0]  # 返回第一个匹配的通道
 
         return None  # 未找到匹配项
     
@@ -608,17 +632,17 @@ class NodeProcessor(object):
         return ordered_dict
 
     #   连接并创建处理节点
-    def ConnectTexFileNodeToProNode(self, Tex_name, NodeList, InputPort, MatChannel, InputPortList=None, OutputPortList=None):
+    def ConnectTexFileNodeToProNode(self, texture_name, node_list, input_port, material_channel, input_port_list=None, output_port_list=None):
         """
-        此函数用于将纹理文件节点连接到提供的节点列表，并将提供的输入端口和材质通道与这些节点关联。
+        这个函数用于将纹理文件节点连接到提供的节点列表并将提供的输入端口和材质通道与这些节点关联。
 
         参数:
-        Tex_name (str): 纹理文件节点的名称。
-        NodeList (list of str): 一个包含节点类型的列表，用于创建并连接到纹理文件节点的节点。
-        InputPort (str): 第一个节点的输入端口。
-        MatChannel (str): 材质通道，用于确定纹理文件节点的输出端口（'outColor' 或 'outAlpha'）。
-        InputPortList (list of str, optional): 输入端口的列表。如果未提供，则默认为 ["input", "passthrough"]。
-        OutputPortList (list of str, optional): 输出端口的列表。如果未提供，则默认为 ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"]。
+        texture_name (str): 纹理文件节点的名称。
+        node_list (list of str): 一个包含节点类型的列表，用于创建并连接到纹理文件节点的节点。
+        input_port (str): 第一个节点的输入端口。
+        material_channel (str): 材质通道，用于确定纹理文件节点的输出端口（'outColor' 或 'outAlpha'）。
+        input_port_list (list of str, optional): 输入端口的列表。如果未提供，则默认为 ["input", "passthrough"]。
+        output_port_list (list of str, optional): 输出端口的列表。如果未提供，则默认为 ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"]。
 
         返回:
         str: 已创建的最后一个节点的名称。
@@ -629,70 +653,94 @@ class NodeProcessor(object):
         - 如果连接不成功，则在提供的输入端口列表和输出端口列表之间进行尝试。
         - 遍历节点列表，为每个节点创建并将其连接到先前的节点。
         - 返回最后创建的节点名称。
-        
+
         注意:
-        - 当输入的材质通道未在定义的列表中找到时，会引发 ValueError 异常。
+        - 当输入的材质通道未在定义的列表中时，会引发 ValueError 异常。
         - 在尝试连接节点时，可能会发生异常。如果发生异常，会在尝试列表中进行循环尝试。
         """
-        # 定义灰色和彩色列表
-        GraysList = ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'ao', 'bump', 'displacement']
-        ColorList = ['baseColor', 'specularColor', 'subsurfaceColor', 'subsurfaceRadius', 'emissionColor', 'opacity', 'normalCamera']
+        # 定义灰色和彩色通道列表
+        gray_channels = ["base", "diffuseRoughness", "metalness", "specularRoughness", "subsurface", "emission", "ao",
+                         "bump", "displacement"]
+        color_channels = ["baseColor", "specularColor", "subsurfaceColor", "subsurfaceRadius", "emissionColor",
+                          "opacity", "normalCamera"]
 
         # 如果没有提供输入端口列表，则设置默认值
-        if InputPortList is None:
-            InputPortList = ["input", "passthrough"]
+        if input_port_list is None:
+            input_port_list = ["input", "passthrough"]
 
-        if OutputPortList is None:
-            OutputPortList = ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"]
+        if output_port_list is None:
+            output_port_list = ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"]
 
-        # 根据材质通道确定纹理文件节点的输出端口
-        if MatChannel in ColorList:
-            TexFileOutPort = 'outColor'
-        elif MatChannel in GraysList:
-            TexFileOutPort = 'outAlpha'
+        texture_output_port = ''
 
+        # 确定纹理文件节点的输出端口
+        if material_channel in color_channels:
+            texture_output_port = 'outColor'
+        elif material_channel in gray_channels:
+            texture_output_port = 'outAlpha'
+        else:
+            self.feedback.CPE('位置的材质通道：'+ str(material_channel))
 
-        # 从NodeList中创建第一个节点，并将其连接到纹理文件节点
-        FirstNodeType = NodeList[0]
-        FirstNode = cmds.createNode(FirstNodeType, name=f"{Tex_name}_{FirstNodeType}")
-        
+        # 创建第一个节点
+        first_node_type = node_list[0]
+        first_node = cmds.createNode(first_node_type, name=f"{texture_name}_{first_node_type}")
+
+        # first_node_type 这个是第一个获取的节点类型
+        # first_node 这个变量是第一个创建的处理节点名称
+
+        # 储存创建节点方便后面调整参数
+        create_node_name_list = []
+        # 添加第一个创建的节点
+        create_node_name_list.append(first_node)
+
+        # 尝试将纹理文件节点连接到第一个节点
         try:
-            # 将纹理文件节点连接到第一个节点
-            if MatChannel in ColorList:
-                self.NodeConnect(Tex_name, TexFileOutPort, FirstNode, InputPort)
-            elif MatChannel in GraysList:
-                for Color in ['R', 'G', 'B']:
-                    self.NodeConnect(Tex_name, TexFileOutPort, FirstNode, InputPort + Color)
+            if material_channel in color_channels:
+                self.node_connect(texture_name, texture_output_port, first_node, input_port)
+            elif material_channel in gray_channels:
+                for color in ["R", "G", "B"]:
+                    self.node_connect(texture_name, texture_output_port, first_node, input_port + color)
         except:
-            for InputPort in InputPortList:
-                for OutProt in OutputPortList:
+            for input_port in input_port_list:
+                for output_port in output_port_list:
                     try:
-                        self.NodeConnect(Tex_name, OutProt, FirstNode, InputPort)
-                        break              
-                    except:
-                        pass
-
-        PreviousNode = FirstNode
-
-        # 遍历NodeList进行节点的创建和连接
-        for index in range(1, len(NodeList)):
-
-            CurrentNodeType = NodeList[index]
-
-            # 创建当前节点
-            CurrentNode = cmds.createNode(CurrentNodeType, name=f"{Tex_name}_{CurrentNodeType}")
-            
-            for InputPort in InputPortList:
-                for OutProt in OutputPortList:
-                    try:
-                        self.NodeConnect(PreviousNode, OutProt, CurrentNode, InputPort)
+                        self.node_connect(texture_name, output_port, first_node, input_port)
                         break
                     except:
                         pass
 
-            PreviousNode = CurrentNode
+        # 保存上一个创建的节点
+        previous_node = first_node
 
-        return PreviousNode
+        # 遍历NodeList进行节点的创建和连接
+        for index in range(1, len(node_list)):
+
+            CurrentNodeType = node_list[index]
+
+            # 创建当前节点
+            current_node = cmds.createNode(CurrentNodeType, name=f"{texture_name}_{CurrentNodeType}")
+            create_node_name_list.append(current_node)
+            for input_port in input_port_list:
+                for output_port in output_port_list:
+                    try:
+                        self.node_connect(previous_node, output_port, current_node, input_port)
+                        break
+                    except:
+                        pass
+
+            previous_node = current_node
+
+
+
+        # 把 aiRampRgb 类型节点类型改成 custom
+        for node_name in create_node_name_list:
+            # 检查节点是否存在并且是 aiRampRgb 类型
+            if cmds.objExists(node_name) and cmds.nodeType(node_name) == 'aiRampRgb':
+                # 将 type 属性设置为 0
+                cmds.setAttr(f"{node_name}.type", 0)
+
+
+        return previous_node
     
     #   连接到材质球。此函数根据匹配字典和最后节点字典，将节点与材质球连接。
     def ConnectToMaterial(self, MatchingDict, LastNodeDict, ProcessingNodeData, MaterialName=None, OutputPortList=None, DisplacementShader=None):
@@ -729,7 +777,7 @@ class NodeProcessor(object):
             for OutPort in OutputPortList:
                 try:
                     # 尝试连接节点
-                    self.NodeConnect(Node, OutPort, NodeName, NodeChannel)
+                    self.node_connect(Node, OutPort, NodeName, NodeChannel ,force=True)
                     break
                 except Exception as e:
                     # 如果连接失败，继续尝试下一个端口
@@ -796,16 +844,18 @@ class NodeProcessor(object):
                 
             # 处理 Displacement 通道
             elif MatChannel == "displacement":
+
                 # 创建 displacementShader 节点
                 displacementShader = cmds.createNode("displacementShader", name=NodeName + "displacementShader")
 
                 # 将 displacementShader 连接到材质球的 Displacement 通道
                 try:
-                    ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'Displacement')], displacementShader, "displacement")
+                    ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'displacement')], displacementShader, "displacement")
                 except Exception as e:
-                    ContToNode(self.FindKeyByChannel(MatchingDict, 'Displacement'), displacementShader, "displacement")
+                    ContToNode(self.FindKeyByChannel(MatchingDict, 'displacement'), displacementShader, "displacement")
                     
                 # 如果提供了 DisplacementShader，则将 displacementShader 连接到 DisplacementShader 的 displacementShader 通道
+
                 if DisplacementShader is not None:
                     ContToNode(displacementShader, DisplacementShader, "displacementShader")
 
@@ -886,14 +936,14 @@ class NodeProcessor(object):
         # 使用新的 UV 节点与节点列表中的每个文件纹理节点进行连接
         for file_tex_node in node_list:
             for plug in connect_plug:
-                self.NodeConnect(new_uv_node, plug, file_tex_node, plug, True)
+                self.node_connect(new_uv_node, plug, file_tex_node, plug, True)
 
             # 单独连接 'outUV' 和 'outUvFilterSize' 属性
-            self.NodeConnect(new_uv_node, 'outUV', file_tex_node, 'uvCoord', True)
-            self.NodeConnect(new_uv_node, 'outUvFilterSize', file_tex_node, 'uvFilterSize', True)
+            self.node_connect(new_uv_node, 'outUV', file_tex_node, 'uvCoord', True)
+            self.node_connect(new_uv_node, 'outUvFilterSize', file_tex_node, 'uvFilterSize', True)
 
     #   自动连接节点函数
-    def AutoNodeConnect(self, node_list, mat_name, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options, shading_engine_out = None):
+    def AutoNodeConnect(self, node_list, mat_name, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options, shading_engine_node = None):
         """
         自动连接贴图至材质球。（包括处理节点的连接）
         
@@ -906,9 +956,10 @@ class NodeProcessor(object):
         - Auto_Node_Connection_Options: 相应贴图是否要连接相应的节点
 
         返回：
-        无
+        - 会返回匹配好的字典
         """
         # 3.重新排序贴图顺序
+
         MatchingDict = self.ReorderdictionaryByPriority(self.MatchingChannels(node_list, FilterData))
 
 
@@ -925,50 +976,41 @@ class NodeProcessor(object):
                                                                         ProcessingNodeData[MatChannel]["InputPort"],
                                                                         MatChannel)
 
-        # 5.连接至材质球
-        if shading_engine_out is None:
-            displacement_shader = shading_engine_out
-        else:
-            displacement_shader = None
 
-        self.ConnectToMaterial(MatchingDict, LastNodeDict, ProcessingNodeData, mat_name, DisplacementShader= displacement_shader)
-        
-        self.feedback.CP(f'完成{mat_name}材质球连接')
-    
+        self.ConnectToMaterial(MatchingDict, LastNodeDict, ProcessingNodeData, mat_name, DisplacementShader= shading_engine_node)
+
+        return MatchingDict
+
     #   自动匹配色彩空间并设置
-    def AutoSetTexColorSpace(self, AutoSetColorSpaceConfig,  NodeList, FilterData, MatchingChannel = None):
+    def AutoSetTexColorSpace(self, auto_set_color_space_config, node_list=None, filter_data=None, matching_channel=None):
         """
-        输入节点自动匹配色彩空间
-        
-        
-        参数:
-        NodeList -- 包含节点名称的列表
-        FilterData -- 用于过滤节点的相关数据
+         输入节点自动匹配色彩空间
 
-        
-        """
+         参数:
+         node_list -- 包含节点名称的列表
+         filter_data -- 用于过滤节点的相关数据
+         """
 
+        # 1. 使用 matching_channels 函数匹配通道
+        if matching_channel is None:
+            matching_channel = self.MatchingChannels(node_list, filter_data)
 
-        # 1, 使用MatchingChannels函数匹配通道
-        if MatchingChannel == None:
-            MatchingChannel = self.MatchingChannels(NodeList, FilterData)
-        
-        # 2，进行设置色彩空间相关设置
-        for NodeNmae, Channel in MatchingChannel.items():
-            if Channel in AutoSetColorSpaceConfig:
-                TexColorSpace = AutoSetColorSpaceConfig[Channel]
-                
+        # 2. 进行设置色彩空间相关设置
+        for node_name, channel in matching_channel.items():
+            if channel in auto_set_color_space_config:
+                tex_color_space = auto_set_color_space_config[channel]
+
                 # 设置色彩空间
-                cmds.setAttr(NodeNmae + '.colorSpace', TexColorSpace, type='string')
-                
-                # 把alpha是亮度还有忽略色彩空间规则开启
-                cmds.setAttr(NodeNmae + '.alphaIsLuminance', 1)
-                cmds.setAttr(NodeNmae + '.ignoreColorSpaceFileRules', 1)
-                
-                self.feedback.CP(f"{NodeNmae}节点设置为 <{TexColorSpace}> 色彩空间")
-                
+                cmds.setAttr(node_name + '.colorSpace', tex_color_space, type='string')
+
+                # 设置 alpha 是亮度，并忽略色彩空间规则
+                cmds.setAttr(node_name + '.alphaIsLuminance', 1)
+                cmds.setAttr(node_name + '.ignoreColorSpaceFileRules', 1)
+
+                self.feedback.CP(f"{node_name} 节点设置为 <{tex_color_space}> 色彩空间")
+
     #   连接节点属性
-    def NodeConnect(self, source_node, source_attr, target_node, target_attr, force = True):
+    def node_connect(self, source_node, source_attr, target_node, target_attr, force = True):
         """
         连接节点属性。
 
@@ -987,6 +1029,28 @@ class NodeProcessor(object):
         """
         # 使用 Maya cmds.connectAttr() 函数连接源节点和目标节点的属性
         cmds.connectAttr(source_node+ '.'+ source_attr, target_node+ '.'+ target_attr, f=force)
+
+    # 清洁材质名称
+    def clean_material_name(self, filename: str, tex_filter: dict):
+
+        # 将所有专业词汇扁平化为一个列表
+        professional_terms = [term.upper() for sublist in tex_filter.values() for term in sublist]
+
+        # 1. 删除数字及后面的下划线
+        filename = re.sub(r'^\d+_', '', filename)
+
+        # 2. 删除专业名词
+        for term in professional_terms:
+            # 使用正则表达式忽略大小写匹配并删除专业词汇
+            filename = re.sub(term, '', filename, flags=re.IGNORECASE)
+
+        # 3. 删除文件后缀
+        filename = os.path.splitext(filename)[0]
+
+        # 删除多余的下划线
+        filename = re.sub(r'_+', '_', filename).strip('_')
+
+        return filename
 
 #   获取节点数据的库
 class GetNodeData():
@@ -1732,8 +1796,8 @@ class FeedbackPrompt():
             error_message += '\n' + str(Content)
 
         # 抛出异常
-        cmds.warning(error_message)
-        # raise ValueError(error_message)
+        # cmds.warning(error_message)
+        raise ValueError(error_message)
 
 
 

@@ -450,9 +450,13 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 初始化控件的设置，例如设置默认值，连接信号和槽等
     def initial_widgets_settings(self):
-        # 初始化create_magic_connection_tab 控件值
+        # 初始化 连接时智能修改色彩空间 控件值
         self.auto_color_space_connection.setChecked(
             self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'])
+
+        # 初始化 连接时修改材质名称 控件值
+        self.magic_change_material_name_options.setChecked(
+            self.texture_processing_data['ProcSet_Options']['change_material_name'])
 
         self.update_similarity_max_slider_ui()
 
@@ -469,9 +473,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # [1] 连接设置
         
-        self.add_line_with_text(layout , "连接设置")
+        self.add_line_with_text(layout , "魔法连接设置")
          
-        self.auto_color_space_connection = QtWidgets.QCheckBox('连接时开启自动色彩空间')
+        self.auto_color_space_connection = QtWidgets.QCheckBox('连接时智能修改色彩空间')
 
         # auto_color_space_connection 连接修改配置函数
         self.auto_color_space_connection.stateChanged.connect(lambda :self.modify_nested_config(
@@ -479,6 +483,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 ['ProcSet_Options', 'MagicConnectionSetColorSpace']))
 
         layout.addWidget(self.auto_color_space_connection)
+
+        self.magic_change_material_name_options = QtWidgets.QCheckBox('连接时修改材质名称')
+
+        # auto_color_space_connection 连接修改配置函数
+        self.magic_change_material_name_options.stateChanged.connect(lambda :self.modify_nested_config(
+                self.magic_change_material_name_options.isChecked(),
+                ['ProcSet_Options', 'change_material_name']))
+
+        layout.addWidget(self.magic_change_material_name_options)
 
         
         # [2] 自定义连接的贴图
@@ -798,13 +811,36 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.add_line_with_text(layout , "连接时相关设置")
          
 
-        self.path_matching_checkbox = QtWidgets.QCheckBox('连接时开启自动色彩空间')
+        self.path_matching_checkbox = QtWidgets.QCheckBox('连接时智能修改色彩空间')
         self.path_matching_checkbox.setChecked(path_detection_config['PathDetectionConnectionSetColorSpace'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_checkbox.stateChanged.connect(lambda: self.modify_config(
-            self.path_matching_checkbox.isChecked(), 'PathDetectionConnectionSetColorSpace'))
+            'PathDetectionConnectionSetColorSpace',
+            self.path_matching_checkbox.isChecked(),
+            'path_detection_config.bin'))
 
         layout.addWidget(self.path_matching_checkbox)
+
+        self.path_matching_change_material_name_options = QtWidgets.QCheckBox('连接时修改材质名称')
+        self.path_matching_change_material_name_options.setChecked(path_detection_config['change_material_name'])
+        # 连接复选框的状态变化信号到修改配置函数
+        self.path_matching_change_material_name_options.stateChanged.connect(lambda: self.modify_config(
+            'change_material_name',
+            self.path_matching_change_material_name_options.isChecked(),
+            'path_detection_config.bin'))
+
+        layout.addWidget(self.path_matching_change_material_name_options)
+
+
+        self.path_disable_feedback_options = QtWidgets.QCheckBox('关闭反馈')
+        self.path_disable_feedback_options.setChecked(path_detection_config['disable_feedback'])
+        # 连接复选框的状态变化信号到修改配置函数
+        self.path_disable_feedback_options.stateChanged.connect(lambda: self.modify_config(
+            'disable_feedback',
+            self.path_disable_feedback_options.isChecked(),
+            'path_detection_config.bin'))
+
+        layout.addWidget(self.path_disable_feedback_options)
 
          
         # [2] 排除名称
@@ -858,7 +894,14 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动选择最佳匹配')
         self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
-        self.auto_max_val_checkbox.stateChanged.connect(lambda: (self.modify_config('auto_max_val', self.auto_max_val_checkbox.isChecked(), 'path_detection_config.bin'),self.update_similarity_max_slider_ui()))
+        self.auto_max_val_checkbox.stateChanged.connect(lambda: (
+            self.modify_config(
+                'auto_max_val',
+                self.auto_max_val_checkbox.isChecked(),
+                'path_detection_config.bin'),self.update_similarity_max_slider_ui()))
+
+
+
         layout.addWidget(self.auto_max_val_checkbox)
         self.auto_max_val_checkbox.setToolTip('如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。')
 
@@ -4055,12 +4098,6 @@ class TextureBatchImporterWin:
         def create_widgets(self):
             pass
 
-
-
-
-
-
-
 def test():
     pass
 
@@ -4847,12 +4884,6 @@ def ai_aov_switch_button():
         else:
             cmds.setAttr(aov + ".enabled", 1)
 
-
-
-
-
-
-
 class Path_Detection_Connection:
     def __init__(self):
         ### 实例各种模块
@@ -4892,30 +4923,50 @@ class Path_Detection_Connection:
 
         matching_completed_dict = self.detect_and_calculate_similarity()
 
+        # alt 只会创建贴图
         if keyboard.is_pressed('alt') or keyboard.is_pressed('shift'):
 
             need_connect_node_lists = self.create_nodes_from_list(matching_completed_dict)
 
+            # 判断是否要修改颜色空间
+            if self.path_detection_data['PathDetectionConnectionSetColorSpace']:
+                for need_connect_node_list in need_connect_node_lists:
+                    self.nodeP.AutoSetTexColorSpace(
+                        auto_set_color_space_config=self.texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                        node_list=need_connect_node_list,
+                        filter_data=self.texture_filter_dict)
+
+            # shift 会创建材质并连接
             if keyboard.is_pressed('shift'):
                 for need_connect_node_list in need_connect_node_lists:
 
-                    # 材质球名称会用列表的第一个索引的名称
-                    mat_name = need_connect_node_list[0]
-                    # 处理材质球名称，删除所有的数字
-                    mat_name_processing = re.sub(r'\d+', '', mat_name)
-                    # 创建材质球
-                    mat_node_name = cmds.shadingNode('aiStandardSurface', asShader=True)
+                    # 判断是否要修改材质的名称
+                    if self.path_detection_data['change_material_name']:
 
-                    # 重命名材质球名称
-                    new_mat_name = cmds.rename(mat_node_name, mat_name_processing)
+                        # 材质球名称会用列表的第一个索引的名称
+                        file_name = need_connect_node_list[0]
 
-                    self.nodeP.AutoNodeConnect(need_connect_node_list,
+                        processing_mat_name = self.nodeP.clean_material_name(file_name, self.texture_processing_data["TexFirstFilter"])
+
+                        new_mat_name = cmds.shadingNode('aiStandardSurface', asShader=True, name=processing_mat_name)
+                    else:
+                        new_mat_name = cmds.shadingNode('aiStandardSurface', asShader=True)
+
+
+
+
+                    matching_dict = self.nodeP.AutoNodeConnect(need_connect_node_list,
                                                new_mat_name,
                                                self.texture_processing_data["TexFirstFilter"], # 过滤贴图的数据
                                                self.texture_processing_data['ProcSet_Options']['ProcessingNodeData'], # 相应贴图节点的参数
                                                self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options'], # 相应贴图是否要连接的参数
                                                self.texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options']) # 相应贴图是否要连接相应的节点
 
+                    # 判断是否要修改颜色空间
+                    if self.path_detection_data['PathDetectionConnectionSetColorSpace']:
+                        self.nodeP.AutoSetTexColorSpace(
+                            auto_set_color_space_config=self.texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                            matching_channel=matching_dict)
 
     def detect_and_calculate_similarity(self):
         # 用来储存匹配完成的数据字典
@@ -4957,8 +5008,9 @@ class Path_Detection_Connection:
             similarity_range = self.path_detection_data['similarity_range']
             matching_list = self.pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range)
 
-            # 发出反馈提醒
-            self.feedback_prompt(similarity_dict, matching_list, original_name)
+            if not self.path_detection_data['disable_feedback']:
+                # 发出反馈提醒
+                self.feedback_prompt(similarity_dict, matching_list, original_name)
 
             # 储存匹配好的数据
             matching_completed_dict[node_name] = [matching_list, target_dirname]
@@ -5010,6 +5062,7 @@ class Path_Detection_Connection:
 
         return need_connect_node_lists
 
+
 class Magic_Node_Connection:
     def __init__(self):
         ### 实例各种模块
@@ -5034,9 +5087,7 @@ class Magic_Node_Connection:
         self.auto_node_connection_options = self.texture_processing_data[
             'ProcSet_Options'][
             'Auto_Node_Connection_Options']  # 相应贴图是否要连接相应的节点
-        self.magic_connection_set_color_space = self.texture_processing_data[
-            'ProcSet_Options'][
-            'MagicConnectionSetColorSpace']  # 魔法连接启用色彩空间
+
 
         # 获取选择节点
         self.select_node = process_sl_data()
@@ -5047,33 +5098,87 @@ class Magic_Node_Connection:
         if self.select_node is None:
             return
 
+        if keyboard.is_pressed('alt'):
+            pass
+        else:
+            self.magic_processing_node_connection()
+
+    # 魔法连接处理节点
+    def magic_processing_node_connection(self):
         # 检查SlNode字典中是否有file key 如果没有直接退出函数
         if 'file' not in self.select_node:
             return self.feedback.CPW('没有选择纹理节点，请选择纹理节点')
 
-
         mat_name = self.detect_and_create_materials()
-        print(mat_name)
-        self.nodeP.AutoNodeConnect(self.select_node['file'],
-                                   mat_name,
-                                   self.texture_filter_dict,
-                                   self.processing_node_data,
-                                   self.magic_connection_options,
-                                   self.auto_node_connection_options)
 
+        # 如果选择了着色节点会连接上
+        if 'shadingEngine' in self.select_node:
+            shadingEngine = self.select_node['shadingEngine'][0]
+        else:
+            shadingEngine = None
+
+        self.matching_dict = self.nodeP.AutoNodeConnect(self.select_node['file'],
+                                                        mat_name,
+                                                        self.texture_filter_dict,
+                                                        self.processing_node_data,
+                                                        self.magic_connection_options,
+                                                        self.auto_node_connection_options,
+                                                        shadingEngine)
+
+
+        # 如果材质变量是None的话就不需要处理
+        if mat_name is None:
+            return
+
+        new_mat_name = self.modify_mat_name(original_mat_name=mat_name, file_name=self.select_node['file'][0])
+
+        self.feedback.CP('已完成 {} 材质连接'.format(new_mat_name))
+
+        self.modify_color_space()
+
+    # 检测并创建材质
     def detect_and_create_materials(self):
-        mat_name = ''
+        mat_name = None
         # 检测有没有选择材质球
         if 'aiStandardSurface' in self.select_node:
             mat_name = self.select_node['aiStandardSurface'][0]
         else:
             if keyboard.is_pressed('shift'):
                 mat_name = cmds.shadingNode('aiStandardSurface', asShader=True)
-            else:
-                self.feedback('请选择材质球')
+
 
         return mat_name
 
+    # 修改材质名称
+    def modify_mat_name(self,original_mat_name,  file_name):
+
+        texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+        # 修改材质名称
+        if texture_processing_data['ProcSet_Options']['change_material_name']:
+            new_mat_name = self.nodeP.clean_material_name(file_name, self.texture_filter_dict)
+        else:
+            return original_mat_name
+
+        # 修改材质节点名称
+        cmds.rename(original_mat_name, new_mat_name)
+
+        self.feedback.CP('已将 {} 材质名称修改成 {}'.format(original_mat_name, new_mat_name))
+
+        return new_mat_name
+
+    # 修改颜色空间
+    def modify_color_space(self):
+        texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+        if texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace']:
+            self.nodeP.AutoSetTexColorSpace(
+                auto_set_color_space_config = texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                matching_channel = self.matching_dict)
+        else:
+            return
 
 def path_detection_connection_button():
     PDC = Path_Detection_Connection()
@@ -5082,9 +5187,6 @@ def path_detection_connection_button():
 def magic_connection_button():
     MC = Magic_Node_Connection()
     MC.main()
-
-
-
 
 def Main_program(cached_device_fingerprint, public_key, public_password, validating):
     # cached_device_fingerprint, public_key, public_password, remaining_time
@@ -5122,4 +5224,3 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
 
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
-
