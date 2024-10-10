@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.6.3"
+SoftwareVersion = "0.6.4.1"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"

@@ -10,6 +10,7 @@ import importlib
 import ntplib
 import requests
 import time
+import subprocess
 import maya.OpenMayaUI as omui
 import maya.cmds as cmds
 #   自己的库
@@ -77,17 +78,33 @@ language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages',
 
 #   获取主板的ID
 def get_motherboard_id():
-    command = "wmic baseboard get serialnumber"
-    output = os.popen(command).read().strip()
+    # Windows 系统
+    if os.name == 'nt':  # 'nt' 表示 Windows 系统
+        try:
+            # 使用 subprocess 获取主板序列号
+            output = subprocess.check_output("wmic baseboard get serialnumber", shell=True)
+            lines = output.decode().split('\n')
+            if len(lines) > 1:
+                serial_number = lines[1].strip()
+                if serial_number:
+                    return serial_number
+            return "Error: Serial number not found"
+        except Exception as e:
+            return f"Error getting motherboard serial number (Windows): {e}"
 
-    # 过滤掉空行
-    lines = [line.strip() for line in output.split("\n") if line.strip()]
-    if len(lines) > 1:
-        serial_number = lines[1]
-        return serial_number
+    # Linux/Unix 系统
     else:
-        feedback.CP(language["GMI"]["01"])
-        return None
+        try:
+            # 使用 subprocess 获取产品 UUID
+            output = subprocess.check_output("cat /sys/class/dmi/id/product_uuid", shell=True)
+            uuid = output.decode().strip()
+            if uuid:
+                return uuid
+            return "Error: UUID not found"
+        except Exception as e:
+            return f"Error getting UUID (Linux/Unix): {e}"
+
+
 
 #   Hardware Identifier 设别标识符
 def generate_device_fingerprint(motherboard_id):
@@ -449,7 +466,7 @@ class LicenseWin(QtWidgets.QDialog):
 
         # 验证按钮
         self.verify_button = QtWidgets.QPushButton(self.LT["VB"]) # "验证许可"
-        self.verify_button.clicked.connect(self.verify_license)
+        self.verify_button.clicked.connect(lambda *args: self.verify_license())
 
     def create_layouts(self):
         layout = QtWidgets.QVBoxLayout()
