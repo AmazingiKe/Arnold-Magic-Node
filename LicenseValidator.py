@@ -314,19 +314,16 @@ def verify_license(public_key_pem, license_b64, current_device_fingerprint, curr
             else:
                 # 如果所有检查通过，返回True，表示许可证有效 并返回许可时间
                 return {'validate': True, 'license_type': license_data['license_type'], 'expiry_date': expiry_date}
-    except Exception as e:
-        return False
-        print(e)
 
-    # except InvalidSignature:
-    #     feedback.CPW(LT['04'])
-    #     return False
-    # except ValueError:
-    #     feedback.CPW(LT['05'])
-    #     return False
-    # except Exception as e:
-    #     feedback.CPE(LT['06'])
-    #     return False
+    except InvalidSignature:
+        feedback.CPW(LT['04'])
+        return False
+    except ValueError:
+        feedback.CPW(LT['05'])
+        return False
+    except Exception as e:
+        feedback.CPE(LT['06'])
+        return False
 
 #   获取许可证剩余时间
 def get_license_remaining_time(license_package_b64, password=public_password):
@@ -487,7 +484,9 @@ class LicenseWin(QtWidgets.QDialog):
             return
 
         validating = verify_license(public_key, license, cached_device_fingerprint, current_timestamp, public_password)
-        print(validating)
+
+        if not validating:
+            return
 
         if validating['validate'] == True:
             #   写出许可证文件

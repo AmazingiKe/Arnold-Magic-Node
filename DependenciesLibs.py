@@ -19,8 +19,8 @@ PreferencesPath = cmds.about(preferences=True)  # 配置文件的地方
 MayaInstallDir = os.environ.get('MAYA_LOCATION')    # Maya安装的地方
 ScriptPath = os.path.join(os.path.dirname(__file__)) # 脚本路径
 
-LibsPath =  os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVersion)}')
-MayapyPath = os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe')
+LibsPath =  os.path.normpath(os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVersion)}'))
+MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe'))
 
 LibsFilesDict = {
     'cv2': 'opencv-python',

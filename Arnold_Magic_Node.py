@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.5.9"
+SoftwareVersion = "0.6.3"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -181,48 +181,48 @@ class Arnold_Magic_Node_UI(object):
 
         cmds.menuItem(label= '贴图处理工具', divider=True) # 添加分割线
 
-        cmds.menuItem(label= '贴图管理器', c=lambda *args:TextureManagerWinInstance(),
+        cmds.menuItem(label= '贴图管理器', c=lambda *args: TextureManagerWinInstance(),
                       i = icon_path + "\\TXManagerShelf_200.png")
 
-        cmds.menuItem(label= '贴图批量导入器', c=lambda *args:TextureBatchImporterWin(),
+        cmds.menuItem(label= '贴图批量导入器', c=lambda *args: TextureBatchImporterWin(),
                       i = icon_path + "\\RenderToTextureShelf_200.png")
 
         cmds.menuItem(label= '渲染预设设置',
                       divider=True) # 添加分割线
 
         cmds.menuItem(label= '添加渲染预设',
-                      c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+                      c=lambda *args: rendering_preset_settings_button(self.rendering_preset))
 
         cmds.menuItem(label= '修改渲染预设',
-                      c= lambda *args:modify_rendering_preset_menuItem(
+                      c= lambda *args: modify_rendering_preset_menuItem(
                           cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
                           cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
 
         cmds.menuItem(label= '删除渲染预设',
-                      c= lambda *args:delete_rendering_preset_menuItem(
+                      c= lambda *args: delete_rendering_preset_menuItem(
                           cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
                           cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
 
         cmds.menuItem(label= '打开渲染预设文件夹',
-                      c= lambda *args:os.startfile(os.path.join(SCRIPT_PATH, 'Datas', 'render_settings')))
+                      c= lambda *args: os.startfile(os.path.join(SCRIPT_PATH, 'Datas', 'render_settings')))
 
         cmds.menuItem(divider=True)
 
         default_rendering_properties_options = cmds.menuItem(label= '输出 默认参数',
                                                              cb= True,
-                                                             c= lambda *args:self.modify_rendering_properties_write_options('default_rendering_properties_write_options', cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
+                                                             c= lambda *args: self.modify_rendering_properties_write_options('default_rendering_properties_write_options', cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
 
         rendering_properties_options = cmds.menuItem(label= '输出 阿诺德参数',
                                                      cb= True,
-                                                     c= lambda *args:self.modify_rendering_properties_write_options('rendering_properties_write_options', cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
+                                                     c= lambda *args: self.modify_rendering_properties_write_options('rendering_properties_write_options', cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
 
         aov_properties_properties_options = cmds.menuItem(label= '输出 AOV参数',
                                                           cb= True,
-                                                          c= lambda *args:self.modify_rendering_properties_write_options('AOV_properties_properties_write_options', cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
+                                                          c= lambda *args: self.modify_rendering_properties_write_options('AOV_properties_properties_write_options', cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
         cmds.menuItem(divider=True)
 
         cmds.menuItem(label= '设置',
-                      c= lambda *args:ArnoldMagicNodeSettingsPanel())
+                      c= lambda *args: ArnoldMagicNodeSettingsPanel())
 
         # 读取settings_path文件夹下的render_preset_config_dict文件
         render_preset_config_dict =  self.dataM.bin_load_data(
@@ -246,14 +246,14 @@ class Arnold_Magic_Node_UI(object):
 
 
         # Magic_Connection
-        self.magic_connection = cmds.button(label="魔法连接",c=lambda *args:magic_connection_button())
+        self.magic_connection = cmds.button(label="魔法连接",c=lambda *args: magic_connection_button())
 
-        self.path_detection_connection = cmds.button(label="路径拾取连接",c=lambda *args:path_detection_connection_button())
+        self.path_detection_connection = cmds.button(label="路径拾取连接",c=lambda *args: path_detection_connection_button())
 
         # Direct_Connection
-        self.direct_connection = cmds.button(label="直连",c=lambda *args:direct_connection_button())
+        self.direct_connection = cmds.button(label="直连",c=lambda *args: direct_connection_button())
         # Unify Uv Node
-        self.unify_uv_node = cmds.button(label="统一UV",c=lambda *args:unify_uv_node_button())
+        self.unify_uv_node = cmds.button(label="统一UV",c=lambda *args: unify_uv_node_button())
 
         cmds.text(label=" "*2)
 
@@ -279,16 +279,16 @@ class Arnold_Magic_Node_UI(object):
             cmds.menuItem(label = color_space_name)
 
         # 自动色彩空间的按钮
-        cmds.button(label="自动色彩空间",c=lambda *args:AutoSet_TexColorSpace())
+        cmds.button(label="自动色彩空间",c=lambda *args: AutoSet_TexColorSpace())
 
         cmds.text(label=" "*2)
 
-        self.ai_aov_switch = cmds.button(label="AOV开关",c=lambda *args:ai_aov_switch_button())
+        self.ai_aov_switch = cmds.button(label="AOV开关",c=lambda *args: ai_aov_switch_button())
 
         # 渲染预设的菜单 —————————————————— 开始
         self.rendering_preset_name = {}
         self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
-        # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args:rendering_preset_settings_button(self.rendering_preset))
+        # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args: rendering_preset_settings_button(self.rendering_preset))
 
 
         renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
@@ -307,12 +307,12 @@ class Arnold_Magic_Node_UI(object):
 
 
         cmds.text(label="                     "*1)
-        # self.Arnold_Magic_Node_Settings_Panel = cmds.button(label="设置",c=lambda *args:Arnold_Magic_Node_Settings_Panel())
-        # self.test = cmds.iconTextButton(i=SCRIPT_PATH+ r'\icon\TEST.png',c=lambda *args:test(), h=37.5/1.8,w=80)
+        # self.Arnold_Magic_Node_Settings_Panel = cmds.button(label="设置",c=lambda *args: Arnold_Magic_Node_Settings_Panel())
+        # self.test = cmds.iconTextButton(i=SCRIPT_PATH+ r'\icon\TEST.png',c=lambda *args: test(), h=37.5/1.8,w=80)
         cmds.iconTextButton(i = os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
                             h=37.5/1.8,
                             w=155/1.8,
-                            c=lambda *args:ArnoldMagicNodeSettingsPanel())
+                            c=lambda *args: ArnoldMagicNodeSettingsPanel())
 
         cmds.text(label=" "*1)
 
@@ -396,7 +396,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 创建“重置数据”动作
         self.reset_data_action = QAction('重置设置数据', self)
         # 连接“重置数据”动作的触发信号到对应的槽函数
-        self.reset_data_action.triggered.connect(lambda :(os.remove(os.path.join(settings_path, 'texture_processing_data.bin')),
+        self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, 'texture_processing_data.bin')),
                                                           InitialConfigFile.Main_program()))
         self.settings_menu.addAction(self.reset_data_action)
 
@@ -405,7 +405,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 创建“更换许可证”动作
         self.change_license_action = QAction('更换许可证', self)
-        self.change_license_action.triggered.connect(lambda :self.replace_license())
+        self.change_license_action.triggered.connect(lambda *args: self.replace_license())
 
         # 将动作添加到许可证菜单
         self.license_menu.addAction(self.change_license_action)
@@ -419,11 +419,11 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 创建“联系/反馈”动作
         self.contact_feedback_action = QAction('联系/反馈', self)
         self.contact_feedback_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
+            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
         # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
         self.help_document_action = QAction('帮助文档', self)
         self.help_document_action.triggered.connect(
-            lambda :QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomePath)))
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomePath)))
 
         # 将动作添加到关于菜单
 
@@ -478,7 +478,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.auto_color_space_connection = QtWidgets.QCheckBox('连接时智能修改色彩空间')
 
         # auto_color_space_connection 连接修改配置函数
-        self.auto_color_space_connection.stateChanged.connect(lambda :self.modify_nested_config(
+        self.auto_color_space_connection.stateChanged.connect(lambda *args: self.modify_nested_config(
                 self.auto_color_space_connection.isChecked(),
                 ['ProcSet_Options', 'MagicConnectionSetColorSpace']))
 
@@ -487,7 +487,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.magic_change_material_name_options = QtWidgets.QCheckBox('连接时修改材质名称')
 
         # auto_color_space_connection 连接修改配置函数
-        self.magic_change_material_name_options.stateChanged.connect(lambda :self.modify_nested_config(
+        self.magic_change_material_name_options.stateChanged.connect(lambda *args: self.modify_nested_config(
                 self.magic_change_material_name_options.isChecked(),
                 ['ProcSet_Options', 'change_material_name']))
 
@@ -516,7 +516,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             item.setSelected(value)
         # 触发绑定函数
         self.tex_first_filter_options_list.selectionModel().selectionChanged.connect(
-            lambda item:self.modify_tex_first_filter_options_list_config())
+            lambda *args: self.modify_tex_first_filter_options_list_config())
 
         layout.addWidget(self.tex_first_filter_options_list)
 
@@ -706,7 +706,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 绑定修改自动连接处理界定啊配置函数
         self.auto_node_connection_list.selectionModel().selectionChanged.connect(
-            lambda item:self.modify_auto_node_connection_config())
+            lambda *args: self.modify_auto_node_connection_config())
 
         layout.addWidget(self.auto_node_connection_list)
 
@@ -814,7 +814,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.path_matching_checkbox = QtWidgets.QCheckBox('连接时智能修改色彩空间')
         self.path_matching_checkbox.setChecked(path_detection_config['PathDetectionConnectionSetColorSpace'])
         # 连接复选框的状态变化信号到修改配置函数
-        self.path_matching_checkbox.stateChanged.connect(lambda: self.modify_config(
+        self.path_matching_checkbox.stateChanged.connect(lambda *args:  self.modify_config(
             'PathDetectionConnectionSetColorSpace',
             self.path_matching_checkbox.isChecked(),
             'path_detection_config.bin'))
@@ -824,7 +824,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.path_matching_change_material_name_options = QtWidgets.QCheckBox('连接时修改材质名称')
         self.path_matching_change_material_name_options.setChecked(path_detection_config['change_material_name'])
         # 连接复选框的状态变化信号到修改配置函数
-        self.path_matching_change_material_name_options.stateChanged.connect(lambda: self.modify_config(
+        self.path_matching_change_material_name_options.stateChanged.connect(lambda *args:  self.modify_config(
             'change_material_name',
             self.path_matching_change_material_name_options.isChecked(),
             'path_detection_config.bin'))
@@ -835,7 +835,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.path_disable_feedback_options = QtWidgets.QCheckBox('关闭反馈')
         self.path_disable_feedback_options.setChecked(path_detection_config['disable_feedback'])
         # 连接复选框的状态变化信号到修改配置函数
-        self.path_disable_feedback_options.stateChanged.connect(lambda: self.modify_config(
+        self.path_disable_feedback_options.stateChanged.connect(lambda *args:  self.modify_config(
             'disable_feedback',
             self.path_disable_feedback_options.isChecked(),
             'path_detection_config.bin'))
@@ -857,7 +857,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 当排除列表文本发生变化时，更新配置文件
         self.exclude_list_text.textChanged.connect(
-            lambda: self.modify_config(
+            lambda *args:  self.modify_config(
                 'exclude_list',
                 [item.replace(' ', '') for item in self.exclude_list_text.toPlainText().split(",")]
                 , 'path_detection_config.bin'))
@@ -879,7 +879,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 当格式列表文本发生变化时，更新配置文件
         self.detection_excluded_list.textChanged.connect(
-            lambda: self.modify_config(
+            lambda *args:  self.modify_config(
                 'detection_excluded_list',
                 [item.replace(' ', '') for item in self.detection_excluded_list.toPlainText().split(",")]
                 , 'path_detection_config.bin'))
@@ -894,7 +894,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动选择最佳匹配')
         self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
-        self.auto_max_val_checkbox.stateChanged.connect(lambda: (
+        self.auto_max_val_checkbox.stateChanged.connect(lambda *args:  (
             self.modify_config(
                 'auto_max_val',
                 self.auto_max_val_checkbox.isChecked(),
@@ -1497,7 +1497,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 材质列表刷新
         self.MaterialList_Refresh_Button = QtWidgets.QPushButton()
         self.MaterialList_Refresh_Button.setIcon(QtGui.QIcon(icon_path + "\\ResetMode_200.png"))
-        self.MaterialList_Refresh_Button.clicked.connect(lambda *args: (self.refresh_scene_node_info(),
+        self.MaterialList_Refresh_Button.clicked.connect(lambda *args:  (self.refresh_scene_node_info(),
                                                                         self.refresh_material_list()))
         self.MaterialList_Refresh_Button.setFixedWidth(40)
         self.MaterialList_Refresh_Button.setFixedHeight(40)
@@ -1524,7 +1524,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 并设置成材质列表的默认大小到滑杆上
         self.MaterialList_Display_Slider.setValue(MaterialList_Slider_default_font - 8)
         # 滑杆绑定函数
-        self.MaterialList_Display_Slider.valueChanged.connect(lambda *args: self.updateMaterialListSlider())
+        self.MaterialList_Display_Slider.valueChanged.connect(lambda *args:  self.updateMaterialListSlider())
 
         # TexturelListSearch 搜索框
         self.TexturelListSearch = QtWidgets.QLineEdit()
@@ -1539,7 +1539,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_Refresh_Button.setFixedWidth(40)
         self.TexturelList_Refresh_Button.setFixedHeight(40)
         self.TexturelList_Refresh_Button.setIconSize(QtCore.QSize(32, 32))
-        self.TexturelList_Refresh_Button.clicked.connect(lambda: self.refresh_texture_table())
+        self.TexturelList_Refresh_Button.clicked.connect(lambda *args:  self.refresh_texture_table())
         self.TexturelList_Refresh_Button.setToolTip(lang['TexturelList_Refresh_Button_ToolTip']) # 根据缓存进行重新刷新
 
         # 全选材质节点
@@ -1547,12 +1547,12 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(icon_path + "\\select_all_icon.png"))
         self.MaterialList_SelectAll_Button.setFixedWidth(40)
         self.MaterialList_SelectAll_Button.setFixedHeight(40)
-        self.MaterialList_SelectAll_Button.clicked.connect(lambda: self.all_selected_materials())
+        self.MaterialList_SelectAll_Button.clicked.connect(lambda *args:  self.all_selected_materials())
         self.MaterialList_SelectAll_Button.setIconSize(QtCore.QSize(38, 38))
 
         # 取消所有选择
         self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton() # 取消全选 lang['TexturelList_Unselect_All_Button']
-        self.TexturelList_Unselect_All_Button.clicked.connect(lambda: (
+        self.TexturelList_Unselect_All_Button.clicked.connect(lambda *args:  (
             self.MaterialList.clearSelection(),
             self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
         ))
@@ -1567,7 +1567,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_reverse_selection.setFixedHeight(40)
         self.TexturelList_reverse_selection.setFixedWidth(40)
         self.TexturelList_reverse_selection.setIconSize(QtCore.QSize(42, 42))
-        self.TexturelList_reverse_selection.clicked.connect(lambda: self.texture_list_reverse_selection())
+        self.TexturelList_reverse_selection.clicked.connect(lambda *args:  self.texture_list_reverse_selection())
         self.TexturelList_reverse_selection.setIcon(QtGui.QIcon(
             os.path.join(icon_path , 'invert_selection_icon.png')
         ))
@@ -1575,7 +1575,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 一键选出所有缺失贴图
         self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton() # 选出缺失 lang['TexturelList_Find_Missing_Textures_Button']
         self.TexturelList_Find_Missing_Textures_Button.clicked.connect(
-            lambda: self.texture_list_find_missing_textures())
+            lambda *args:  self.texture_list_find_missing_textures())
         self.TexturelList_Find_Missing_Textures_Button.setFixedHeight(40)
         self.TexturelList_Find_Missing_Textures_Button.setFixedWidth(40)
         self.TexturelList_Find_Missing_Textures_Button.setIconSize(QtCore.QSize(38, 38))
@@ -1586,7 +1586,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 选出最大贴图的按钮
         self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton() # 选出大贴图 lang['TexturelList_Intelligent_Find_Max_Size_Button']
         self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(
-                                                                            lambda: self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
+                                                                            lambda *args:  self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedHeight(40)
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedWidth(40)
         self.TexturelList_Intelligent_Find_Max_Size_Button.setIconSize(QtCore.QSize(38, 38))
@@ -1603,23 +1603,23 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.tolerance_doubleSpinBox.setDecimals(2)  # 设置小数点后的位数
         self.tolerance_doubleSpinBox.setFixedHeight(40)
         self.tolerance_doubleSpinBox.valueChanged.connect(
-            lambda: self.TM_modify_config('listwidget_data', self.tolerance_doubleSpinBox.value()))
+            lambda *args:  self.TM_modify_config('listwidget_data', self.tolerance_doubleSpinBox.value()))
 
         # 替换名称
         self.TexturelList_Search_And_Replace_Date_Button = QtWidgets.QPushButton(
             lang['TexturelList_Search_And_Replace_Date_Button'])
         self.TexturelList_Search_And_Replace_Date_Button.setFixedHeight(40)
-        self.TexturelList_Search_And_Replace_Date_Button.clicked.connect(lambda: self.batch_replace_data_Win())
+        self.TexturelList_Search_And_Replace_Date_Button.clicked.connect(lambda *args:  self.batch_replace_data_Win())
 
         # 找回所有缺失路径
         self.TexturelList_Replace_Data_Button = QtWidgets.QPushButton(lang['TexturelList_Replace_Data_Button']) # 找回路径
         self.TexturelList_Replace_Data_Button.setFixedHeight(40)
-        self.TexturelList_Replace_Data_Button.clicked.connect(lambda: self.find_path_re_Win())
+        self.TexturelList_Replace_Data_Button.clicked.connect(lambda *args:  self.find_path_re_Win())
 
         # 压缩贴图
         self.TexturelList_Processed_Image_Button = QtWidgets.QPushButton(lang['TexturelList_Processed_Image_Button']) # 处理图像
         self.TexturelList_Processed_Image_Button.setFixedHeight(40)
-        self.TexturelList_Processed_Image_Button.clicked.connect(lambda: self.image_processing_Win())
+        self.TexturelList_Processed_Image_Button.clicked.connect(lambda *args:  self.image_processing_Win())
 
         # TexturelList 贴图列表
         self.TexturelList = QtWidgets.QTableView()
@@ -1642,7 +1642,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList.horizontalHeader().setSectionResizeMode(7, QtWidgets.QHeaderView.Stretch)
 
         self.TexturelList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)  # 更改成多选模式
-        self.TexturelList.clicked.connect(lambda *args: self.selection_texture_sl_node_delay_selection_signal())
+        self.TexturelList.clicked.connect(lambda *args:  self.selection_texture_sl_node_delay_selection_signal())
 
         # 启用自动换行
         self.TexturelList.setWordWrap(True)
@@ -1742,7 +1742,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         QtCore.QTimer.singleShot(0, self.refresh_to_texture_table)
 
         # 选择选中的材质球
-        QtCore.QTimer.singleShot(0, lambda: self.select_nodes([item.text() for item in self.MaterialList.selectedItems()]))
+        QtCore.QTimer.singleShot(0, lambda *args:  self.select_nodes([item.text() for item in self.MaterialList.selectedItems()]))
 
     # 刷新material_list列表控件
     def refresh_material_list(self):
@@ -2021,7 +2021,7 @@ class TextureManagerWin(QtWidgets.QDialog):
     # 选择的延迟处理
     def selection_texture_sl_node_delay_selection_signal(self):
         # 使用 QTimer 延迟处理选择
-        QtCore.QTimer.singleShot(0,lambda *args: self.selection_texture_sl_node())
+        QtCore.QTimer.singleShot(0,lambda *args:  self.selection_texture_sl_node())
 
     # 选择当前表格选择的节点
     def selection_texture_sl_node(self):
@@ -2045,7 +2045,7 @@ class TextureManagerWin(QtWidgets.QDialog):
             self.temp_cache_texture_sl = selected_data[0]
 
         # 选择选到的贴图节点
-        QtCore.QTimer.singleShot(0,lambda: self.select_nodes(selected_data))
+        QtCore.QTimer.singleShot(0,lambda *args:  self.select_nodes(selected_data))
 
     # 列表反选
     def texture_list_reverse_selection(self):
@@ -2649,7 +2649,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.line_edit_find.setFixedHeight(40)
         self.line_edit_find.setPlaceholderText(lang['line_edit_find_placeholder'])  # 请输入查找内容...
         self.line_edit_find.textChanged.connect(
-            lambda *args: self.modify_config('search_content', self.line_edit_find.text()))
+            lambda *args:  self.modify_config('search_content', self.line_edit_find.text()))
 
         self.label_replace = QtWidgets.QLabel(lang['label_replace'])  # ↓ ↓ ↓ ↓ ↓ ↓
         self.label_replace.setFont(font_10x)
@@ -2659,20 +2659,20 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.line_edit_replace.setFixedHeight(40)
         self.line_edit_replace.setPlaceholderText(lang['line_edit_replace_placeholder'])  # 请输入替换内容...
         self.line_edit_replace.textChanged.connect(
-            lambda *args: self.modify_config('replace_content', self.line_edit_replace.text()))
+            lambda *args:  self.modify_config('replace_content', self.line_edit_replace.text()))
 
         # 创建第三行的控件（复选框）
         self.checkbox_case_sensitive = QtWidgets.QCheckBox(lang['checkbox_case_sensitive'])  # 大小写忽略
         self.checkbox_case_sensitive.stateChanged.connect(
-            lambda *args: self.modify_config('case_sensitive', self.checkbox_case_sensitive.isChecked()))
+            lambda *args:  self.modify_config('case_sensitive', self.checkbox_case_sensitive.isChecked()))
 
         self.checkbox_regex = QtWidgets.QCheckBox(lang['checkbox_regex'])  # 使用正则表达式
         self.checkbox_regex.stateChanged.connect(
-            lambda *args: self.modify_config('use_regex', self.checkbox_regex.isChecked()))
+            lambda *args:  self.modify_config('use_regex', self.checkbox_regex.isChecked()))
 
         # 创建第四行的控件（替换按钮）
         self.button_replace = QtWidgets.QPushButton(lang['button_replace'])  # 替换
-        self.button_replace.clicked.connect(lambda *args: self.replace_button())
+        self.button_replace.clicked.connect(lambda *args:  self.replace_button())
 
     def create_layouts(self):
         # 创建主垂直布局
@@ -3112,7 +3112,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.select_folder_button = QtWidgets.QPushButton('. . .')
         self.select_folder_button.setFixedHeight(38)
         self.select_folder_button.setFixedWidth(35)
-        self.select_folder_button.clicked.connect(lambda *args:self.select_folder())
+        self.select_folder_button.clicked.connect(lambda *args: self.select_folder())
 
         self.memory_search_mode_checkbox = QtWidgets.QCheckBox(
             self.language['create_widgets']['memory_search_mode_checkbox'])  # 记忆搜索模式
@@ -3120,18 +3120,18 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
         self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
         self.search_subfolders_checkbox.stateChanged.connect(
-            lambda *args: self.modify_config('search_subfolders_checkbox', self.search_subfolders_checkbox.isChecked()))
+            lambda *args:  self.modify_config('search_subfolders_checkbox', self.search_subfolders_checkbox.isChecked()))
 
         self.multiple_subfolder_search_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['multiple_subfolder_search_checkbox']) # 多个子文件夹搜索
         self.multiple_subfolder_search_checkbox.stateChanged.connect(
-            lambda *args: self.modify_config('multiple_subfolder_search_checkbox', self.multiple_subfolder_search_checkbox.isChecked()))
+            lambda *args:  self.modify_config('multiple_subfolder_search_checkbox', self.multiple_subfolder_search_checkbox.isChecked()))
 
         self.ignore_case_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['ignore_case_checkbox']) # 忽略大小写
         self.ignore_case_checkbox.stateChanged.connect(
-            lambda *args: self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
+            lambda *args:  self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
 
         self.fix_path_button = QtWidgets.QPushButton(self.language['create_widgets']['fix_path_button'])
-        self.fix_path_button.clicked.connect(lambda *args: self.fix_path())
+        self.fix_path_button.clicked.connect(lambda *args:  self.fix_path())
 
     # 创建布局
     def create_layouts(self):
@@ -3434,7 +3434,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.edit_menu = self.menu_bar.addMenu("编辑")
 
         self.clear_cache = QAction("清除缓存  ！谨慎删除！", self)
-        self.clear_cache.triggered.connect(lambda :os.remove(self.TM_image_processing_cache_FilePath))
+        self.clear_cache.triggered.connect(lambda *args: os.remove(self.TM_image_processing_cache_FilePath))
 
         self.redo_action = QAction("还原图像", self)
 
@@ -3460,7 +3460,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         format_list = ['jpg', 'png', 'tif', 'bmp']
         self.format_combo_box = QtWidgets.QComboBox()
         self.format_combo_box.addItems(format_list)  # 添加选项
-        self.format_combo_box.currentTextChanged.connect(lambda :(
+        self.format_combo_box.currentTextChanged.connect(lambda *args: (
             self.modify_config('format', self.format_combo_box.currentText()), # 存入数据
             self.update_quality_controls_visibility()))
 
@@ -3477,14 +3477,14 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.zoom_ratios_combo_box.setFixedWidth(100)
 
         # 绑定 currentTextChanged 信号到自定义的函数
-        self.zoom_ratios_combo_box.currentTextChanged.connect(lambda :(
+        self.zoom_ratios_combo_box.currentTextChanged.connect(lambda *args: (
             self.modify_config('zoom', self.zoom_ratios_combo_box.currentText().replace('%', ''))))
 
         # 获取 QComboBox 内部的 QLineEdit
         self.zoom_ratios_line_edit = self.zoom_ratios_combo_box.lineEdit()
 
         # 当编辑结束时，连接信号到槽函数
-        self.zoom_ratios_line_edit.editingFinished.connect(lambda :self.update_zoom_ratios_string())
+        self.zoom_ratios_line_edit.editingFinished.connect(lambda *args: self.update_zoom_ratios_string())
 
         # 创建一个显示输入结果的 QLabel
         self.resampling_mode_combo_box_label = QtWidgets.QLabel("重新取样：")
@@ -3493,7 +3493,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         resampling_mode_list = ['最近邻插值', '双线性插值', '三次插值', 'Lanczos 插值', '区域插值', '填充插值外点', '逆映射插值']
         self.resampling_combo_box = QtWidgets.QComboBox()
         self.resampling_combo_box.addItems(resampling_mode_list)  # 添加选项
-        self.resampling_combo_box.currentTextChanged.connect(lambda :self.modify_config(
+        self.resampling_combo_box.currentTextChanged.connect(lambda *args: self.modify_config(
             'resampling_mode', self.resampling_combo_box.currentIndex()))
 
         self.jpg_label = QtWidgets.QLabel("JPG的品质: ")
@@ -3511,7 +3511,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.jpg_quality_slider.setFixedHeight(25)
         self.jpg_quality_slider.setFixedWidth(400)
 
-        self.jpg_quality_slider.valueChanged.connect(lambda: (
+        self.jpg_quality_slider.valueChanged.connect(lambda *args:  (
             self.update_quality_display_label(),
             self.modify_config('JPG_quality', self.jpg_quality_slider.value())))
 
@@ -3533,7 +3533,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.png_quality_slider.setFixedHeight(25)
         self.png_quality_slider.setFixedWidth(400)
 
-        self.png_quality_slider.valueChanged.connect(lambda :(
+        self.png_quality_slider.valueChanged.connect(lambda *args: (
             self.update_quality_display_label(),
             self.modify_config('PNG_quality', self.png_quality_slider.value())))
 
@@ -3543,16 +3543,16 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
         self.convert_format_check_box = QtWidgets.QCheckBox('转换格式')
         self.convert_format_check_box.clicked.connect(
-            lambda :self.modify_config('convert_format', self.convert_format_check_box.isChecked()))
+            lambda *args: self.modify_config('convert_format', self.convert_format_check_box.isChecked()))
 
         self.scale_texture_check_box = QtWidgets.QCheckBox('缩放贴图')
         self.scale_texture_check_box.clicked.connect(
-            lambda: self.modify_config('scale_texture', self.scale_texture_check_box.isChecked()))
+            lambda *args:  self.modify_config('scale_texture', self.scale_texture_check_box.isChecked()))
 
 
 
         self.conversion_button = QtWidgets.QPushButton('开始转换')
-        self.conversion_button.clicked.connect(lambda :self.image_conversion())
+        self.conversion_button.clicked.connect(lambda *args: self.image_conversion())
 
     def create_layouts(self):
         # 第一层的多选格式的控件布局
@@ -4136,6 +4136,7 @@ def color_space_preset_menu(color_space_preset):
     feedback = FeedbackPrompt() # 错误提示模块
     dataM = DataManager()
     select_node = process_sl_data()
+
     # 如果没有选择节点会返回None，返回None会关闭函数
     if select_node is not None and 'file' not in select_node:
         return feedback.CP('请选择贴图节点')
@@ -4776,9 +4777,9 @@ class rendering_preset_settings_button():
 
         # 创建按钮布局
         cmds.text(label=" "*3)
-        cmds.button(label="确定",c=lambda *args:determine())
+        cmds.button(label="确定",c=lambda *args: determine())
         cmds.text(label=" | ")
-        cmds.button(label="取消",c=lambda *args:cancellation())
+        cmds.button(label="取消",c=lambda *args: cancellation())
         cmds.text(label=" "*3)
         # 设置按钮布局的父级为窗口的布局
         cmds.setParent(layout)

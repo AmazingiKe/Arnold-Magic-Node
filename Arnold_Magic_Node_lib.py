@@ -10,6 +10,7 @@ import os  # 提供与操作系统交互的功能，如文件路径操作、目�
 import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
+import stat
 
 # 3. 数据处理
 import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
@@ -23,10 +24,9 @@ import re  # 提供正则表达式操作，用于模式匹配、搜索和替换�
 import difflib  # 用于比较文本差异，生成差异报告或补丁，适合版本控制和文本分析
 
 # 5. 图像处理
-import imghdr  # 用于识别图像文件的类型，如 JPEG、PNG、GIF 等
 from PIL import Image , UnidentifiedImageError # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
 import cv2
-
+import pyexr
 # 6. 时间管理
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
@@ -37,7 +37,10 @@ import keyboard  # 用于监听和发送键盘事件，适合自动化任务和�
 
 # 8. 依赖管理
 import DependenciesLibs  # 导入自定义的依赖管理模块，用于加载和初始化项目所需的其他库
+
 DependenciesLibs.importLibs()  # 调用自定义模块中的函数，动态导入和初始化所需的依赖库
+
+Script_path = os.path.dirname(os.path.abspath(__file__))
 
 # ##############################################################################################
 
@@ -110,13 +113,13 @@ class PathDetection(object):
 
         # 获取目录中的文件列表
         try:
-            dirname_list = os.listdir(target_dirname)
+            file_list = os.listdir(target_dirname)
         except Exception as e:
             self.feedback.CP(f'无法访问目录 {target_dirname}，详细报错:[{e}]')
             return {}
 
         # 储存过滤后的文件字典
-        tex_dict = {}
+        filtered_files  = {}
 
         # 使用 Aho-Corasick 算法构建关键字树
         kwtree = KeywordTree(case_insensitive=True)
@@ -125,20 +128,24 @@ class PathDetection(object):
         kwtree.finalize()
 
         # 遍历文件列表
-        for file_name in dirname_list:
+        for file_name in file_list:
             # 构建完整的文件路径
             file_path = os.path.join(target_dirname, file_name)
 
             # 判断文件是否为图像类型
             try:
-                if imghdr.what(file_path):
+                with Image.open(file_path) as img:
+                    img.verify()  # 验证文件是否为有效图像
+
                     # 检查文件名是否包含排除关键字
                     if not kwtree.search(file_name):
-                        tex_dict[file_name] = file_path
+                        filtered_files[file_name] = file_path
+            except (IOError, SyntaxError):
+                self.feedback.CP(f'{file_name}: 无法打开或验证为图像文件。')
             except Exception as e:
-                self.feedback.CP(f'{file_name}: 此贴图文件没有权限访问，无法获得更高权限访问。详细报错:[{e}]')
+                self.feedback.CP(f'{file_name}: 此文件没有权限访问，详细报错:[{e}]')
 
-        return tex_dict
+        return filtered_files
 
     # 从给定的文件名列表中删除与指定格式列表中任何格式相匹配的部分，并返回新的文件名列表
     def remove_formats(self, file_list, format_list):
@@ -1868,23 +1875,4 @@ class DataManager:
     def ProcessInputString(self):
         pass
 
-    def ModifyConfigurationFile(self, value, key_path):
-            """
-            修改配置文件函数。
-
-            参数:
-            value -- 要设置的新值
-            key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
-            """
-            # 读取文件
-            TEX_PROCESSING_DATA = load_data('TEX_PROCESSING_DATA')
-
-            # 根据给定的键路径设置值
-            current_level = TEX_PROCESSING_DATA
-            for key in key_path[:-1]:  # 迭代到倒数第二个键
-                current_level = current_level[key]  # 进入下一层级
-            current_level[key_path[-1]] = value  # 设置最终键的值
-
-            # 修改并写回文件
-            write_data(Script_path + '\TEX_PROCESSING_DATA.json', TEX_PROCESSING_DATA)
 
