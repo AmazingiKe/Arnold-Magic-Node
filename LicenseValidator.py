@@ -1,50 +1,57 @@
-# ##############################################################################################
-# # ++导入所需的库和模块
-import os
-import sys
-import cryptography
-import hashlib
-import json
-import base64
-import importlib
-import ntplib
-import requests
-import time
-import subprocess
-import maya.OpenMayaUI as omui
-import maya.cmds as cmds
-#   自己的库
-import Arnold_Magic_Node_lib
+##############################################################################################
+# ++导入所需的库和模块
 
+# 标准库
+import os  # 提供操作系统功能的模块，例如文件和目录操作
+import sys  # 提供与Python解释器和命令行参数交互的功能
+import hashlib  # 提供用于生成哈希值的模块（例如MD5, SHA256等）
+import json  # 提供用于处理JSON数据的模块
+import base64  # 提供用于Base64编码和解码的模块
+import importlib  # 提供动态加载和重新加载模块的功能
+import time  # 提供时间相关函数，如时间戳、睡眠等
+import subprocess  # 提供执行系统命令和启动新进程的功能
+from time import ctime  # 提供将时间戳转换为字符串格式的函数
+from datetime import datetime, timedelta  # 提供日期和时间的操作功能
 
-#   重新加载模块
+# 外部库
+import cryptography  # 提供加密和解密相关功能的模块
+from cryptography.fernet import Fernet  # 对称加密库，用于加密和解密
+from cryptography.hazmat.primitives.asymmetric import rsa  # 提供非对称加密的RSA算法
+from cryptography.hazmat.primitives import hashes  # 提供加密中的哈希算法
+from cryptography.hazmat.primitives.asymmetric import padding  # 用于设置非对称加密中的填充方式
+from cryptography.hazmat.primitives import serialization  # 提供序列化和反序列化密钥的功能
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC  # 提供密码派生函数
+from cryptography.hazmat.backends import default_backend  # 提供默认加密后端支持
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes  # 提供对称加密的算法和模式
+from cryptography.exceptions import InvalidSignature  # 异常处理，处理无效签名
+
+import ntplib  # 提供与NTP（网络时间协议）服务器交互的功能
+import requests  # 提供HTTP请求功能，用于与网络API交互
+
+# Maya相关库
+import maya.OpenMayaUI as omui  # 提供与Maya UI交互的功能
+import maya.cmds as cmds  # Maya的命令模块，用于操控Maya中的场景和对象
+
+# 自己的库
+import Arnold_Magic_Node_lib  # 自定义的Maya Arnold节点库
+
+# 重新加载模块
 importlib.reload(Arnold_Magic_Node_lib)
 
-from time import ctime
-from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.exceptions import InvalidSignature
-
-# 导入PySide
+# 导入PySide，用于Maya中的UI开发
 try:
-    from PySide6 import QtCore, QtWidgets, QtGui
-    from PySide6.QtCore import Signal, Slot
-    from PySide6.QtGui import QAction
-    from shiboken6 import wrapInstance
+    from PySide6 import QtCore, QtWidgets, QtGui  # PySide6库提供用于开发Qt应用程序的类
+    from PySide6.QtCore import Signal, Slot  # 提供信号和槽机制
+    from PySide6.QtGui import QAction  # 提供创建菜单和工具栏的动作
+    from shiboken6 import wrapInstance  # 将Maya中的C++对象封装为Python对象
 except ImportError:
-    from PySide2 import QtCore, QtWidgets, QtGui
-    from PySide2.QtCore import Signal, Slot
-    from PySide2.QtWidgets import QAction
-    from shiboken2 import wrapInstance
+    from PySide2 import QtCore, QtWidgets, QtGui  # 如果PySide6不可用，使用PySide2
+    from PySide2.QtCore import Signal, Slot  # 信号与槽机制
+    from PySide2.QtWidgets import QAction  # 创建菜单和工具栏的动作
+    from shiboken2 import wrapInstance  # Maya中将C++对象封装为Python对象
 
 
+##############################################################################################
 
 
 Script_path = os.path.join(os.path.dirname(__file__))
@@ -78,6 +85,8 @@ language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages',
 
 #   获取主板的ID
 def get_motherboard_id():
+    LT = language['GMI']
+
     # Windows 系统
     if os.name == 'nt':  # 'nt' 表示 Windows 系统
         try:
@@ -88,9 +97,11 @@ def get_motherboard_id():
                 serial_number = lines[1].strip()
                 if serial_number:
                     return serial_number
-            return "Error: Serial number not found"
+            feedback.CPW(LT['01']) # "Windows系统 无法找到主板序列号"
+            return False
         except Exception as e:
-            return f"Error getting motherboard serial number (Windows): {e}"
+            feedback.CPW(f"{LT['02']} {str(e)}") # "Windows系统 获取主板序列号时出:"
+            return False
 
     # Linux/Unix 系统
     else:
@@ -100,9 +111,11 @@ def get_motherboard_id():
             uuid = output.decode().strip()
             if uuid:
                 return uuid
-            return "Error: UUID not found"
+            feedback.CPW(LT['03']) # "Linux/Unix系统 无法找到主板序列号"
+            return False
         except Exception as e:
-            return f"Error getting UUID (Linux/Unix): {e}"
+            feedback.CPW(f"{LT['04']} {str(e)}") # Linux/Unix系统 获取主板序列号时出错:
+            return False
 
 
 
@@ -131,6 +144,9 @@ def generate_device_fingerprint(motherboard_id):
 #------------------------------------------获取时间戳
 # 获取淘宝时间戳
 def get_web_timestamp(link = "http://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp"):
+
+    LT = language['GWTS']
+
     # "http://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp"
     # "http://worldtimeapi.org/api/ip"
     # "https://timeapi.io/api/Time/current/zone?timeZone=UTC"
@@ -142,14 +158,16 @@ def get_web_timestamp(link = "http://api.m.taobao.com/rest/api3.do?api=mtop.comm
             timestamp_float = float(timestamp) / 1000  # 转换为浮点类型 并把毫秒转为秒
             return timestamp_float
         else:
-            print("无法获取淘宝时间戳")
+            feedback.CPW(LT['01']) # 无法获取淘宝时间戳"
             return False
     except Exception as e:
-        print("获取link时间失败:" + e)
+        feedback.CPW(LT['02'] + str(e)) # 获取link时间失败:
         return False
 
 # 从阿里云 NTP 服务器获取时间戳
 def get_ntp_timestamp(ntp_servers = None):
+
+    LT = language['GNTS']
 
     inside_ntp_servers = [
         "ntp.tencent.com",  # 腾讯云
@@ -167,7 +185,7 @@ def get_ntp_timestamp(ntp_servers = None):
             except:
                 pass
     except Exception as e:
-        print("获取 NTP 时间失败:" + str(e))
+        feedback.CPW(LT['01'] + str(e))
         return False
 
 # 获取本地的时间戳

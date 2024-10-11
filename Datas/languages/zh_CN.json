@@ -1,7 +1,60 @@
 {
-  "language": "zh_CN",
-  "version": "Beta",
   "ArnoldMagicNode": {
+    "AMNSP_WIN" : {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "Arnold_Magic_Node 插件设置"
+      },
+        "create_menu" : {
+          "settings_menu" : "设置",
+          "reset_data_action" : "重置设置数据",
+          "license_menu" : "许可证",
+          "change_license_action" : "更换许可证",
+          "about_menu" : "关于",
+          "contact_feedback_action" : "联系/反馈",
+          "help_document_action" : "帮助文档"
+        },
+      "create_magic_connection_tab" : {
+        "mfljsz_label" : "魔法连接设置",
+        "auto_color_space_connection" : "连接时智能修改色彩空间",
+        "magic_change_material_name_options" : "连接时修改材质名称",
+        "zdyljdtt_label" : "自定义连接的贴图",
+        "zdyglmz_label" : "自定义过滤名字",
+        "mflj_tab" : "魔法连接"
+      },
+      "create_color_space_tab": {
+        "zdysckj_label": "自定义色彩空间",
+        "zdszsckj_label": "自动设置色彩空间",
+        "sckj_label": "颜色空间"
+      },
+      "create_node_connection_tab": {
+        "zdljcljdsz_label": "自动连接处理节点设置",
+        "cljdsz_list": "处理节点设置",
+        "jdlj_tab": "节点连接"
+      },
+      "create_path_matching_tab": {
+        "ljsxgsz_label": "连接时相关设置",
+        "path_matching_checkbox": "连接时智能修改色彩空间",
+        "path_matching_change_material_name_options": "连接时修改材质名称",
+        "path_disable_feedback_options": "关闭反馈",
+        "sxgczpchywzdwj_label": "筛选过程中排除含有文字的文件",
+        "zjxxsdjcsyczfczdtdnc_label": "在进行相似度检测时移除字符串中的特定内容",
+        "ppsxgsz_label": "匹配时相关设置",
+        "auto_max_val_checkbox": "自动选择最佳匹配",
+        "auto_max_val_checkbox_tip" : "如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。",
+        "ppysqz_label": "匹配元素权重",
+        "mzqz_label": "名字权重",
+        "fblqz_label": "分辨率权重",
+        "gsqz_label": "格式权重",
+        "cjsjqz_label": "创建时间权重",
+        "similarity_max_slider_label": "自定义相似度阈值:",
+        "similarity_max_slider_tip" : "请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。",
+        "similarity_range_slider_label": "相似度容差范围",
+        "similarity_range_slider_tip" : "设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。",
+        "day_range_slider_label": "计算创建天数范围容差值:",
+        "jdljpp_tab": "节点路径匹配"
+      }
+    },
+
     "TM_WIN": {
       "__init__": {
         "WINDOWS_NAME": "贴图管理器",
@@ -22,6 +75,7 @@
         "TexturelList_Headers": ["贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"]
       }
     },
+
     "TM_FAR_WIN": {
       "__init__": {
         "WINDOWS_NAME": "搜索并替换-"
@@ -45,6 +99,7 @@
         "button_replace": "替换"
       }
     },
+
     "TM_RF_WIN": {
       "initialize_window_config": {
         "WINDOWS_NAME": "自动修复路径-"
@@ -57,6 +112,7 @@
         "fix_path_button": "开始修复路径"
       }
     },
+
     "licenses_name" : {
         "free_license": "免费版",
         "standard_license": "标准版",
@@ -78,7 +134,10 @@
   },
   "LicenseV": {
     "GMI": {
-      "01": "无法获取到主板ID 请检查一下权限"
+      "01": "Windows系统 无法找到主板序列号",
+      "02": "Windows系统 获取主板序列号时出:",
+      "03": "Linux/Unix系统 无法找到主板序列号",
+      "04": "Linux/Unix系统 获取主板序列号时出错:"
     },
     "GWTS": {
       "01": "无法获取淘宝时间戳",

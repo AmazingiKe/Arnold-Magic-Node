@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.6.4.1"
+SoftwareVersion = "0.6.4.2"
 
 pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -371,9 +371,17 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.texture_processing_data = self.dataM.bin_load_data(
             os.path.join(settings_path, 'texture_processing_data.bin'))
 
+        # 加载语言配置文件并获取 'language_config' 键的值
+        language_config = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+
+        # 动态加载相应语言的JSON文件，并读取 'ArnoldMagicNode' 中的 'AMNSP_WIN' 键
+        self.language = self.dataM.ascii_load_data(
+            os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['AMNSP_WIN']
+
     def initialize_window_config(self):
 
-        WINDOWS_NAME = f'插件设置  {SoftwareState} : {SoftwareVersion}  {LicenseV_type_name} : {str(LicenseV_remaining_time)}'  # Win名称
+        WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}  {LicenseV_type_name} : {str(LicenseV_remaining_time)} "  # Win名称
 
         delete_window_if_existe('ArnoldMagicNodeSettingsPanel')
 
@@ -391,20 +399,20 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.main_menu_bar = QtWidgets.QMenuBar(self)
 
         # 设置菜单及其动作
-        self.settings_menu = self.main_menu_bar.addMenu('设置')
+        self.settings_menu = self.main_menu_bar.addMenu(self.language['create_menu']['settings_menu']) # 设置
 
         # 创建“重置数据”动作
-        self.reset_data_action = QAction('重置设置数据', self)
+        self.reset_data_action = QAction(self.language['create_menu']['settings_menu'], self) # 重置设置数据
         # 连接“重置数据”动作的触发信号到对应的槽函数
         self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, 'texture_processing_data.bin')),
                                                           InitialConfigFile.Main_program()))
         self.settings_menu.addAction(self.reset_data_action)
 
         # 许可证菜单及其动作
-        self.license_menu = self.main_menu_bar.addMenu('许可证')
+        self.license_menu = self.main_menu_bar.addMenu(self.language['create_menu']['license_menu']) # 许可证
 
         # 创建“更换许可证”动作
-        self.change_license_action = QAction('更换许可证', self)
+        self.change_license_action = QAction(self.language['create_menu']['change_license_action'], self) # 更换许可证
         self.change_license_action.triggered.connect(lambda *args: self.replace_license())
 
         # 将动作添加到许可证菜单
@@ -412,16 +420,16 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         # 关于菜单及其动作
-        self.about_menu = self.main_menu_bar.addMenu('关于')
+        self.about_menu = self.main_menu_bar.addMenu(self.language['create_menu']['about_menu']) # 关于
 
         # 创建“赞助”动作
 
         # 创建“联系/反馈”动作
-        self.contact_feedback_action = QAction('联系/反馈', self)
+        self.contact_feedback_action = QAction(self.language['create_menu']['contact_feedback_action'], self) # 联系/反馈
         self.contact_feedback_action.triggered.connect(
             lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
         # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
-        self.help_document_action = QAction('帮助文档', self)
+        self.help_document_action = QAction(self.language['create_menu']['help_document_action'], self)
         self.help_document_action.triggered.connect(
             lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomePath)))
 
@@ -688,7 +696,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # [1] 自定义连接的节点
         
-        self.add_line_with_text(layout , "自定义连接的节点")
+        self.add_line_with_text(layout , "自动连接处理节点设置")
          
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
@@ -710,7 +718,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.auto_node_connection_list)
 
-        self.add_line_with_text(layout, "自定义连接节点")
+        self.add_line_with_text(layout, "处理节点设置")
 
         input_port_combo = {}
         output_port_combo = {}
@@ -2550,17 +2558,13 @@ class TM_FindAndReplace(QtWidgets.QDialog):
 
         self.config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
 
-        # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
-        # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
+        # 加载语言配置文件并获取 'language_config' 键的值
         language_config = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH , 'Datas', 'settings', 'language_config.json') )['language_config']
+            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
 
-        # 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
-        # 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
-        # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
+        # 动态加载相应语言的JSON文件，并读取 'ArnoldMagicNode' 中的 'TM_FAR_WIN' 键
         self.language = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH , 'Datas', 'languages', f'{language_config}.json') )['ArnoldMagicNode']['TM_FAR_WIN']
-
+            os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['TM_FAR_WIN']
 
         # 命名常量命名
         WINDOWS_NAME =  self.language['__init__']['WINDOWS_NAME'] + WinName #Win名称

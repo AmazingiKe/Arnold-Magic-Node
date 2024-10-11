@@ -1,7 +1,59 @@
 {
-  "language": "en_US",
-  "version": "Beta",
   "ArnoldMagicNode": {
+    "AMNSP_WIN" : {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "Arnold_Magic_Node Plugin Settings"
+      },
+      "create_menu" : {
+        "settings_menu" : "Settings",
+        "reset_data_action" : "Reset Settings Data",
+        "license_menu" : "License",
+        "change_license_action" : "Change License",
+        "about_menu" : "About",
+        "contact_feedback_action" : "Contact/Feedback",
+        "help_document_action" : "Help Document"
+      },
+      "create_magic_connection_tab" : {
+        "mfljsz_label" : "Magic Connection Settings",
+        "auto_color_space_connection" : "Intelligently Adjust Color Space During Connection",
+        "magic_change_material_name_options" : "Modify Material Name During Connection",
+        "zdyljdtt_label" : "Custom Connection Maps",
+        "zdyglmz_label" : "Custom Filter Names",
+        "mflj_tab" : "Magic Connection"
+      },
+      "create_color_space_tab": {
+        "zdysckj_label": "Custom Color Space",
+        "zdszsckj_label": "Automatically Set Color Space",
+        "sckj_label": "Color Space"
+      },
+      "create_node_connection_tab": {
+        "zdljcljdsz_label": "Auto Node Connection Handling Settings",
+        "cljdsz_list": "Node Handling Settings",
+        "jdlj_tab": "Node Connection"
+      },
+      "create_path_matching_tab": {
+        "ljsxgsz_label": "Related Settings During Connection",
+        "path_matching_checkbox": "Intelligently Adjust Color Space During Connection",
+        "path_matching_change_material_name_options": "Modify Material Name During Connection",
+        "path_disable_feedback_options": "Disable Feedback",
+        "sxgczpchywzdwj_label": "Exclude Files Containing Text During Filtering",
+        "zjxxsdjcsyczfczdtdnc_label": "Remove Specific Content from Strings During Similarity Detection",
+        "ppsxgsz_label": "Related Settings During Matching",
+        "auto_max_val_checkbox": "Auto Select Best Match",
+        "auto_max_val_checkbox_tip" : "If selected, the program will automatically use the highest similarity value as the matching threshold, no manual setting needed.",
+        "ppysqz_label": "Element Weight for Matching",
+        "mzqz_label": "Name Weight",
+        "fblqz_label": "Resolution Weight",
+        "gsqz_label": "Format Weight",
+        "cjsjqz_label": "Creation Time Weight",
+        "similarity_max_slider_label": "Custom Similarity Threshold:",
+        "similarity_max_slider_tip" : "Enter the similarity threshold (0.0 - 1.0). The program will match results with a similarity higher than this threshold.",
+        "similarity_range_slider_label": "Similarity Tolerance Range",
+        "similarity_range_slider_tip" : "Set the tolerance range for the matching threshold (0.0 - 1.0). The program will match results within this range above or below the threshold.",
+        "day_range_slider_label": "Creation Days Range Tolerance:",
+        "jdljpp_tab": "Node Path Matching"
+      }
+    },
 
     "TM_WIN": {
       "__init__": {
@@ -10,8 +62,8 @@
         "day": "Days"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "Enter the material name to search....",
-        "TexturelListSearch_placeholder": "Enter the texture name to search....",
+        "MaterialListSearch_placeholder": "Enter the material name to search...",
+        "TexturelListSearch_placeholder": "Enter the texture name to search...",
         "TexturelList_Unselect_All_Button": "Deselect All",
         "TexturelList_reverse_selection": "Reverse Selection",
         "TexturelList_Find_Missing_Textures_Button": "Find Missing",
@@ -26,91 +78,108 @@
 
     "TM_FAR_WIN": {
       "__init__": {
-        "WINDOWS_NAME": "Search and Replace-"
+        "WINDOWS_NAME": "Search and Replace -"
       },
       "create_widgets": {
-        "label_data_to_edit_options": "Content to Modify",
-        "label_data_to_edit_options_02": "Choose according to what you want to modify",
+        "label_data_to_edit_options": "Content to Edit",
+        "label_data_to_edit_options_02": "Select based on the content you want to edit",
         "sl_material": "Material",
         "sl_texture": "Texture",
         "sl_texture_path": "Texture Path",
-        "label_modify_options": "Scope of Modification",
+        "label_modify_options": "Range of Content to Modify",
         "radio_all": "All",
         "radio_table": "In Table",
         "radio_selection": "In Selection",
         "label_find": "Find Content",
-        "line_edit_find_placeholder": "Enter the content to find...",
+        "line_edit_find_placeholder": "Enter content to find...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-        "line_edit_replace_placeholder": "Enter the replacement content...",
+        "line_edit_replace_placeholder": "Enter content to replace...",
         "checkbox_case_sensitive": "Ignore Case",
-        "checkbox_regex": "Use Regular Expressions",
+        "checkbox_regex": "Use Regular Expression",
         "button_replace": "Replace"
       }
     },
 
     "TM_RF_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "Auto Fix Path-"
+        "WINDOWS_NAME": "Auto Fix Path -"
       },
       "create_widgets": {
-        "memory_search_mode_checkbox": "Memory Search Mode",
+        "memory_search_mode_checkbox" : "Memory Search Mode",
         "search_subfolders_checkbox": "Search Subfolders",
         "multiple_subfolder_search_checkbox": "Multiple Subfolder Search",
         "ignore_case_checkbox": "Ignore Case",
         "fix_path_button": "Start Fixing Path"
       }
+    },
+
+    "licenses_name" : {
+      "free_license": "Free Version",
+      "standard_license": "Standard Version",
+      "premium_license": "Premium Version",
+      "developer_license": "Developer License",
+      "educational_license": "Educational License",
+      "permanent_standard_license": "Permanent Standard Version",
+      "permanent_premium_license": "Permanent Premium Version",
+      "expiry_date_01" : "Permanent"
     }
   },
 
   "ArnoldMagicNodeLibs": {
     "DataP": {
       "SSARD": {
-        "01": "The passed data is not a string",
-        "02": "Regular expression error:"
+        "01": "The data passed is not of string type",
+        "02": "Regular Expression Error:"
       }
     }
   },
+
   "LicenseV": {
     "GMI": {
-      "01": "Cannot get motherboard ID, please check permissions"
+      "01": "Windows System: Cannot find motherboard serial number",
+      "02": "Error occurred while retrieving motherboard serial number on Windows:",
+      "03": "Linux/Unix System: Cannot find motherboard serial number",
+      "04": "Error occurred while retrieving motherboard serial number on Linux/Unix:"
     },
     "GWTS": {
-      "01": "Failed to get Taobao timestamp",
-      "02": "Failed to get link time:"
+      "01": "Failed to retrieve Taobao timestamp",
+      "02": "Failed to retrieve link time:"
     },
     "GNTS": {
-      "01": "Failed to get NTP time:"
+      "01": "Failed to retrieve NTP time:"
     },
     "VL": {
-      "01": "Invalid license format",
-      "02": "Device ID mismatch",
-      "03": "License expired!",
-      "04": "Signature verification failed, the license may have been tampered with",
-      "05": "License format error",
-      "06": "Unknown error occurred during verification, please contact the developer"
+      "01": "Invalid License Format",
+      "02": "Device Identification Code Does Not Match",
+      "03": "License Has Expired!",
+      "04": "Signature Verification Failed, License May Have Been Tampered With",
+      "05": "License Format Error",
+      "06": "Unknown Error Occurred During Verification, Please Contact Developer"
     },
     "LW": {
-      "DIL": "Device ID (needs to be provided to the developer)",
+      "DIL": "Device Identification Code (Required to Provide to Developer)",
       "SUL": "Enter Serial Number",
-      "SNT": "Please enter the serial number",
-      "VB": "Verify License"
+      "SNT": "Please Enter Serial Number",
+      "VB": "Verify License",
+      "01" : "Please Enter Serial Number"
     },
     "MP": {
-      "01": "Cannot get online time"
+      "01": "Failed to retrieve online time",
+      "02": "Failed to retrieve time"
     }
   },
 
-  "DLibs": {
-    "FP": "@Arnold Tool Plugin Reminder {} | ",
-    "CVF": "Great, configuration library folder exists ╭(●｀∀´●)╯ Applause Applause",
-    "DL": {
-      "01": "Found",
-      "02": "Library does not exist ◔ ‸◔？ Downloading ≖‿≖✧ Please wait patiently",
-      "03": "Awesome!!!! No issues with environment configuration ♪（＾∀＾●）ﾉｼ "
+  "DLibs" : {
+    "FP" : "@Arnold Tool Plugin Reminder {} | ",
+    "CVF" : "Great! Configuration folder exists ╭(●｀∀´●)╯ Applause Applause",
+    "DL" : {
+      "01" : "Found",
+      "02" : "Library does not exist ◔ ‸◔？ Downloading ≖‿≖✧ Please be patient",
+      "03" : "Great!!!! No issues with environment configuration ♪（＾∀＾●）ﾉｼ "
     },
-    "MP": {
-      "01": "Library search time: ",
-      "02": " seconds"
+    "MP" : {
+      "01" : "Library search time: ",
+      "02" : " seconds"
     }
   }
 }
