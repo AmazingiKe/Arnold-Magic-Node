@@ -1,0 +1,243 @@
+{
+  "language_type" : "Français",
+
+  "ArnoldMagicNode": {
+
+    "AMDUI_WIN": {
+      "create_widgets" : {
+        "ttclgj_menu": "Outils de traitement des textures",
+        "ttglq_menu": "Gestionnaire de textures",
+        "ttpldrq_menu": "Importation de textures en lot",
+        "xryssz_menu": "Paramètres des préréglages de rendu",
+        "tjxrys_menu": "Ajouter un préréglage de rendu",
+        "xgxrys_menu": "Modifier un préréglage de rendu",
+        "scxrys_menu": "Supprimer un préréglage de rendu",
+        "dkxryswjj_menu": "Ouvrir le dossier des préréglages de rendu",
+        "default_rendering_properties_options": "Exporter les paramètres par défaut",
+        "rendering_properties_options": "Exporter les paramètres Arnold",
+        "aov_properties_properties_options": "Exporter les paramètres AOV",
+        "sz_menu": "Paramètres",
+        "magic_connection": "Connexion magique",
+        "path_detection_connection": "Connexion de détection de chemin",
+        "direct_connection": "Connexion directe",
+        "unify_uv_node": "Unifier UV",
+        "uv_preset": ["Désactivé", "Type 0 (ZBrush)", "Type 1 (Mudbox)", "UDIM (Mari)", "Afficher les tuiles"],
+        "zdsckj_button": "Espace colorimétrique automatique",
+        "ai_aov_switch": "Commutateur AOV"
+      }
+    },
+
+    "AMNSP_WIN" : {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "Paramètres du plugin Arnold_Magic_Node"
+      },
+      "create_menu" : {
+        "settings_menu" : "Paramètres",
+        "reset_data_action" : "Réinitialiser les données de paramètres",
+        "license_menu" : "Licence",
+        "change_license_action" : "Changer de licence",
+        "about_menu" : "À propos",
+        "contact_feedback_action" : "Contact/Retour",
+        "help_document_action" : "Document d'aide",
+        "plugin_update_download_action": "Télécharger la mise à jour du plugin",
+        "plugin_home" : "Page d'accueil du plugin"
+      },
+      "create_magic_connection_tab" : {
+        "mfljsz_label" : "Paramètres de connexion magique",
+        "auto_color_space_connection" : "Modifier automatiquement l'espace colorimétrique lors de la connexion",
+        "magic_change_material_name_options" : "Modifier le nom du matériau lors de la connexion",
+        "zdyljdtt_label" : "Textures de connexion personnalisées",
+        "zdyglmz_label" : "Filtres de noms personnalisés",
+        "mflj_tab" : "Connexion magique"
+      },
+      "create_color_space_tab": {
+        "zdysckj_label": "Espace colorimétrique personnalisé",
+        "zdszsckj_label": "Définir automatiquement l'espace colorimétrique",
+        "sckj_label": "Espace colorimétrique"
+      },
+      "create_node_connection_tab": {
+        "zdljcljdsz_label": "Paramètres de connexion automatique des nœuds",
+        "cljdsz_list": "Paramètres de traitement des nœuds",
+        "jdlj_tab": "Connexion de nœuds"
+      },
+      "create_path_matching_tab": {
+        "ljsxgsz_label": "Paramètres relatifs lors de la connexion",
+        "path_matching_checkbox": "Modifier automatiquement l'espace colorimétrique lors de la connexion",
+        "path_matching_change_material_name_options": "Modifier le nom du matériau lors de la connexion",
+        "path_disable_feedback_options": "Désactiver les retours",
+        "sxgczpchywzdwj_label": "Exclure les fichiers contenant du texte lors du filtrage",
+        "zjxxsdjcsyczfczdtdnc_label": "Supprimer certains contenus des chaînes lors de la détection de similitude",
+        "ppsxgsz_label": "Paramètres relatifs lors de la correspondance",
+        "auto_max_val_checkbox": "Sélectionner automatiquement la meilleure correspondance",
+        "auto_max_val_checkbox_tip" : "Si sélectionné, le programme utilisera automatiquement la valeur de similitude la plus élevée comme seuil de correspondance sans réglage manuel.",
+        "ppysqz_label": "Poids des éléments de correspondance",
+        "mzqz_label": "Poids du nom",
+        "fblqz_label": "Poids de la résolution",
+        "gsqz_label": "Poids du format",
+        "cjsjqz_label": "Poids de la date de création",
+        "xsdjs_label" : "Calcul de la similitude",
+        "similarity_max_slider_label": "Seuil de similitude personnalisé:",
+        "similarity_max_slider_tip" : "Veuillez entrer le seuil de similitude (0,0 - 1,0). Le programme correspondra aux résultats dont la similitude dépasse ce seuil.",
+        "similarity_range_slider_label": "Plage de tolérance de similitude",
+        "similarity_range_slider_tip" : "Définir la plage de tolérance pour le seuil de similitude (0,0 - 1,0). Le programme correspondra aux résultats dans cette plage de tolérance.",
+        "day_range_slider_label": "Plage de tolérance pour la date de création:",
+        "jdljpp_tab": "Correspondance des chemins des nœuds"
+      }
+    },
+
+    "TM_WIN": {
+      "__init__": {
+        "WINDOWS_NAME": "Gestionnaire de textures",
+        "remaining_time": "Temps restant de la licence",
+        "day": "Jours"
+      },
+      "create_widgets": {
+        "MaterialListSearch_placeholder": "Entrez le nom du matériau à rechercher....",
+        "TexturelListSearch_placeholder": "Entrez le nom de la texture à rechercher....",
+        "TexturelList_Unselect_All_Button": "Tout désélectionner",
+        "TexturelList_reverse_selection": "Inverser la sélection",
+        "TexturelList_Find_Missing_Textures_Button": "Trouver les manquantes",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "Trouver les grandes textures",
+        "TexturelList_Search_And_Replace_Date_Button": "Rechercher et remplacer",
+        "TexturelList_Replace_Data_Button": "Corriger automatiquement le chemin",
+        "TexturelList_Processed_Image_Button": "Traiter l'image",
+        "TexturelList_Refresh_Button_ToolTip": "Actualiser en fonction du cache",
+        "TexturelList_Headers": ["Nom du nœud de texture", "Matériau", "Taille", "Taille en pixels", "Format", "Nombre de références", "État", "Chemin"]
+      }
+    },
+
+    "TM_FAR_WIN": {
+      "__init__": {
+        "WINDOWS_NAME": "Rechercher et remplacer -"
+      },
+      "create_widgets": {
+        "label_data_to_edit_options": "Contenu à modifier",
+        "label_data_to_edit_options_02": "Choisissez en fonction du contenu que vous souhaitez modifier",
+        "sl_material": "Matériau",
+        "sl_texture": "Texture",
+        "sl_texture_path": "Chemin de la texture",
+        "label_modify_options": "Plage de modification du contenu",
+        "radio_all": "Tout",
+        "radio_table": "Dans le tableau",
+        "radio_selection": "Dans la sélection",
+        "label_find": "Contenu à rechercher",
+        "line_edit_find_placeholder": "Entrez le contenu à rechercher...",
+        "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
+        "line_edit_replace_placeholder": "Entrez le contenu à remplacer...",
+        "checkbox_case_sensitive": "Ignorer la casse",
+        "checkbox_regex": "Utiliser une expression régulière",
+        "button_replace": "Remplacer"
+      }
+    },
+
+    "TM_RF_WIN": {
+      "initialize_window_config": {
+        "WINDOWS_NAME": "Correction automatique du chemin -"
+      },
+      "create_widgets": {
+        "memory_search_mode_checkbox" : "Mode de recherche mémoire",
+        "search_subfolders_checkbox": "Rechercher dans les sous-dossiers",
+        "multiple_subfolder_search_checkbox": "Rechercher dans plusieurs sous-dossiers",
+        "ignore_case_checkbox": "Ignorer la casse",
+        "fix_path_button": "Commencer à corriger le chemin"
+      }
+    },
+
+    "TM_IP_WIN": {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "Traitement d'image -"
+      },
+      "menu_widgets": {
+        "edit_menu": "Éditer",
+        "clear_cache": "Effacer le cache ! Attention lors de la suppression !",
+        "redo_action": "Restaurer l'image",
+        "help_menu": "Aide",
+        "instructions_action": "Instructions"
+      },
+      "create_widgets": {
+        "format_combo_box_label": "Format:",
+        "zoom_ratios_combo_box_label": "Zoom:",
+        "resampling_mode_combo_box_label": "Rééchantillonnage:",
+        "resampling_mode_list": ["Interpolation du plus proche voisin", "Interpolation bilinéaire", "Interpolation bicubique", "Interpolation Lanczos", "Interpolation par zone", "Interpolation avec remplissage pour points hors limites", "Interpolation par mappage inverse"],
+        "jpg_label": "Qualité JPG: ",
+        "png_label": "Qualité PNG: ",
+        "convert_format_check_box": "Convertir le format",
+        "scale_texture_check_box": "Redimensionner la texture",
+        "conversion_button": "Commencer la conversion"
+      }
+    },
+
+    "UVPM" : {
+      "01": "Le mode de tuile UV de",
+      "02": "nœud a été défini comme:",
+      "03": "Erreur lors du réglage:",
+      "04" : "Veuillez sélectionner un nœud de texture"
+    },
+
+    "licenses_name" : {
+      "free_license": "Version gratuite",
+      "standard_license": "Version standard",
+      "premium_license": "Version premium",
+      "developer_license": "Licence développeur",
+      "educational_license": "Licence éducative",
+      "permanent_standard_license": "Version standard permanente",
+      "permanent_premium_license": "Version premium permanente",
+      "expiry_date_01" : "Permanente"
+    }
+  },
+  "ArnoldMagicNodeLibs": {
+    "DataP": {
+      "SSARD": {
+        "01": "Les données transmises ne sont pas de type chaîne",
+        "02": "Erreur d'expression régulière:"
+      }
+    }
+  },
+  "LicenseV": {
+    "GMI": {
+      "01": "Système Windows: Impossible de trouver le numéro de série de la carte mère",
+      "02": "Erreur lors de la récupération du numéro de série de la carte mère sous Windows:",
+      "03": "Système Linux/Unix: Impossible de trouver le numéro de série de la carte mère",
+      "04": "Erreur lors de la récupération du numéro de série de la carte mère sous Linux/Unix:"
+    },
+    "GWTS": {
+      "01": "Impossible de récupérer l'horodatage de Taobao",
+      "02": "Échec de la récupération de l'heure du lien:"
+    },
+    "GNTS": {
+      "01": "Échec de la récupération de l'heure NTP:"
+    },
+    "VL": {
+      "01": "Format de licence invalide",
+      "02": "Le code d'identification de l'appareil ne correspond pas",
+      "03": "La licence a expiré !",
+      "04": "Échec de la vérification de la signature, la licence peut avoir été altérée",
+      "05": "Erreur de format de licence",
+      "06": "Une erreur inconnue s'est produite lors de la vérification, veuillez contacter le développeur"
+    },
+    "LW": {
+      "DIL": "Code d'identification de l'appareil (à fournir au développeur)",
+      "SUL": "Entrez le numéro de série",
+      "SNT": "Veuillez entrer le numéro de série",
+      "VB": "Vérifier la licence",
+      "01" : "Veuillez entrer le numéro de série"
+    },
+    "MP": {
+      "01": "Impossible de récupérer l'heure en ligne",
+      "02": "Impossible de récupérer l'heure"
+    }
+  },
+  "DLibs" : {
+    "FP" : "@Arnold Tool Rappel du plugin {} | ",
+    "CVF" : "Super ! Le dossier de configuration existe ╭(●｀∀´●)╯ Applaudissements",
+    "DL" : {
+      "01" : "Trouvé",
+      "02" : "Bibliothèque introuvable ◔ ‸◔？ Téléchargement en cours ≖‿≖✧ Veuillez patienter",
+      "03" : "Super !!!! Aucune erreur dans la configuration de l'environnement ♪（＾∀＾●）ﾉｼ "
+    },
+    "MP" : {
+      "01": "Temps de recherche de la bibliothèque: ",
+      "02": " secondes"
+    }
+  }
+}

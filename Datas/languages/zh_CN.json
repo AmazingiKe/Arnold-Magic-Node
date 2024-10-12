@@ -1,5 +1,32 @@
 {
+  "language_type" : "简体中文",
+
   "ArnoldMagicNode": {
+
+    "AMDUI_WIN": {
+      "create_widgets" : {
+        "ttclgj_menu": "贴图处理工具",
+        "ttglq_menu": "贴图管理器",
+        "ttpldrq_menu": "贴图批量导入器",
+        "xryssz_menu": "渲染预设设置",
+        "tjxrys_menu": "添加渲染预设",
+        "xgxrys_menu": "修改渲染预设",
+        "scxrys_menu": "删除渲染预设",
+        "dkxryswjj_menu": "打开渲染预设文件夹",
+        "default_rendering_properties_options": "输出 默认参数",
+        "rendering_properties_options": "输出 阿诺德参数",
+        "aov_properties_properties_options": "输出 AOV参数",
+        "sz_menu": "设置",
+        "magic_connection": "魔法连接",
+        "path_detection_connection": "路径拾取连接",
+        "direct_connection": "直连",
+        "unify_uv_node": "统一UV",
+        "uv_preset": ["禁用","0型(ZBrush)","1型(Mudbox)","UDIM(Mari)","显示平铺"],
+        "zdsckj_button": "自动色彩空间",
+        "ai_aov_switch": "AOV开关"
+      }
+    },
+
     "AMNSP_WIN" : {
       "initialize_window_config": {
         "WINDOWS_NAME" : "Arnold_Magic_Node 插件设置"
@@ -11,7 +38,9 @@
           "change_license_action" : "更换许可证",
           "about_menu" : "关于",
           "contact_feedback_action" : "联系/反馈",
-          "help_document_action" : "帮助文档"
+          "help_document_action" : "帮助文档",
+          "plugin_update_download_action" : "插件更新下载",
+          "plugin_home" : "插件主页"
         },
       "create_magic_connection_tab" : {
         "mfljsz_label" : "魔法连接设置",
@@ -46,6 +75,7 @@
         "fblqz_label": "分辨率权重",
         "gsqz_label": "格式权重",
         "cjsjqz_label": "创建时间权重",
+        "xsdjs_label" : "相似度的计算",
         "similarity_max_slider_label": "自定义相似度阈值:",
         "similarity_max_slider_tip" : "请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。",
         "similarity_range_slider_label": "相似度容差范围",
@@ -112,6 +142,41 @@
         "fix_path_button": "开始修复路径"
       }
     },
+
+    "TM_IP_WIN": {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "图像处理-"
+      },
+      "menu_widgets": {
+        "edit_menu": "编辑",
+        "clear_cache": "清除缓存  ！谨慎删除！",
+        "redo_action": "还原图像",
+        "help_menu": "帮助",
+        "instructions_action": "使用说明"
+
+      },
+      "create_widgets": {
+        "format_combo_box_label": "格式：",
+        "zoom_ratios_combo_box_label": "缩放：",
+        "resampling_mode_combo_box_label": "重新取样：",
+        "resampling_mode_list": ["最近邻插值", "双线性插值", "三次插值", "Lanczos 插值", "区域插值", "填充插值外点", "逆映射插值"],
+        "jpg_label": "JPG的品质: ",
+        "png_label": "PNG的品质: ",
+        "convert_format_check_box": "转换格式",
+        "scale_texture_check_box": "缩放贴图",
+        "conversion_button": "开始转换"
+      }
+
+
+    },
+
+    "UVPM" : {
+      "01": "已经把",
+      "02": "节点的uv平铺模式设置成:",
+      "03": "设置时错误：",
+      "04" : "请选择纹理节点"
+    },
+
 
     "licenses_name" : {
         "free_license": "免费版",

@@ -82,8 +82,10 @@ AMN_UI_WorkSpaceControl = None
 SoftwareState = "Beta"
 SoftwareVersion = "0.6.4.2"
 
-pluginHomePath = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
+pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
+pluginUpdateDownloadURL = r'https://flowus.cn/amazingike/share/84422156-5158-4b73-9a5f-c5cadbb6625a?code=LZVF69'
+pluginHelpDocumentURL = r'https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69'
 
 datas_path = os.path.join(SCRIPT_PATH, "Datas") # 定义数据文件夹  ->全局变量
 
@@ -147,6 +149,19 @@ def MayaMainWindows():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr),QtWidgets.QWidget)
 
+def language_loading():
+    dataM = DataManager()
+
+    # 加载语言配置文件并获取 'language_config' 键的值
+    language_config = dataM.ascii_load_data(
+        os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+
+    # 动态加载相应语言的JSON文件
+    language = dataM.ascii_load_data(
+        os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))
+
+    return language
+
 # 插件窗口
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
@@ -179,49 +194,50 @@ class Arnold_Magic_Node_UI(object):
         # 菜单========= 
         customMenu = cmds.popupMenu(button=3)
 
-        cmds.menuItem(label= '贴图处理工具', divider=True) # 添加分割线
+        cmds.menuItem(label= self.language['create_widgets']['ttclgj_menu'], divider=True) # 贴图处理工具
 
-        cmds.menuItem(label= '贴图管理器', c=lambda *args: TextureManagerWinInstance(),
-                      i = icon_path + "\\TXManagerShelf_200.png")
+        cmds.menuItem(label= self.language['create_widgets']['ttglq_menu'],
+                      c=lambda *args: TextureManagerWinInstance(), # 贴图管理器
+                      i= icon_path + "\\TXManagerShelf_200.png")
 
-        cmds.menuItem(label= '贴图批量导入器', c=lambda *args: TextureBatchImporterWin(),
+        cmds.menuItem(label= self.language['create_widgets']['ttpldrq_menu'],
+                      c=lambda *args: TextureBatchImporterWin(), # 贴图批量导入器
                       i = icon_path + "\\RenderToTextureShelf_200.png")
 
-        cmds.menuItem(label= '渲染预设设置',
-                      divider=True) # 添加分割线
+        cmds.menuItem(label= self.language['create_widgets']['xryssz_menu'], divider=True) # 渲染预设设置
 
-        cmds.menuItem(label= '添加渲染预设',
+        cmds.menuItem(label= self.language['create_widgets']['tjxrys_menu'], # 添加渲染预设
                       c=lambda *args: rendering_preset_settings_button(self.rendering_preset))
 
-        cmds.menuItem(label= '修改渲染预设',
+        cmds.menuItem(label= self.language['create_widgets']['xgxrys_menu'], # 修改渲染预设
                       c= lambda *args: modify_rendering_preset_menuItem(
                           cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
                           cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
 
-        cmds.menuItem(label= '删除渲染预设',
+        cmds.menuItem(label= self.language['create_widgets']['scxrys_menu'], # 删除渲染预设
                       c= lambda *args: delete_rendering_preset_menuItem(
                           cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
                           cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
 
-        cmds.menuItem(label= '打开渲染预设文件夹',
+        cmds.menuItem(label= self.language['create_widgets']['dkxryswjj_menu'], # 打开渲染预设文件夹
                       c= lambda *args: os.startfile(os.path.join(SCRIPT_PATH, 'Datas', 'render_settings')))
 
         cmds.menuItem(divider=True)
 
-        default_rendering_properties_options = cmds.menuItem(label= '输出 默认参数',
+        default_rendering_properties_options = cmds.menuItem(label= self.language['create_widgets']['default_rendering_properties_options'], # 输出 默认参数
                                                              cb= True,
                                                              c= lambda *args: self.modify_rendering_properties_write_options('default_rendering_properties_write_options', cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
 
-        rendering_properties_options = cmds.menuItem(label= '输出 阿诺德参数',
+        rendering_properties_options = cmds.menuItem(label= self.language['create_widgets']['rendering_properties_options'], # 输出 阿诺德参数
                                                      cb= True,
                                                      c= lambda *args: self.modify_rendering_properties_write_options('rendering_properties_write_options', cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
 
-        aov_properties_properties_options = cmds.menuItem(label= '输出 AOV参数',
+        aov_properties_properties_options = cmds.menuItem(label= self.language['create_widgets']['aov_properties_properties_options'], # 输出 AOV参数
                                                           cb= True,
                                                           c= lambda *args: self.modify_rendering_properties_write_options('AOV_properties_properties_write_options', cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
         cmds.menuItem(divider=True)
 
-        cmds.menuItem(label= '设置',
+        cmds.menuItem(label= self.language['create_widgets']['sz_menu'] , # 设置
                       c= lambda *args: ArnoldMagicNodeSettingsPanel())
 
         # 读取settings_path文件夹下的render_preset_config_dict文件
@@ -246,20 +262,20 @@ class Arnold_Magic_Node_UI(object):
 
 
         # Magic_Connection
-        self.magic_connection = cmds.button(label="魔法连接",c=lambda *args: magic_connection_button())
+        self.magic_connection = cmds.button(label=self.language['create_widgets']['magic_connection'],c=lambda *args: magic_connection_button()) # 魔法连接
 
-        self.path_detection_connection = cmds.button(label="路径拾取连接",c=lambda *args: path_detection_connection_button())
+        self.path_detection_connection = cmds.button(label=self.language['create_widgets']['path_detection_connection'],c=lambda *args: path_detection_connection_button()) # 路径拾取连接
 
         # Direct_Connection
-        self.direct_connection = cmds.button(label="直连",c=lambda *args: direct_connection_button())
+        self.direct_connection = cmds.button(label=self.language['create_widgets']['direct_connection'],c=lambda *args: direct_connection_button()) # 直连
         # Unify Uv Node
-        self.unify_uv_node = cmds.button(label="统一UV",c=lambda *args: unify_uv_node_button())
+        self.unify_uv_node = cmds.button(label=self.language['create_widgets']['unify_uv_node'],c=lambda *args: unify_uv_node_button()) # 统一UV
 
         cmds.text(label=" "*2)
 
         self.uv_preset = cmds.optionMenu(mvi = 8, cc=lambda* args:uv_preset_menu(cmds.optionMenu(self.uv_preset, query=True, value=True)))
         # 用循环创建uv_mode_list 的menu
-        uv_mode_list = ['禁用','0型(ZBrush)','1型(Mudbox)','UDIM(Mari)','显示平铺']
+        uv_mode_list = self.language['create_widgets']['uv_preset'] # ['禁用','0型(ZBrush)','1型(Mudbox)','UDIM(Mari)','显示平铺']
         for uv_mode_name in uv_mode_list:
             cmds.menuItem(label=uv_mode_name)
 
@@ -279,11 +295,11 @@ class Arnold_Magic_Node_UI(object):
             cmds.menuItem(label = color_space_name)
 
         # 自动色彩空间的按钮
-        cmds.button(label="自动色彩空间",c=lambda *args: AutoSet_TexColorSpace())
+        cmds.button(label=self.language['create_widgets']['zdsckj_button'],c=lambda *args: AutoSet_TexColorSpace()) # 自动色彩空间
 
         cmds.text(label=" "*2)
 
-        self.ai_aov_switch = cmds.button(label="AOV开关",c=lambda *args: ai_aov_switch_button())
+        self.ai_aov_switch = cmds.button(label=self.language['create_widgets']['ai_aov_switch'],c=lambda *args: ai_aov_switch_button()) # AOV开关
 
         # 渲染预设的菜单 —————————————————— 开始
         self.rendering_preset_name = {}
@@ -322,6 +338,9 @@ class Arnold_Magic_Node_UI(object):
         self.dataP = DataProcessor()
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.getnodedata = GetNodeData() # 获取节点数据模块
+
+        # 加载语言
+        self.language = language_loading()['ArnoldMagicNode']['AMDUI_WIN']
 
     # 修改渲染属性写入选项
     def modify_rendering_properties_write_options(self, write_name, val):
@@ -367,6 +386,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.dataM = DataManager()  # 数据管理模块
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.pathD = PathDetection()  # 数据检测模块
+
         ### 初始化配置数据
         self.texture_processing_data = self.dataM.bin_load_data(
             os.path.join(settings_path, 'texture_processing_data.bin'))
@@ -402,10 +422,11 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.settings_menu = self.main_menu_bar.addMenu(self.language['create_menu']['settings_menu']) # 设置
 
         # 创建“重置数据”动作
-        self.reset_data_action = QAction(self.language['create_menu']['settings_menu'], self) # 重置设置数据
+        self.reset_data_action = QAction(self.language['create_menu']['reset_data_action'], self) # 重置设置数据
         # 连接“重置数据”动作的触发信号到对应的槽函数
         self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, 'texture_processing_data.bin')),
                                                           InitialConfigFile.Main_program()))
+
         self.settings_menu.addAction(self.reset_data_action)
 
         # 许可证菜单及其动作
@@ -422,20 +443,29 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 关于菜单及其动作
         self.about_menu = self.main_menu_bar.addMenu(self.language['create_menu']['about_menu']) # 关于
 
-        # 创建“赞助”动作
+        # 创建 插件主页菜单
+        self.plugin_home = QAction(self.language['create_menu']['plugin_home'], self) # 插件主页
+        self.plugin_home.triggered.connect(
+            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomeURL)))
 
-        # 创建“联系/反馈”动作
+        # 创建 帮助/反馈菜单
         self.contact_feedback_action = QAction(self.language['create_menu']['contact_feedback_action'], self) # 联系/反馈
         self.contact_feedback_action.triggered.connect(
             lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
+
         # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
-        self.help_document_action = QAction(self.language['create_menu']['help_document_action'], self)
+        self.help_document_action = QAction(self.language['create_menu']['help_document_action'], self) # 帮助文档
         self.help_document_action.triggered.connect(
-            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomePath)))
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHelpDocumentURL)))
+
+        self.plugin_update_download_action = QAction(self.language['create_menu']['plugin_update_download_action'], self) # 插件更新下载
+        self.plugin_update_download_action.triggered.connect(
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginUpdateDownloadURL)))
 
         # 将动作添加到关于菜单
-
+        self.about_menu.addAction(self.plugin_home)
         self.about_menu.addAction(self.contact_feedback_action)
+        self.about_menu.addAction(self.plugin_update_download_action)
         self.about_menu.addAction(self.help_document_action)
 
 
@@ -481,9 +511,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # [1] 连接设置
         
-        self.add_line_with_text(layout , "魔法连接设置")
-         
-        self.auto_color_space_connection = QtWidgets.QCheckBox('连接时智能修改色彩空间')
+        self.add_line_with_text(layout , self.language['create_magic_connection_tab']['mfljsz_label']) # "魔法连接设置"
+
+        self.auto_color_space_connection = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
+                                                                            ['auto_color_space_connection']) # 连接时智能修改色彩空间
 
         # auto_color_space_connection 连接修改配置函数
         self.auto_color_space_connection.stateChanged.connect(lambda *args: self.modify_nested_config(
@@ -492,7 +523,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.auto_color_space_connection)
 
-        self.magic_change_material_name_options = QtWidgets.QCheckBox('连接时修改材质名称')
+        self.magic_change_material_name_options = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
+                                                                                    ['magic_change_material_name_options'])# '连接时修改材质名称'
 
         # auto_color_space_connection 连接修改配置函数
         self.magic_change_material_name_options.stateChanged.connect(lambda *args: self.modify_nested_config(
@@ -503,7 +535,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         
         # [2] 自定义连接的贴图
-        self.add_line_with_text(layout , "自定义连接的贴图")
+        self.add_line_with_text(layout , self.language['create_magic_connection_tab']['zdyljdtt_label']) # 自定义连接的贴图
          
         self.tex_first_filter_options_list = QtWidgets.QListWidget()
 
@@ -530,7 +562,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         
         # [3] 自定义过滤名字
-        self.add_line_with_text(layout , "自定义过滤名字")
+        self.add_line_with_text(layout , self.language['create_magic_connection_tab']['zdyglmz_label']) # 自定义过滤名字
          
 
         self.texture_filter_fields = {}
@@ -574,7 +606,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         tab_layout.addWidget(scroll_area)  # 将滚动区域添加到选项卡布局中
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(magic_connection_tab, "魔法连接")
+        self.tab_widget.addTab(magic_connection_tab, self.language['create_magic_connection_tab']['mflj_tab']) # 魔法连接
 
     # 颜色空间的标签页面
     def create_color_space_tab(self):
@@ -593,7 +625,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         
         # [1] 自定义色彩空间
-        self.add_line_with_text(layout , "自定义色彩空间")
+        self.add_line_with_text(layout , self.language['create_color_space_tab']['zdysckj_label']) # 自定义色彩空间
          
         self.color_space_text = QtWidgets.QPlainTextEdit()
 
@@ -621,7 +653,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addWidget(self.color_space_text)
          
         # [2] 自动设置色彩空间
-        self.add_line_with_text(layout , "自动设置色彩空间")
+        self.add_line_with_text(layout , self.language['create_color_space_tab']['zdszsckj_label']) # 自动设置色彩空间
         
         self.auto_color_space_options = {}
 
@@ -672,7 +704,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         tab_layout.addWidget(scroll_area)
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(color_space_tab, "颜色空间")
+        self.tab_widget.addTab(color_space_tab, self.language['create_color_space_tab']['sckj_label']) # 颜色空间
 
     # 节点连接的标签页面
     def create_node_connection_tab(self):
@@ -696,7 +728,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # [1] 自定义连接的节点
         
-        self.add_line_with_text(layout , "自动连接处理节点设置")
+        self.add_line_with_text(layout , self.language['create_node_connection_tab']['zdljcljdsz_label']) # 自动连接处理节点设置
          
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
@@ -718,7 +750,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.auto_node_connection_list)
 
-        self.add_line_with_text(layout, "处理节点设置")
+        self.add_line_with_text(layout, self.language['create_node_connection_tab']['cljdsz_list']) # 处理节点设置
 
         input_port_combo = {}
         output_port_combo = {}
@@ -786,7 +818,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         node_connection_layout.addWidget(scroll_area)
 
         # 添加到选项卡
-        self.tab_widget.addTab(node_connection_widget, "节点连接")
+        self.tab_widget.addTab(node_connection_widget, self.language['create_node_connection_tab']['jdlj_tab']) # 节点连接
 
     # 节点路径匹配页面
     def create_path_matching_tab(self):
@@ -816,10 +848,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         
         # [1] 连接时相关设置
-        self.add_line_with_text(layout , "连接时相关设置")
+        self.add_line_with_text(layout , self.language['create_path_matching_tab']['ljsxgsz_label']) # 连接时相关设置
          
 
-        self.path_matching_checkbox = QtWidgets.QCheckBox('连接时智能修改色彩空间')
+        self.path_matching_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_checkbox']) # 连接时智能修改色彩空间
         self.path_matching_checkbox.setChecked(path_detection_config['PathDetectionConnectionSetColorSpace'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_checkbox.stateChanged.connect(lambda *args:  self.modify_config(
@@ -829,7 +861,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.path_matching_checkbox)
 
-        self.path_matching_change_material_name_options = QtWidgets.QCheckBox('连接时修改材质名称')
+        self.path_matching_change_material_name_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_change_material_name_options']) # 连接时修改材质名称
+
         self.path_matching_change_material_name_options.setChecked(path_detection_config['change_material_name'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_change_material_name_options.stateChanged.connect(lambda *args:  self.modify_config(
@@ -840,7 +873,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addWidget(self.path_matching_change_material_name_options)
 
 
-        self.path_disable_feedback_options = QtWidgets.QCheckBox('关闭反馈')
+        self.path_disable_feedback_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_disable_feedback_options']) # 关闭反馈
         self.path_disable_feedback_options.setChecked(path_detection_config['disable_feedback'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_disable_feedback_options.stateChanged.connect(lambda *args:  self.modify_config(
@@ -852,7 +885,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
          
         # [2] 排除名称
-        self.add_line_with_text(layout , "筛选过程中排除含有文字的文件")
+        self.add_line_with_text(layout , self.language['create_path_matching_tab']['sxgczpchywzdwj_label']) # 筛选过程中排除含有文字的文件
         
         self.exclude_list_text = QtWidgets.QPlainTextEdit()
         # 设置默认排除列表，并格式化显示
@@ -874,7 +907,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
          
         # [3] 格式名称
-        self.add_line_with_text(layout , "在进行相似度检测时移除字符串中的特定内容")
+        self.add_line_with_text(layout , self.language['create_path_matching_tab']['zjxxsdjcsyczfczdtdnc_label']) # 在进行相似度检测时移除字符串中的特定内容
         
         self.detection_excluded_list = QtWidgets.QPlainTextEdit()
         # 设置默认格式列表，并格式化显示
@@ -898,9 +931,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # [4] 匹配时相关设置
 
 
-        self.add_line_with_text(layout , "匹配时相关设置")
+        self.add_line_with_text(layout ,  self.language['create_path_matching_tab']['ppsxgsz_label']) # 匹配时相关设置
 
-        self.auto_max_val_checkbox = QtWidgets.QCheckBox('自动选择最佳匹配')
+        self.auto_max_val_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['auto_max_val_checkbox']) # 自动选择最佳匹配
         self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
         self.auto_max_val_checkbox.stateChanged.connect(lambda *args:  (
             self.modify_config(
@@ -911,9 +944,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         layout.addWidget(self.auto_max_val_checkbox)
-        self.auto_max_val_checkbox.setToolTip('如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。')
+        self.auto_max_val_checkbox.setToolTip(self.language['create_path_matching_tab']['auto_max_val_checkbox_tip']) # "如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。"
 
-        self.add_line_with_text(layout, '匹配元素权重')
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ppysqz_label']) # 匹配元素权重
 
         # 初始化滑杆的权重值
         slider_values = {
@@ -987,7 +1020,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                                'path_detection_config.bin')
 
         # 名字权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("名字权重:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['mzqz_label'])) # 名字权重
         name_weight_layout = QtWidgets.QHBoxLayout()
         self.name_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.name_weight_slider.setMinimum(0)
@@ -1001,7 +1034,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.name_weight_slider.valueChanged.connect(lambda value: update_weight('name_weight', value))
 
         # 分辨率权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("分辨率权重:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['fblqz_label'])) # 分辨率权重
         resolution_weight_layout = QtWidgets.QHBoxLayout()
         self.resolution_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.resolution_weight_slider.setMinimum(0)
@@ -1014,7 +1047,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.resolution_weight_slider.valueChanged.connect(lambda value: update_weight('resolution_weight', value))
 
         # 格式权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("格式权重:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['gsqz_label'])) # 格式权重
         format_weight_layout = QtWidgets.QHBoxLayout()
         self.format_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.format_weight_slider.setMinimum(0)
@@ -1027,7 +1060,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.format_weight_slider.valueChanged.connect(lambda value: update_weight('format_weight', value))
 
         # 创建时间权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("创建时间权重:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['cjsjqz_label'])) # 创建时间权重
         creation_time_weight_layout = QtWidgets.QHBoxLayout()
         self.creation_time_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.creation_time_weight_slider.setMinimum(0)
@@ -1040,10 +1073,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.creation_time_weight_slider.valueChanged.connect(
             lambda value: update_weight('creation_time_weight', value))
 
-        self.add_line_with_text(layout, "相似度的计算")
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['xsdjs_label']) # 相似度的计算
 
         # 相似度判断值滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("自定义相似度阈值:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_max_slider_label'])) # 自定义相似度阈值:
         similarity_max_layout = QtWidgets.QHBoxLayout()
         self.similarity_max_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_max_slider.setMinimum(0)
@@ -1053,7 +1086,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.similarity_max_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_max']))
         similarity_max_layout.addWidget(self.similarity_max_label)
         layout.addLayout(similarity_max_layout)
-        self.similarity_max_slider.setToolTip('请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。')
+        self.similarity_max_slider.setToolTip(self.language['create_path_matching_tab']['similarity_max_slider_tip']) # "请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。"
 
         # 连接滑杆的值变化信号到更新函数
         self.similarity_max_slider.valueChanged.connect(
@@ -1061,7 +1094,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         )
 
         # 相似度差异值滑杆和标签
-        layout.addWidget(QtWidgets.QLabel("相似度容差范围:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_range_slider_label'])) # 相似度容差范围
         similarity_range_layout = QtWidgets.QHBoxLayout()
         self.similarity_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_range_slider.setMinimum(0)
@@ -1072,14 +1105,14 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         similarity_range_layout.addWidget(self.similarity_range_label)
         layout.addLayout(similarity_range_layout)
         self.similarity_range_slider.setToolTip(
-            '设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。')
+            self.language['create_path_matching_tab']['similarity_range_slider_tip']) # "设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。"
 
         self.similarity_range_slider.valueChanged.connect(
             lambda value: update_slider_value('similarity_range', value)
         )
 
         # 计算创建天数范围容差值
-        layout.addWidget(QtWidgets.QLabel("计算创建天数范围容差值:"))
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['day_range_slider_label'])) # 计算创建天数范围容差值:
         day_range_layout = QtWidgets.QHBoxLayout()
         self.day_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.day_range_slider.setMinimum(1)
@@ -1101,7 +1134,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         scroll_area.setWidget(path_matching_widget)
 
         # 添加到选项卡
-        self.tab_widget.addTab(scroll_area, "节点路径匹配")
+        self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab']) # 节点路径匹配
 
     # 创建标签
     def create_section_label(self, text):
@@ -1496,7 +1529,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # MaterialListSearch 搜索框
         self.MaterialListSearch = QtWidgets.QLineEdit()
-        self.MaterialListSearch.textChanged.connect(lambda item: self.material_list_search())
+        self.MaterialListSearch.textChanged.connect(lambda *args: self.material_list_search())
         self.MaterialListSearch.setFixedWidth(350)
         self.MaterialListSearch.setFixedHeight(40)
         self.MaterialListSearch.setPlaceholderText(lang['MaterialListSearch_placeholder']) # 输入要搜索的材质球名称
@@ -3388,7 +3421,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
     # 初始化窗口配置
     def initialize_window_config(self, WinName):
         # 命名常量命名
-        WINDOWS_NAME =  '图像处理-' + WinName #Win名称
+        WINDOWS_NAME =  self.language['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
 
         delete_window_if_existe('TM_ImageProcessing_Win')
 
@@ -3430,36 +3463,45 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         if not os.path.exists(self.TM_image_processing_cache_FilePath):
             self.dataM.bin_save_data(self.TM_image_processing_cache_FilePath, image_processing_cache_dict)
 
+        self.language = language_loading()['ArnoldMagicNode']['TM_IP_WIN']
+
     def menu_widgets(self):
+        # 获取到相应函数的语言
+        menu_lang = self.language['menu_widgets']
+
         # 创建菜单栏
         self.menu_bar = QtWidgets.QMenuBar(self)
 
         # 创建“编辑”菜单
-        self.edit_menu = self.menu_bar.addMenu("编辑")
+        self.edit_menu = self.menu_bar.addMenu(menu_lang['edit_menu']) # 编辑
 
-        self.clear_cache = QAction("清除缓存  ！谨慎删除！", self)
+        self.clear_cache = QAction(menu_lang['clear_cache'], self) # 清除缓存  ！谨慎删除！
         self.clear_cache.triggered.connect(lambda *args: os.remove(self.TM_image_processing_cache_FilePath))
 
-        self.redo_action = QAction("还原图像", self)
+        self.redo_action = QAction(menu_lang['redo_action'], self) # 还原图像
 
         self.edit_menu.addAction(self.clear_cache)
         self.edit_menu.addAction(self.redo_action)
 
 
 
-        self.help_menu = self.menu_bar.addMenu("帮助")
+        self.help_menu = self.menu_bar.addMenu(menu_lang['help_menu']) # 帮助
 
-        self.instructions_action = QAction("使用说明", self)
+        self.instructions_action = QAction(menu_lang['instructions_action'], self) # 使用说明
         self.help_menu.addAction(self.instructions_action)
 
     def create_widgets(self):
+
+        # 获取到相应函数的语言
+        widgets_lang = self.language['create_widgets']
+
         common_font = QtGui.QFont()
         common_font.setPointSize(SMALL_FONT_SIZE)
 
 
 
 
-        self.format_combo_box_label = QtWidgets.QLabel("格式：")
+        self.format_combo_box_label = QtWidgets.QLabel(widgets_lang['format_combo_box_label']) # 格式
 
         format_list = ['jpg', 'png', 'tif', 'bmp']
         self.format_combo_box = QtWidgets.QComboBox()
@@ -3470,7 +3512,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
         # 创建一个显示输入结果的 QLabel
-        self.zoom_ratios_combo_box_label = QtWidgets.QLabel("缩放：")
+        self.zoom_ratios_combo_box_label = QtWidgets.QLabel(widgets_lang['zoom_ratios_combo_box_label']) # 缩放
 
         # 创建可编辑的 QComboBox
         self.zoom_ratios_combo_box = QtWidgets.QComboBox()
@@ -3491,16 +3533,16 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.zoom_ratios_line_edit.editingFinished.connect(lambda *args: self.update_zoom_ratios_string())
 
         # 创建一个显示输入结果的 QLabel
-        self.resampling_mode_combo_box_label = QtWidgets.QLabel("重新取样：")
+        self.resampling_mode_combo_box_label = QtWidgets.QLabel(widgets_lang['resampling_mode_combo_box_label']) # 重新取样
 
         # 重采样的模式
-        resampling_mode_list = ['最近邻插值', '双线性插值', '三次插值', 'Lanczos 插值', '区域插值', '填充插值外点', '逆映射插值']
+        resampling_mode_list = widgets_lang['resampling_mode_list'] # '最近邻插值', '双线性插值', '三次插值', 'Lanczos 插值', '区域插值', '填充插值外点', '逆映射插值'
         self.resampling_combo_box = QtWidgets.QComboBox()
         self.resampling_combo_box.addItems(resampling_mode_list)  # 添加选项
         self.resampling_combo_box.currentTextChanged.connect(lambda *args: self.modify_config(
             'resampling_mode', self.resampling_combo_box.currentIndex()))
 
-        self.jpg_label = QtWidgets.QLabel("JPG的品质: ")
+        self.jpg_label = QtWidgets.QLabel(widgets_lang['jpg_label']) # JPG的品质
 
         # jpg的参数设置面板
         self.jpg_quality_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -3522,7 +3564,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         self.jpg_quality_display_label = QtWidgets.QLabel()
 
 
-        self.png_label = QtWidgets.QLabel("PNG的品质: ")
+        self.png_label = QtWidgets.QLabel(widgets_lang['png_label']) # PNG的品质
 
         # jpg的参数设置面板
         self.png_quality_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -3545,17 +3587,17 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
 
-        self.convert_format_check_box = QtWidgets.QCheckBox('转换格式')
+        self.convert_format_check_box = QtWidgets.QCheckBox(widgets_lang['convert_format_check_box']) # 转换格式
         self.convert_format_check_box.clicked.connect(
             lambda *args: self.modify_config('convert_format', self.convert_format_check_box.isChecked()))
 
-        self.scale_texture_check_box = QtWidgets.QCheckBox('缩放贴图')
+        self.scale_texture_check_box = QtWidgets.QCheckBox(widgets_lang['scale_texture_check_box']) # 缩放贴图
         self.scale_texture_check_box.clicked.connect(
             lambda *args:  self.modify_config('scale_texture', self.scale_texture_check_box.isChecked()))
 
 
 
-        self.conversion_button = QtWidgets.QPushButton('开始转换')
+        self.conversion_button = QtWidgets.QPushButton(widgets_lang['conversion_button']) # 开始转换
         self.conversion_button.clicked.connect(lambda *args: self.image_conversion())
 
     def create_layouts(self):
@@ -4106,36 +4148,43 @@ def test():
     pass
 
 # 设置uv模式
-class uv_preset_menu(object):
-    def __init__(self,uv_preset):
+def uv_preset_menu(uv_preset):
+    # 初始化反馈模块
+    feedback = FeedbackPrompt() # 错误提示模块
 
-        self.feedback = FeedbackPrompt() # 错误提示模块
+    # 加载语言数据
+    AMDUI_WIN_language = language_loading()['ArnoldMagicNode']['AMDUI_WIN']['create_widgets']
+    UVPM_language = language_loading()['ArnoldMagicNode']['UVPM']
 
-        # 如果没有选择节点会返回None，返回None会关闭函数
-        if process_sl_data() == None:
-            return
-        else:
-            sl_data = process_sl_data()
+    # 处理选中的节点数据
+    select_node = process_sl_data()
 
+    if select_node is None:
+        return
 
-        uv_mode_list = {'禁用':0,
-                        '0型(ZBrush)':1,
-                        '1型(Mudbox)':2,
-                        'UDIM(Mari)':3,
-                        '显示平铺':4}
+    if 'file' not in select_node:
+        feedback.CPW(UVPM_language["04"])  # 请选择纹理节点
+        return
 
-        for i in uv_mode_list:
-            if i == uv_preset:
-                try:
-                    for sl_node in sl_data["file"]:
-                        cmds.setAttr(sl_node + ".uvTilingMode",uv_mode_list[i])
-                        self.feedback.CP(f'已经把<{sl_node}>设置成<{i}>')
-                    return
-                except:
-                    self.feedback.CP('请你选择<file>节点！')
+    uv_mode_list = {AMDUI_WIN_language['uv_preset'][0]:0,
+                    AMDUI_WIN_language['uv_preset'][1]:1,
+                    AMDUI_WIN_language['uv_preset'][2]:2,
+                    AMDUI_WIN_language['uv_preset'][3]:3,
+                    AMDUI_WIN_language['uv_preset'][4]:4}
+
+    for i in uv_mode_list:
+        if i == uv_preset:
+            try:
+                # 遍历选中的节点文件，设置UV模式
+                for sl_node in sl_data["file"]:
+                    cmds.setAttr(sl_node + ".uvTilingMode",uv_mode_list[i])
+                    feedback.CP(f'{UVPM_language["01"]}<{sl_node}>{UVPM_language["02"]}{i}')
+                return
+            except Exception as e:
+                # 捕获并输出异常信息
+                feedback.CPW(f'{UVPM_language["03"]} :{e}')
 
 # 设置颜色空间
-
 def color_space_preset_menu(color_space_preset):
     feedback = FeedbackPrompt() # 错误提示模块
     dataM = DataManager()
