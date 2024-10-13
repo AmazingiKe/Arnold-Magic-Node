@@ -46,6 +46,18 @@ Script_path = os.path.dirname(os.path.abspath(__file__))
 
 
 
+def language_loading():
+    dataM = DataManager()
+
+    # 加载语言配置文件并获取 'language_config' 键的值
+    language_config = dataM.ascii_load_data(
+        os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
+
+    # 动态加载相应语言的JSON文件
+    language = dataM.ascii_load_data(
+        os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))
+
+    return language
 
 
 
@@ -61,6 +73,7 @@ class PathDetection(object):
     def __init__(self):
         self.node_attr = {} # ！此变量是零时变量，用来储存路径等的属性
         self.feedback = FeedbackPrompt() # 错误提示模块
+        self.language = language_loading()['ArnoldMagicNodeLibs']['PathD'] # 加载相关语言模块
 
     # 获取路径
     def get_node_path(self, node_name):
@@ -110,12 +123,12 @@ class PathDetection(object):
             - 使用 Aho-Corasick 算法（通过 `ahocorapy` 库）高效地过滤文件名中包含特定关键字的文件。
             - 如果无法访问目录或文件，函数将捕获异常，并通过 `self.feedback.CP` 输出错误信息。
         """
-
+        lang = self.language['DPC']
         # 获取目录中的文件列表
         try:
             file_list = os.listdir(target_dirname)
         except Exception as e:
-            self.feedback.CP(f'无法访问目录 {target_dirname}，详细报错:[{e}]')
+            self.feedback.CP(f"{lang['01']} {target_dirname}，{lang['02']}:[{e}]") # 无法访问目录 详细报错
             return {}
 
         # 储存过滤后的文件字典
@@ -141,9 +154,9 @@ class PathDetection(object):
                     if not kwtree.search(file_name):
                         filtered_files[file_name] = file_path
             except (IOError, SyntaxError):
-                self.feedback.CP(f'{file_name}: 无法打开或验证为图像文件。')
+                self.feedback.CP(f"{file_name}: {lang['03']}") # 无法打开或验证为图像文件
             except Exception as e:
-                self.feedback.CP(f'{file_name}: 此文件没有权限访问，详细报错:[{e}]')
+                self.feedback.CP(f"{file_name}: {lang['04']}:[{e}]") # 此文件没有权限访问，详细报错
 
         return filtered_files
 
@@ -248,7 +261,7 @@ class PathDetection(object):
                 # 将文件路径设置为节点的 fileTextureName 属性
                 cmds.setAttr(node_name + '.fileTextureName', file_path_norm, type='string')
             else:
-                self.feedback.CPW('此路径无法连接：'+ file_path_norm)
+                self.feedback.CPW(self.language['CN']['01']+ file_path_norm) # 此路径无法连接
         
         # 返回创建的节点列表
         return node_name_list
@@ -279,7 +292,7 @@ class PathDetection(object):
             except UnidentifiedImageError:
                 file_info['resolution'] = temp_resolution
             except Exception as e:
-                self.feedback.CP('在查询贴图元属性的时候报错，报错原因: ' + e)
+                self.feedback.CP(self.language['GFI"']['01'] + e)
 
 
             info_dict[filename] = file_info
@@ -477,6 +490,7 @@ class NodeProcessor(object):
     def __init__(self):
         self.FP = FeedbackPrompt()
         self.feedback = FeedbackPrompt() # 错误提示模块
+        self.language = language_loading()['ArnoldMagicNodeLibs']['PathD'] # 加载相关语言模块
 
     #   对贴图文件的名称进行处理
     def processed_texture_name(self, file_name):
@@ -686,7 +700,7 @@ class NodeProcessor(object):
         elif material_channel in gray_channels:
             texture_output_port = 'outAlpha'
         else:
-            self.feedback.CPE('位置的材质通道：'+ str(material_channel))
+            self.feedback.CPE(self.language['CTFNTPN']['01']+  str(material_channel)) # 位置的材质通道
 
         # 创建第一个节点
         first_node_type = node_list[0]
@@ -997,6 +1011,7 @@ class NodeProcessor(object):
          node_list -- 包含节点名称的列表
          filter_data -- 用于过滤节点的相关数据
          """
+        lang = self.language['ASTCS']
 
         # 1. 使用 matching_channels 函数匹配通道
         if matching_channel is None:
@@ -1014,7 +1029,7 @@ class NodeProcessor(object):
                 cmds.setAttr(node_name + '.alphaIsLuminance', 1)
                 cmds.setAttr(node_name + '.ignoreColorSpaceFileRules', 1)
 
-                self.feedback.CP(f"{node_name} 节点设置为 <{tex_color_space}> 色彩空间")
+                self.feedback.CP(f"{node_name} {lang['01']} <{tex_color_space}> {[lang['02']]}") # 节点设置为 色彩空间
 
     #   连接节点属性
     def node_connect(self, source_node, source_attr, target_node, target_attr, force = True):
@@ -1614,7 +1629,7 @@ class ImageProcessor():
         # 实例化数据管理类
         dataM = DataManager()
 
-
+        self.language = language_loading()['ArnoldMagicNodeLibs']['ImageP']  # 加载相关语言模块
 
         # 获取语言设置
         language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
@@ -1633,9 +1648,11 @@ class ImageProcessor():
             None
         """
 
+        lang = self.language['RI']
+
         # 检查缩放比例是否合法
         if scale_percent <= 0 or scale_percent > 100:
-            self.feedback.CP(f"缩放比例无效: {scale_percent}，请设置0到100之间的有效值。")
+            self.feedback.CP(f"{lang['01']}: {scale_percent}，{lang['02']}") # 缩放比例无效 # 请设置0到100之间的有效值
             return False
 
         # 合法的重采样模式
@@ -1653,7 +1670,7 @@ class ImageProcessor():
                 img_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
                 image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         except Exception as e:
-            self.feedback.CP(f"读取图片失败：{e}")
+            self.feedback.CP(f"{lang['03']}: {e}") # 读取图片失败
             return False
 
         # 如果缩放比例为100%，不做任何的缩放
@@ -1676,9 +1693,9 @@ class ImageProcessor():
                     f.write(encoded_image)
 
         except PermissionError as e:
-            self.feedback.CP(f"文件写入权限错误：{e}")
+            self.feedback.CP(f"{lang['04']}: {e}") # 文件写入权限错误
         except Exception as e:
-            self.feedback.CP(f"保存图片失败：{e}")
+            self.feedback.CP(f"{lang['05']}: {e}") # 保存图片失败
 
     def convert_image_format(self, input_path, output_path, output_format=None, jpg_quality=95, png_compression=3):
         """
@@ -1693,17 +1710,19 @@ class ImageProcessor():
              None
          """
 
+        lang = self.language['CIF']
+
         # 尝试读取图片
         try:
             with open(input_path, 'rb') as f:
                 img_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
                 image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         except Exception as e:
-            self.feedback.CP(f"转换格式-读取图片失败：{e}")
+            self.feedback.CP(f"{lang['01']}: {e}") # 转换格式-读取图片失败
             return
 
         if image is None:
-            self.feedback.CP(f"转换格式-读取图片缓存失败：" + os.path.basename(input_path))
+            self.feedback.CP(f"{lang['02']}: " + os.path.basename(input_path)) # 转换格式-读取图片缓存失败
             return
 
         # 检查输出格式
@@ -1728,10 +1747,10 @@ class ImageProcessor():
                     with open(output_path, 'wb') as f:
                         f.write(encoded_image)
 
-            self.feedback.CP(f"{os.path.basename(input_path)} 已转换为{output_format}格式 新路径：{output_path}")
+            self.feedback.CP(f"{os.path.basename(input_path)} {lang['03']}{output_format}{lang['04']}: {output_path}") # 已转换为 # 格式 新路径
 
         except Exception as e:
-            self.feedback.CP(f"转换格式-保存图片失败：{e}")
+            self.feedback.CP(f"{lang['05']}: {e}") # 转换格式-保存图片失败 错误原因
 
 
     def check_and_set_permission(self, file_path):
@@ -1775,9 +1794,12 @@ class FeedbackPrompt():
 
 
     def __init__(self):
+
+        self.language = language_loading()['ArnoldMagicNodeLibs']['FeedbackPrompt']  # 加载相关语言模块
+
         current_time = datetime.now()
         self.primary_contact = "\nmail:1925250542@qq.com\nWeChat:13549971630"
-        self.DefContent = '@Arnold Tool 插件提醒 {} | '.format(current_time.strftime("%Y-%m-%d %H:%M:%S"))
+        self.DefContent = f"{self.language['01']} {current_time.strftime('%Y-%m-%d %H:%M:%S')} | "
     
     def CP (self, Content):
         print(self.DefContent+ Content)
@@ -1786,13 +1808,13 @@ class FeedbackPrompt():
         if EC == None:
             cmds.warning(str(self.DefContent) + str(Content))
         else:
-            print(str(self.DefContent) + "错误警告，报错问题在下面"+ str(Content))
+            print(str(self.DefContent) + self.language['02']+ str(Content))
             print("↓"*65)
             cmds.warning(str(EC))
 
     def CPE (self, Content= None, EC = None):
         # 构建基础错误消息
-        error_message = str(self.DefContent) + f"严重错误，触发请联系开发者去修复，联系方式：{self.primary_contact}"
+        error_message = str(self.DefContent) + f"{self.language['03']}: {self.primary_contact}"
 
         # 追加 EC 信息（如果存在）
         if EC:
@@ -1810,7 +1832,7 @@ class FeedbackPrompt():
 
 def process_sl_data(sl_data = None):
     """ 函数可以批量归类选择的节点 """
-    
+    language = language_loading()['ArnoldMagicNodeLibs']['process_sl_data']  # 加载相关语言模块
     feedback = FeedbackPrompt() # 错误提示模块
     
     # 创建空的字典
@@ -1823,7 +1845,7 @@ def process_sl_data(sl_data = None):
 
     # 判断是否有选择数据
     if sl_data == []:
-        feedback.CPW('请你先选择相应的节点哦！')
+        feedback.CPW(language['01'])
         return None
 
     # 创建一个字典并存储节点的类型

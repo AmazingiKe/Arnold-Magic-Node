@@ -1,16 +1,16 @@
 {
-  "language_type" : "Deutsch",
+  "language_type": "Deutsch",
 
   "ArnoldMagicNode": {
 
     "AMDUI_WIN": {
-      "create_widgets" : {
-        "ttclgj_menu": "Texturverarbeitungstools",
+      "create_widgets": {
+        "ttclgj_menu": "Texturverarbeitungstool",
         "ttglq_menu": "Texturmanager",
-        "ttpldrq_menu": "Batch-Texturimporteur",
+        "ttpldrq_menu": "Batch-Importeur für Texturen",
         "xryssz_menu": "Render-Voreinstellungen",
         "tjxrys_menu": "Render-Voreinstellung hinzufügen",
-        "xgxrys_menu": "Render-Voreinstellung bearbeiten",
+        "xgxrys_menu": "Render-Voreinstellung ändern",
         "scxrys_menu": "Render-Voreinstellung löschen",
         "dkxryswjj_menu": "Render-Voreinstellungsordner öffnen",
         "default_rendering_properties_options": "Standardparameter ausgeben",
@@ -18,37 +18,37 @@
         "aov_properties_properties_options": "AOV-Parameter ausgeben",
         "sz_menu": "Einstellungen",
         "magic_connection": "Magische Verbindung",
-        "path_detection_connection": "Pfaderkennungsverbindung",
-        "direct_connection": "Direktverbindung",
+        "path_detection_connection": "Pfadauswahl-Verbindung",
+        "direct_connection": "Direkte Verbindung",
         "unify_uv_node": "UV vereinheitlichen",
-        "uv_preset": ["Deaktivieren", "Typ 0 (ZBrush)", "Typ 1 (Mudbox)", "UDIM (Mari)", "Kacheln anzeigen"],
+        "uv_preset": ["Deaktiviert", "Typ 0 (ZBrush)", "Typ 1 (Mudbox)", "UDIM (Mari)", "Kachelansicht anzeigen"],
         "zdsckj_button": "Automatischer Farbraum",
         "ai_aov_switch": "AOV-Schalter"
       }
     },
 
-    "AMNSP_WIN" : {
+    "AMNSP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "Arnold_Magic_Node Plugin-Einstellungen"
+        "WINDOWS_NAME": "Arnold_Magic_Node Plugin-Einstellungen"
       },
-      "create_menu" : {
-        "settings_menu" : "Einstellungen",
-        "reset_data_action" : "Einstellungsdaten zurücksetzen",
-        "license_menu" : "Lizenz",
-        "change_license_action" : "Lizenz ändern",
-        "about_menu" : "Über",
-        "contact_feedback_action" : "Kontakt/Feedback",
-        "help_document_action" : "Hilfedokument",
+      "create_menu": {
+        "settings_menu": "Einstellungen",
+        "reset_data_action": "Einstellungsdaten zurücksetzen",
+        "license_menu": "Lizenz",
+        "change_license_action": "Lizenz ändern",
+        "about_menu": "Über",
+        "contact_feedback_action": "Kontakt/Feedback",
+        "help_document_action": "Hilfedokumentation",
         "plugin_update_download_action": "Plugin-Update herunterladen",
-        "plugin_home" : "Plugin-Homepage"
+        "plugin_home": "Plugin-Homepage"
       },
-      "create_magic_connection_tab" : {
-        "mfljsz_label" : "Magische Verbindungseinstellungen",
-        "auto_color_space_connection" : "Farbraum automatisch anpassen bei Verbindung",
-        "magic_change_material_name_options" : "Materialname bei Verbindung ändern",
-        "zdyljdtt_label" : "Benutzerdefinierte Texturen für Verbindung",
-        "zdyglmz_label" : "Benutzerdefinierte Filter-Namen",
-        "mflj_tab" : "Magische Verbindung"
+      "create_magic_connection_tab": {
+        "mfljsz_label": "Magische Verbindungs-Einstellungen",
+        "auto_color_space_connection": "Farbraum bei Verbindung automatisch ändern",
+        "magic_change_material_name_options": "Materialnamen bei Verbindung ändern",
+        "zdyljdtt_label": "Benutzerdefinierte verbundene Texturen",
+        "zdyglmz_label": "Benutzerdefinierte Filternamen",
+        "mflj_tab": "Magische Verbindung"
       },
       "create_color_space_tab": {
         "zdysckj_label": "Benutzerdefinierter Farbraum",
@@ -56,32 +56,37 @@
         "sckj_label": "Farbraum"
       },
       "create_node_connection_tab": {
-        "zdljcljdsz_label": "Automatische Knotenverbindungseinstellungen",
-        "cljdsz_list": "Knotenverarbeitungseinstellungen",
+        "zdljcljdsz_label": "Einstellungen für automatische Verbindungsprozesse",
+        "cljdsz_list": "Einstellungen der Verarbeitungsprozesse",
         "jdlj_tab": "Knotenverbindung"
       },
       "create_path_matching_tab": {
-        "ljsxgsz_label": "Verbindungseinstellungen",
-        "path_matching_checkbox": "Farbraum automatisch anpassen bei Verbindung",
-        "path_matching_change_material_name_options": "Materialname bei Verbindung ändern",
+        "ljsxgsz_label": "Relevante Einstellungen bei Verbindung",
+        "path_matching_checkbox": "Farbraum bei Verbindung automatisch ändern",
+        "path_matching_change_material_name_options": "Materialnamen bei Verbindung ändern",
         "path_disable_feedback_options": "Feedback deaktivieren",
-        "sxgczpchywzdwj_label": "Dateien mit Text beim Filtern ausschließen",
-        "zjxxsdjcsyczfczdtdnc_label": "Bestimmte Inhalte aus Zeichenfolgen bei Ähnlichkeitserkennung entfernen",
-        "ppsxgsz_label": "Einstellungen bei Übereinstimmung",
+        "sxgczpchywzdwj_label": "Dateien mit Text während der Filterung ausschließen",
+        "zjxxsdjcsyczfczdtdnc_label": "Spezifische Inhalte aus Zeichenketten bei Ähnlichkeitserkennung entfernen",
+        "ppsxgsz_label": "Relevante Einstellungen bei Übereinstimmung",
         "auto_max_val_checkbox": "Beste Übereinstimmung automatisch auswählen",
-        "auto_max_val_checkbox_tip" : "Wenn ausgewählt, verwendet das Programm automatisch den höchsten Ähnlichkeitswert als Schwellenwert, ohne manuelle Einstellung.",
-        "ppysqz_label": "Übereinstimmungsgewichtung",
+        "auto_max_val_checkbox_tip": "Wenn aktiviert, verwendet das Programm den höchsten Ähnlichkeitswert als Übereinstimmungsschwelle automatisch ohne manuelle Einstellung.",
+        "ppysqz_label": "Gewichtung der Übereinstimmungselemente",
         "mzqz_label": "Namensgewichtung",
         "fblqz_label": "Auflösungsgewichtung",
         "gsqz_label": "Formatgewichtung",
-        "cjsjqz_label": "Erstellungszeit-Gewichtung",
-        "xsdjs_label" : "Ähnlichkeitsberechnung",
-        "similarity_max_slider_label": "Benutzerdefinierter Ähnlichkeitsschwellenwert:",
-        "similarity_max_slider_tip" : "Bitte geben Sie den Ähnlichkeitsschwellenwert ein (0,0 - 1,0). Das Programm wird Ergebnisse mit einer Ähnlichkeit oberhalb dieses Schwellenwerts abgleichen.",
-        "similarity_range_slider_label": "Ähnlichkeitstoleranzbereich",
-        "similarity_range_slider_tip" : "Den Toleranzbereich für den Ähnlichkeitsschwellenwert festlegen (0,0 - 1,0). Das Programm wird Ergebnisse innerhalb dieses Bereichs abgleichen.",
-        "day_range_slider_label": "Toleranzbereich für Erstellungszeit in Tagen:",
+        "cjsjqz_label": "Erstellungszeitgewichtung",
+        "xsdjs_label": "Berechnung der Ähnlichkeit",
+        "similarity_max_slider_label": "Benutzerdefinierte Ähnlichkeitsschwelle:",
+        "similarity_max_slider_tip": "Bitte geben Sie eine Ähnlichkeitsschwelle (0.0 - 1.0) ein. Das Programm wird Ergebnisse mit einer Ähnlichkeit über dieser Schwelle abgleichen.",
+        "similarity_range_slider_label": "Toleranzbereich der Ähnlichkeit",
+        "similarity_range_slider_tip": "Stellen Sie den Toleranzbereich für die Übereinstimmungsschwelle (0.0 - 1.0) ein. Das Programm wird Ergebnisse mit einer Ähnlichkeit innerhalb dieses Bereichs um die Schwelle herum abgleichen.",
+        "day_range_slider_label": "Toleranzwert für den Erstellungsdatumsbereich:",
         "jdljpp_tab": "Knotenpfad-Übereinstimmung"
+      },
+      "create_configure_ui_layout_tab": {
+        "yyszd_label": "Spracheinstellungen etc.",
+        "yy_label": "Sprache:",
+        "jmybjsz_tab": "Interface- und Layout-Einstellungen"
       }
     },
 
@@ -92,16 +97,16 @@
         "day": "Tage"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "Geben Sie den Materialnamen ein, um zu suchen....",
-        "TexturelListSearch_placeholder": "Geben Sie den Texturnamen ein, um zu suchen....",
+        "MaterialListSearch_placeholder": "Geben Sie den Namen des zu suchenden Materials ein...",
+        "TexturelListSearch_placeholder": "Geben Sie den Namen der zu suchenden Textur ein...",
         "TexturelList_Unselect_All_Button": "Alle abwählen",
         "TexturelList_reverse_selection": "Auswahl umkehren",
         "TexturelList_Find_Missing_Textures_Button": "Fehlende finden",
         "TexturelList_Intelligent_Find_Max_Size_Button": "Große Texturen finden",
         "TexturelList_Search_And_Replace_Date_Button": "Suchen und Ersetzen",
-        "TexturelList_Replace_Data_Button": "Pfad automatisch korrigieren",
-        "TexturelList_Processed_Image_Button": "Bild verarbeiten",
-        "TexturelList_Refresh_Button_ToolTip": "Auf Grundlage des Caches aktualisieren",
+        "TexturelList_Replace_Data_Button": "Pfade automatisch korrigieren",
+        "TexturelList_Processed_Image_Button": "Bilder verarbeiten",
+        "TexturelList_Refresh_Button_ToolTip": "Basierend auf dem Cache aktualisieren",
         "TexturelList_Headers": ["Texturknotenname", "Material", "Größe", "Pixelgröße", "Format", "Referenzanzahl", "Status", "Pfad"]
       }
     },
@@ -112,131 +117,210 @@
       },
       "create_widgets": {
         "label_data_to_edit_options": "Zu ändernder Inhalt",
-        "label_data_to_edit_options_02": "Wählen Sie basierend auf dem zu ändernden Inhalt",
+        "label_data_to_edit_options_02": "Bitte wählen Sie basierend auf dem Inhalt, den Sie ändern möchten",
         "sl_material": "Material",
         "sl_texture": "Textur",
         "sl_texture_path": "Texturpfad",
-        "label_modify_options": "Bereich des zu ändernden Inhalts",
-        "radio_all": "Alles",
-        "radio_table": "Im Tabellenbereich",
-        "radio_selection": "In der Auswahl",
+        "label_modify_options": "Änderungsbereich",
+        "radio_all": "Alle",
+        "radio_table": "Innerhalb der Tabelle",
+        "radio_selection": "Ausgewählt",
         "label_find": "Zu suchender Inhalt",
-        "line_edit_find_placeholder": "Geben Sie den zu suchenden Inhalt ein...",
+        "line_edit_find_placeholder": "Bitte geben Sie den zu suchenden Inhalt ein...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-        "line_edit_replace_placeholder": "Geben Sie den zu ersetzenden Inhalt ein...",
+        "line_edit_replace_placeholder": "Bitte geben Sie den Ersatzinhalt ein...",
         "checkbox_case_sensitive": "Groß-/Kleinschreibung ignorieren",
-        "checkbox_regex": "Regulären Ausdruck verwenden",
+        "checkbox_regex": "Reguläre Ausdrücke verwenden",
         "button_replace": "Ersetzen"
       }
     },
 
     "TM_RF_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "Pfad automatisch korrigieren -"
+        "WINDOWS_NAME": "Pfade automatisch korrigieren -"
       },
       "create_widgets": {
-        "memory_search_mode_checkbox" : "Speichersuchmodus",
-        "search_subfolders_checkbox": "Unterordner durchsuchen",
-        "multiple_subfolder_search_checkbox": "Mehrere Unterordner durchsuchen",
+        "memory_search_mode_checkbox": "Speicher-Suchmodus",
+        "search_subfolders_checkbox": "In Unterordnern suchen",
+        "multiple_subfolder_search_checkbox": "In mehreren Unterordnern suchen",
         "ignore_case_checkbox": "Groß-/Kleinschreibung ignorieren",
-        "fix_path_button": "Pfadkorrektur starten"
+        "fix_path_button": "Pfade korrigieren starten"
       }
     },
 
     "TM_IP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "Bildverarbeitung -"
+        "WINDOWS_NAME": "Bildbearbeitung -"
       },
       "menu_widgets": {
         "edit_menu": "Bearbeiten",
         "clear_cache": "Cache leeren! Vorsicht beim Löschen!",
         "redo_action": "Bild wiederherstellen",
         "help_menu": "Hilfe",
-        "instructions_action": "Anleitung"
+        "instructions_action": "Anweisungen zur Verwendung"
       },
       "create_widgets": {
         "format_combo_box_label": "Format:",
         "zoom_ratios_combo_box_label": "Zoom:",
         "resampling_mode_combo_box_label": "Resampling:",
-        "resampling_mode_list": ["Nächster-Nachbar-Interpolation", "Bilineare Interpolation", "Bikubische Interpolation", "Lanczos-Interpolation", "Bereichsinterpolation", "Füllinterpolation für Außengrenzpunkte", "Umgekehrte Abbildungsinterpolation"],
-        "jpg_label": "JPG-Qualität: ",
-        "png_label": "PNG-Qualität: ",
+        "resampling_mode_list": ["Nächster Nachbar", "Bilineares Resampling", "Bikubisches Resampling", "Lanczos Resampling", "Bereich", "Ausreißer-Interpolation", "Inverse Mapping Interpolation"],
+        "jpg_label": "JPG-Qualität:",
+        "png_label": "PNG-Qualität:",
         "convert_format_check_box": "Format konvertieren",
         "scale_texture_check_box": "Textur skalieren",
         "conversion_button": "Konvertierung starten"
       }
     },
 
-    "UVPM" : {
-      "01": "Der UV-Kachelmodus von",
-      "02": "wurde auf folgendes eingestellt:",
-      "03": "Fehler beim Einstellen:",
-      "04" : "Bitte wählen Sie einen Texturknoten aus"
+    "UVPM": {
+      "01": "Bereits festgelegt",
+      "02": "UV-Kachelmodus des Knotens auf:",
+      "03": "Fehler bei der Einstellung:",
+      "04": "Bitte wählen Sie einen Texturknoten"
     },
 
-    "licenses_name" : {
+    "CSPM": {
+      "01": "Bitte wählen Sie einen Texturknoten!",
+      "02": "Bereits festgelegt",
+      "03": "auf"
+    },
+
+    "ASTCS": {
+      "01": "Bitte wählen Sie einen Texturknoten!"
+    },
+
+    "DC_Button": {
+      "__init__": {
+        "01": "Knoten erfolgreich eingestellt",
+        "02": "Bitte wählen Sie zuerst einen Ausgangsknoten aus"
+      },
+      "connection_node": {
+        "01": "Ihr",
+        "02": "Knoten kann nicht mit",
+        "03": "Knoten verbinden"
+      }
+    },
+
+    "licenses_name": {
       "free_license": "Kostenlose Version",
       "standard_license": "Standardversion",
       "premium_license": "Premiumversion",
       "developer_license": "Entwicklerlizenz",
       "educational_license": "Bildungslizenz",
-      "permanent_standard_license": "Dauerhafte Standardversion",
-      "permanent_premium_license": "Dauerhafte Premiumversion",
-      "expiry_date_01" : "Dauerhaft"
+      "permanent_standard_license": "Permanente Standardversion",
+      "permanent_premium_license": "Permanente Premiumversion",
+      "expiry_date_01": "Permanent"
     }
   },
+
   "ArnoldMagicNodeLibs": {
+
+    "PathD": {
+      "DPC": {
+        "01": "Verzeichnis kann nicht zugegriffen werden",
+        "02": "Detaillierter Fehler",
+        "03": "Kann nicht als Bilddatei geöffnet oder überprüft werden",
+        "04": "Diese Datei hat keine Zugriffsrechte, detaillierter Fehler"
+      },
+      "CN": {
+        "01": "Dieser Pfad kann nicht verbunden werden:"
+      },
+      "GFI": {
+        "01": "Fehler beim Abfragen der Textur-Metaattribute, Fehlergrund: "
+      }
+    },
+
+    "NodeP": {
+      "CTFNTPN": {
+        "01": "Materialkanal an Position:"
+      },
+      "ASTCS": {
+        "01": "Knoten auf",
+        "02": "Farbraum eingestellt"
+      }
+    },
+
     "DataP": {
       "SSARD": {
-        "01": "Die übergebenen Daten sind nicht vom Typ Zeichenkette",
+        "01": "Die übergebenen Daten sind kein String-Typ",
         "02": "Regulärer Ausdruck Fehler:"
       }
+    },
+
+    "ImageP": {
+      "RI": {
+        "01": "Ungültiges Skalierungsverhältnis",
+        "02": "Bitte legen Sie einen gültigen Wert zwischen 0 und 100 fest",
+        "03": "Bild konnte nicht gelesen werden",
+        "04": "Fehler bei Dateischreibberechtigung",
+        "05": "Bild konnte nicht gespeichert werden"
+      },
+      "CIF": {
+        "01": "Format konvertieren - Bild konnte nicht gelesen werden",
+        "02": "Format konvertieren - Bild-Cache konnte nicht gelesen werden",
+        "03": "In",
+        "04": "Format Neuer Pfad",
+        "05": "Format konvertieren - Bild konnte nicht gespeichert werden, Fehlergrund"
+      }
+    },
+
+    "FeedbackPrompt": {
+      "01": "@Arnold Tool Plugin Warnung",
+      "02": "Fehlerwarnung, die Fehlerdetails sind unten aufgeführt",
+      "03": "Schwerwiegender Fehler, bitte kontaktieren Sie den Entwickler zur Behebung, Kontaktinformationen"
+    },
+
+    "process_sl_data": {
+      "01": "Bitte wählen Sie zuerst den entsprechenden Knoten aus!"
     }
+
   },
+
   "LicenseV": {
     "GMI": {
-      "01": "Windows-System: Seriennummer des Motherboards konnte nicht gefunden werden",
-      "02": "Fehler beim Abrufen der Seriennummer des Motherboards unter Windows:",
-      "03": "Linux/Unix-System: Seriennummer des Motherboards konnte nicht gefunden werden",
-      "04": "Fehler beim Abrufen der Seriennummer des Motherboards unter Linux/Unix:"
+      "01": "Windows-System kann die Motherboard-Seriennummer nicht finden",
+      "02": "Windows-System hat beim Abrufen der Motherboard-Seriennummer einen Fehler festgestellt:",
+      "03": "Linux/Unix-System kann die Motherboard-Seriennummer nicht finden",
+      "04": "Linux/Unix-System hat beim Abrufen der Motherboard-Seriennummer einen Fehler festgestellt:"
     },
     "GWTS": {
-      "01": "Zeitstempel von Taobao konnte nicht abgerufen werden",
-      "02": "Abrufen der Linkzeit fehlgeschlagen:"
+      "01": "Kann Taobao-Timestamp nicht abrufen",
+      "02": "Abrufen der Link-Zeit fehlgeschlagen:"
     },
     "GNTS": {
       "01": "Abrufen der NTP-Zeit fehlgeschlagen:"
     },
     "VL": {
       "01": "Ungültiges Lizenzformat",
-      "02": "Geräteerkennungscode stimmt nicht überein",
-      "03": "Die Lizenz ist abgelaufen!",
-      "04": "Signaturüberprüfung fehlgeschlagen, die Lizenz könnte manipuliert worden sein",
-      "05": "Fehlerhaftes Lizenzformat",
-      "06": "Unbekannter Fehler bei der Verifizierung, bitte kontaktieren Sie den Entwickler"
+      "02": "Geräte-ID stimmt nicht überein",
+      "03": "Lizenz ist abgelaufen!",
+      "04": "Signaturüberprüfung fehlgeschlagen, Lizenz könnte manipuliert worden sein",
+      "05": "Lizenzformatfehler",
+      "06": "Während der Überprüfung ist ein unbekannter Fehler aufgetreten, bitte kontaktieren Sie den Entwickler"
     },
     "LW": {
-      "DIL": "Geräteerkennungscode (muss dem Entwickler mitgeteilt werden)",
+      "DIL": "Geräte-ID (muss dem Entwickler bereitgestellt werden)",
       "SUL": "Seriennummer eingeben",
-      "SNT": "Bitte Seriennummer eingeben",
+      "SNT": "Bitte geben Sie die Seriennummer ein",
       "VB": "Lizenz überprüfen",
-      "01" : "Bitte Seriennummer eingeben"
+      "01": "Bitte geben Sie die Seriennummer ein"
     },
     "MP": {
-      "01": "Online-Zeit konnte nicht abgerufen werden",
-      "02": "Zeit konnte nicht abgerufen werden"
+      "01": "Kann Online-Zeit nicht abrufen",
+      "02": "Kann Zeit nicht abrufen"
     }
   },
-  "DLibs" : {
-    "FP" : "@Arnold Tool Plugin-Benachrichtigung {} | ",
-    "CVF" : "Großartig! Der Konfigurationsordner existiert ╭(●｀∀´●)╯ Applaus",
-    "DL" : {
-      "01" : "Gefunden",
-      "02" : "Bibliothek nicht gefunden ◔ ‸◔？ Wird heruntergeladen ≖‿≖✧ Bitte warten",
-      "03" : "Großartig!!!! Keine Probleme mit der Umgebungskonfiguration ♪（＾∀＾●）ﾉｼ "
+
+  "DLibs": {
+    "FP": "@Arnold Tool Plugin Warnung {} | ",
+    "CVF": "Konfigurationsbibliotheksordner existiert perfekt ╭(●｀∀´●)╯ Applaus Applaus",
+    "DL": {
+      "01": "Gefunden",
+      "02": "Bibliothek existiert nicht ◔ ‸◔？   Wird jetzt heruntergeladen ≖‿≖✧ Bitte geduldig warten",
+      "03": "Fantastisch!!!! Umgebungsconfiguration hat keine Probleme ♪（＾∀＾●）ﾉｼ "
     },
-    "MP" : {
-      "01": "Bibliothek-Suchzeit: ",
+    "MP": {
+      "01": "Bibliotheksabrufzeit: ",
       "02": " Sekunden"
     }
   }
