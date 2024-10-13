@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.6.4.2"
+SoftwareVersion = "0.6.5"
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -391,13 +391,13 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.texture_processing_data = self.dataM.bin_load_data(
             os.path.join(settings_path, 'texture_processing_data.bin'))
 
-        # 加载语言配置文件并获取 'language_config' 键的值
-        language_config = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+        # 加载语言配置
+        self.language = language_loading()['ArnoldMagicNode']['AMNSP_WIN']
 
-        # 动态加载相应语言的JSON文件，并读取 'ArnoldMagicNode' 中的 'AMNSP_WIN' 键
-        self.language = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['AMNSP_WIN']
+        self.languages_folder_path = os.path.join(SCRIPT_PATH, 'Datas', 'languages')  # 语言文件夹路径
+
+        print(self.languages_folder_path)
+
 
     def initialize_window_config(self):
 
@@ -478,6 +478,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.create_color_space_tab()
         self.create_node_connection_tab()
         self.create_path_matching_tab()
+        self.create_configure_ui_layout_tab()
 
     def create_layouts(self):
         # 创建主布局
@@ -495,6 +496,21 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 初始化 连接时修改材质名称 控件值
         self.magic_change_material_name_options.setChecked(
             self.texture_processing_data['ProcSet_Options']['change_material_name'])
+
+
+        # 初始化语言
+        # 语言配置路径
+        lang_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json')
+
+        # 加载语言配置文件
+        lang_config = self.dataM.ascii_load_data(lang_config_path)
+
+        # 遍历指定文件夹中的所有文件(设置默认的语言多选值)
+        for file_name in os.listdir(self.languages_folder_path):
+            # 检查文件名是否与所需的语言配置匹配
+            if lang_config['language_config'] == file_name.replace('.json', ''):
+                lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
+                self.language_combo_box.setCurrentText(lang['language_type'])
 
         self.update_similarity_max_slider_ui()
 
@@ -1136,6 +1152,58 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab']) # 节点路径匹配
 
+    # 创建界面与布局设置页面
+    def create_configure_ui_layout_tab(self):
+        configure_ui_layout_lang = self.language['create_configure_ui_layout_tab']
+
+
+        # # 设置字体
+        # font = QtGui.QFont()
+        # font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
+        # font.setBold(True)  # 设置加粗
+
+        # 节点连接选项卡
+        configure_ui_layout_widget = QtWidgets.QWidget()
+        configure_ui_layout_layout = QtWidgets.QVBoxLayout(configure_ui_layout_widget)
+
+        # 使用QScrollArea实现滚动
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_content_widget = QtWidgets.QWidget()
+
+        # 创建一个新的QVBoxLayout，并设置居中对齐
+        layout = QtWidgets.QVBoxLayout(scroll_content_widget)
+        layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)  # 设置为上方和水平居中对齐
+
+        # 添加一行文本
+        self.add_line_with_text(layout, configure_ui_layout_lang['jmybjsz_tab']) # 语言设置等
+        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['jmybjsz_tab']))  # 语言
+        # 创建语言切换菜单
+        self.language_combo_box = QtWidgets.QComboBox()
+
+        # 加载语言文件
+        languages_list = self.load_language_files(self.languages_folder_path)
+
+        # 添加语言子选项菜单
+        for lang in languages_list:
+            self.language_combo_box.addItem(lang)
+
+        # 语言切换逻辑
+        self.language_combo_box.currentIndexChanged.connect(lambda *args: self.change_language(self.languages_folder_path))
+
+        layout.addWidget(self.language_combo_box)
+
+        # 将内容添加到滚动区域
+        scroll_area.setWidget(scroll_content_widget)
+        configure_ui_layout_layout.addWidget(scroll_area)
+
+        # 将内容添加到滚动区域
+        scroll_area.setWidget(scroll_content_widget)
+        configure_ui_layout_layout.addWidget(scroll_area)
+
+        # 添加到选项卡
+        self.tab_widget.addTab(configure_ui_layout_widget, configure_ui_layout_lang['jmybjsz_tab'])  # 界面与布局设置
+
     # 创建标签
     def create_section_label(self, text):
         # 设置字体
@@ -1425,6 +1493,47 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         replace_license.show()
 
     # --------------------保存设置内容的函数 结束
+
+    # 加载语言文件
+    def load_language_files(self, folder_path):
+
+
+        languages_list = []
+
+        # 遍历文件夹中的所有JSON文件
+        for file_name in os.listdir(folder_path):
+
+            lang = self.dataM.ascii_load_data(os.path.join(folder_path, file_name))
+            languages_list.append(lang['language_type'])
+
+        return languages_list
+
+    # 更改语言配置文件
+    def change_language(self, language_folder):
+
+        # 获取当前选择的语言
+        selected_lang = self.language_combo_box.currentText()
+
+        # 语言配置路径
+        lang_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json')
+
+        # 加载语言配置文件
+        lang_config = self.dataM.ascii_load_data(lang_config_path)
+
+        # 遍历文件夹中的所有JSON文件
+        for file_name in os.listdir(language_folder):
+            lang = self.dataM.ascii_load_data(os.path.join(language_folder, file_name))
+            if selected_lang == lang['language_type']:
+                # 修改语言文件
+                lang_config['language_config'] = file_name.replace('.json', '')
+
+                self.feedback.CP(f'语言已修改成:{lang["language_type"]}')
+
+        # 保存修改过后的语言文件
+        self.dataM.ascii_save_data(lang_config_path, lang_config)
+
+
+
 
 # 贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
@@ -4187,24 +4296,29 @@ def uv_preset_menu(uv_preset):
 # 设置颜色空间
 def color_space_preset_menu(color_space_preset):
     feedback = FeedbackPrompt() # 错误提示模块
-    dataM = DataManager()
-    select_node = process_sl_data()
+    select_node = process_sl_data() # 选择到的节点
 
-    # 如果没有选择节点会返回None，返回None会关闭函数
-    if select_node is not None and 'file' not in select_node:
-        return feedback.CP('请选择贴图节点')
-    else:
-        sl_data = process_sl_data()
+    lang = language_loading()['ArnoldMagicNode']['CSPM']
+
+    if select_node == None:
+        return
+
+    if 'file' not in select_node:
+        feedback.CPW(lang['01']) # '请选纹理贴图节点'
+        return
 
     for i in sl_data['file']:
         cmds.setAttr(i + '.colorSpace', color_space_preset, type='string')
-        feedback.CP(f"已经把<{i}>设置成<{color_space_preset}>")
+        feedback.CP(f"{lang['02']}<{i}>{lang['02']}<{color_space_preset}>") # 已经把 设置成
 
 # 自动设置颜色空间
 def AutoSet_TexColorSpace():
     ### 实例模块
     dataM = DataManager() # 数据管理模块
     NodePro = NodeProcessor()
+
+    lang = language_loading()['ArnoldMagicNode']['ASTCS']
+
     # 加载数据
     texture_processing_data = dataM.bin_load_data(
         os.path.join(settings_path, 'texture_processing_data.bin'))
@@ -4217,6 +4331,7 @@ def AutoSet_TexColorSpace():
         return
 
     if 'file' not in select_node:
+        feedback.CP(lang['01']) # 请选纹理贴图节点
         return
 
     NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , select_node['file'], FilterData)
@@ -4229,33 +4344,44 @@ class direct_connection_button(object):
 
     def __init__(self):
         global direct_node_select
-        self.feedback = FeedbackPrompt() # 错误提示模块
 
-        # 如果没有选择节点会返回None，返回None会关闭函数
-        if process_sl_data() == None:
+        # 初始化节点
+        self.initial_global_config()
+
+
+        self.select_node = process_sl_data()
+
+        # 如果没有选择节点会直接退出函数
+        if self.select_node == None:
             return
-        else:
-            self.sl_data = process_sl_data()
 
-        for i in self.sl_data:
+
+        for i in self.select_node:
             if i == "shadingEngine":
-                direct_node_select = self.sl_data[i][0]
-                self.feedback.CP(f"节点设置成功<{direct_node_select}>")
+                direct_node_select = self.select_node[i][0]
+                self.feedback.CP(f"{self.lang['__init__']['01']}<{direct_node_select}>") # 节点设置成功
                 return
 
         if direct_node_select == False:
-            self.feedback.CP("请先选择输出节点")
+            self.feedback.CP(self.lang['__init__']['02']) # 请先选择输出节点
             return
 
 
         self.connection_node()
+
+    def initial_global_config(self):
+        self.feedback = FeedbackPrompt() # 错误提示模块
+        self.lang = language_loading()['ArnoldMagicNode']['DC_Button']
 
 
     def connection_node(self):
         # 可以自行添加输出端口名字
         out_name = ["outColor","outAlpha","outValue"]
 
-        for i in self.sl_data:
+        cnlang = self.lang['connection_node']
+
+
+        for i in self.select_node:
             for out in out_name:
                 # 获取输出节点的输入端口是什么
                 shadingEngine_input = cmds.listConnections(direct_node_select,  source=True, destination=False, plugs=True)
@@ -4269,7 +4395,7 @@ class direct_connection_button(object):
                     pass
 
                 # 如果选择节点名字一样就会执行，如果不一样就不会执行
-                if shadingEngine_input_node_name == self.sl_data[i][0]:
+                if shadingEngine_input_node_name == self.select_node[i][0]:
                     # 这个判断是为了切换["outColor","outAlpha"]的，如果是outColor就退出一次循环只循环outAlpha的
                     if shadingEngine_input == None:
                         pass
@@ -4283,13 +4409,13 @@ class direct_connection_button(object):
                         if shadingEngine_input_out == out:
                             continue
 
-                node_name = self.sl_data[i][0]
+                node_name = self.select_node[i][0]
 
                 try:
                     cmds.connectAttr(node_name+'.'+out, direct_node_select+'.'+"surfaceShader", f=True)
                     return
                 except:
-                    self.feedback.CPW(f"你的<{node_name}:{out}>节点无法连接到<{direct_node_select}:shadingEngine>节点上")
+                    self.feedback.CPW(f"{cnlang['01']}<{node_name}:{out}>{cnlang['02']}<{direct_node_select}:shadingEngine>{cnlang['03']}") # 你的 节点无法连接到 节点上
 
 # 统一UV节点
 def unify_uv_node_button():
@@ -5115,7 +5241,6 @@ class Path_Detection_Connection:
             self.nodeP.unify_uv_node(node_list)
 
         return need_connect_node_lists
-
 
 class Magic_Node_Connection:
     def __init__(self):
