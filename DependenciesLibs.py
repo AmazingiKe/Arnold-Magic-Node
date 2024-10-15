@@ -23,7 +23,7 @@ LibsPath =  os.path.normpath(os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVer
 MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe'))
 
 LibsFilesDict = {
-    'cv2': 'opencv-python',
+    #'cv2': 'opencv-python',
     'imagesize': 'imagesize',
     'keyboard': 'keyboard',
     'msgpack': 'msgpack',

@@ -164,7 +164,7 @@
         "format_combo_box_label": "格式：",
         "zoom_ratios_combo_box_label": "缩放：",
         "resampling_mode_combo_box_label": "重新取样：",
-        "resampling_mode_list": ["最近邻插值", "双线性插值", "三次插值", "Lanczos 插值", "区域插值", "填充插值外点", "逆映射插值"],
+        "resampling_mode_list": ["最近邻插值", "均值插值", "双线性插值", "锐化插值", "三次插值", "高精度插值"],
         "jpg_label": "JPG的品质: ",
         "png_label": "PNG的品质: ",
         "convert_format_check_box": "转换格式",
@@ -256,7 +256,8 @@
         "02": "请设置0到100之间的有效值",
         "03": "读取图片失败",
         "04": "文件写入权限错误",
-        "05": "保存图片失败"
+        "05": "保存图片失败",
+        "06": "图片处理失败"
       },
       "CIF": {
         "01": "转换格式-读取图片失败",

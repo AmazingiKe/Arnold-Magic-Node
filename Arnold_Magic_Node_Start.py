@@ -24,10 +24,10 @@ def detecting_language():
     maya_language = cmds.about(uil=True)
 
     # 如果存在maya使用的语言有的话就用，没有的话就默认英文
-    if maya_language not in language_list_dir:
+    if maya_language in language_list_dir:
         language['language_config'] = maya_language
     else:
-        language['language_config'] = 'zh_CN'
+        language['language_config'] = 'en_US'
 
     # 获取语言配置的路径
     language_config_file_path = os.path.join(Script_path, "Datas", "settings", "language_config.json")

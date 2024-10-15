@@ -24,8 +24,9 @@ import re  # 提供正则表达式操作，用于模式匹配、搜索和替换�
 import difflib  # 用于比较文本差异，生成差异报告或补丁，适合版本控制和文本分析
 
 # 5. 图像处理
-from PIL import Image , UnidentifiedImageError # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
-import cv2
+from PIL import Image # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
+from PIL import UnidentifiedImageError
+# import cv2
 import pyexr
 # 6. 时间管理
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
@@ -490,7 +491,7 @@ class NodeProcessor(object):
     def __init__(self):
         self.FP = FeedbackPrompt()
         self.feedback = FeedbackPrompt() # 错误提示模块
-        self.language = language_loading()['ArnoldMagicNodeLibs']['PathD'] # 加载相关语言模块
+        self.language = language_loading()['ArnoldMagicNodeLibs']['NodeP'] # 加载相关语言模块
 
     #   对贴图文件的名称进行处理
     def processed_texture_name(self, file_name):
@@ -687,7 +688,7 @@ class NodeProcessor(object):
 
         # 如果没有提供输入端口列表，则设置默认值
         if input_port_list is None:
-            input_port_list = ["input", "passthrough"]
+            input_port_list = ["input", "passthrough", "input1", "input2"]
 
         if output_port_list is None:
             output_port_list = ["outColor", "outAlpha", "outValue", "outTransparency", "outColorR", "outColorG", "outColorB"]
@@ -1029,7 +1030,7 @@ class NodeProcessor(object):
                 cmds.setAttr(node_name + '.alphaIsLuminance', 1)
                 cmds.setAttr(node_name + '.ignoreColorSpaceFileRules', 1)
 
-                self.feedback.CP(f"{node_name} {lang['01']} <{tex_color_space}> {[lang['02']]}") # 节点设置为 色彩空间
+                self.feedback.CP(f"{node_name} {lang['01']} <{tex_color_space}> {lang['02']}") # 节点设置为 色彩空间
 
     #   连接节点属性
     def node_connect(self, source_node, source_attr, target_node, target_attr, force = True):
@@ -1631,10 +1632,6 @@ class ImageProcessor():
 
         self.language = language_loading()['ArnoldMagicNodeLibs']['ImageP']  # 加载相关语言模块
 
-        # 获取语言设置
-        language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
-        # 获取语言
-        self.language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNodeLibs']
 
     def resize_image(self, input_path, output_path, scale_percent=100, resample_mode='1'):
         """
@@ -1657,18 +1654,17 @@ class ImageProcessor():
 
         # 合法的重采样模式
         interpolation_methods = {
-            '0': cv2.INTER_NEAREST,  # 最近邻插值
-            '1': cv2.INTER_LINEAR,  # 双线性插值
-            '2': cv2.INTER_CUBIC,  # 三次插值
-            '3': cv2.INTER_LANCZOS4,  # Lanczos 插值
-            '4': cv2.INTER_AREA  # 区域插值（主要用于缩小图像）
+            '0': Image.NEAREST,
+            '1': Image.BOX,
+            '2': Image.BILINEAR,
+            '3': Image.HAMMING,
+            '4': Image.BICUBIC,
+            '5': Image.LANCZOS
         }
 
-        # 尝试读取图片
+        # 尝试读取图片信息
         try:
-            with open(input_path, 'rb') as f:
-                img_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
-                image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+            image = Image.open(input_path)
         except Exception as e:
             self.feedback.CP(f"{lang['03']}: {e}") # 读取图片失败
             return False
@@ -1678,20 +1674,19 @@ class ImageProcessor():
             return False
 
         # 计算缩放后的尺寸
-        width = int(image.shape[1] * scale_percent / 100)
-        height = int(image.shape[0] * scale_percent / 100)
-        dim = (width, height)
+        width = int(image.size[1] * scale_percent / 100)
+        height = int(image.size[0] * scale_percent / 100)
+        new_size = (width, height)
 
-        # 执行缩放操作
-        resized_image = cv2.resize(image, dim, interpolation=interpolation_methods[resample_mode])
-
-        # 使用 Unicode 路径转为字节路径来保存图片
+        # 使用不同的重采样模式调整图像大小
         try:
-            success, encoded_image = cv2.imencode('.jpg', resized_image)
-            if success:
-                with open(output_path, 'wb') as f:
-                    f.write(encoded_image)
+            resized_image = image.resize(new_size, interpolation_methods[resample_mode])
+        except Exception as e:
+            self.feedback.CP(f"{lang['06']}: {e}")
 
+        # 导出图片
+        try:
+         resized_image.save(output_path)
         except PermissionError as e:
             self.feedback.CP(f"{lang['04']}: {e}") # 文件写入权限错误
         except Exception as e:
@@ -1714,63 +1709,43 @@ class ImageProcessor():
 
         # 尝试读取图片
         try:
-            with open(input_path, 'rb') as f:
-                img_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
-                image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+            image = Image.open(input_path)
         except Exception as e:
             self.feedback.CP(f"{lang['01']}: {e}") # 转换格式-读取图片失败
-            return
+            return False
 
-        if image is None:
-            self.feedback.CP(f"{lang['02']}: " + os.path.basename(input_path)) # 转换格式-读取图片缓存失败
-            return
-
-        # 检查输出格式
+        # 转换图片格式
         try:
+            # 处理 JPEG 格式
             if output_format.lower() in ['jpg', 'jpeg']:
-                success, encoded_image = cv2.imencode('.jpg', image, [int(cv2.IMWRITE_JPEG_QUALITY), jpg_quality])
-                if success:
-                    with open(output_path, 'wb') as f:
-                        f.write(encoded_image)
+                # 如果图片带有透明通道，填充白色背景
+                if image.mode in ('RGBA', 'LA'):
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    background.paste(image, (0, 0), image if image.mode == 'RGBA' else None)
+                    image = background
+                else:
+                    image = image.convert('RGB')
+                # 保存为 JPEG 格式
+                image.save(output_path, 'JPEG', quality=jpg_quality)
+
+            # 处理 PNG 格式
             elif output_format.lower() == 'png':
-                success, encoded_image = cv2.imencode('.png', image,
-                                                      [int(cv2.IMWRITE_PNG_COMPRESSION), png_compression])
-                if success:
-                    with open(output_path, 'wb') as f:
-                        f.write(encoded_image)
-            # 如果输出格式为其他格式，使用指定的格式进行编码
+                # 保存为 PNG 格式，指定压缩等级
+                image.save(output_path, 'PNG', compress_level=png_compression)
+
+            # 处理其他格式
             else:
-                # 根据指定的输出格式进行编码，格式需以 ".格式" 的方式传入
-                success, encoded_image = cv2.imencode(f'.{output_format}', image)
-                # 如果编码成功，则以二进制写模式保存图像到指定的路径
-                if success:
-                    with open(output_path, 'wb') as f:
-                        f.write(encoded_image)
+                # 使用指定的格式进行保存
+                image.save(output_path, output_format.upper())
 
             self.feedback.CP(f"{os.path.basename(input_path)} {lang['03']}{output_format}{lang['04']}: {output_path}") # 已转换为 # 格式 新路径
 
+            return True
         except Exception as e:
             self.feedback.CP(f"{lang['05']}: {e}") # 转换格式-保存图片失败 错误原因
 
 
-    def check_and_set_permission(self, file_path):
-        if os.path.exists(file_path):
-            # 获取文件状态
-            file_status = os.stat(file_path)
 
-            # 检查文件是否有写权限
-            if not os.access(file_path, os.W_OK):
-                self.feedback.CP(f"文件 {file_path} 没有写权限，正在尝试修改权限...")
-                try:
-                    # 给文件赋予读写权限
-                    os.chmod(file_path, stat.S_IWRITE | stat.S_IREAD)
-                    self.feedback.CP(f"已成功修改 {file_path} 的权限。")
-                except Exception as e:
-                    self.feedback.CP(f"修改权限失败：{e}")
-            else:
-                self.feedback.CP(f"文件 {file_path} 已有写权限。")
-        else:
-            self.feedback.CP(f"文件 {file_path} 不存在。")
 
 
 

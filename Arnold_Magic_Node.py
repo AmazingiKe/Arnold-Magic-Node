@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.6.5"
+SoftwareVersion = "0.7.1"
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -132,7 +132,7 @@ TM_ImageProcessing_config_dict = {
     "JPG_quality" : 90,
     "PNG_quality" : 7,
     "backup_suffix" : '_TM_backup',
-    "processed_suffix" : "_TM_processed" ,
+    "processed_suffix" : "_TMProc" ,
     "convert_format" : True,
     "scale_texture" : False,
 }
@@ -1344,7 +1344,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 os.path.join(settings_path, 'texture_processing_data.bin'))
             # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
 
-        QtCore.QTimer.singleShot(0, main)
+        QtCore.QTimer.singleShot(0, lambda *args:main())
 
     # 修改 texture_filter_fields 过滤配置文件
     def modify_texture_filter_fields_config(self, channel, val):
@@ -1656,8 +1656,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 材质列表
         self.MaterialList = QtWidgets.QListWidget()
         self.MaterialList.setSelectionMode(QtWidgets.QAbstractItemView.ContiguousSelection)
-        self.MaterialList.currentItemChanged.connect(lambda item: self.material_list_clicked())
-        self.MaterialList.itemChanged.connect(lambda item: self.material_list_material_rename())
+        self.MaterialList.currentItemChanged.connect(lambda *args: self.material_list_clicked())
+        self.MaterialList.itemChanged.connect(lambda *args: self.material_list_material_rename())
         self.MaterialList.setFixedWidth(400)
         self.MaterialList.setIconSize(QtCore.QSize(32, 32))
         self.refresh_material_list()  # 初始化刷新材质列表
@@ -1678,7 +1678,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # TexturelListSearch 搜索框
         self.TexturelListSearch = QtWidgets.QLineEdit()
-        self.TexturelListSearch.textChanged.connect(lambda item: self.texture_list_search())
+        self.TexturelListSearch.textChanged.connect(lambda *args: self.texture_list_search())
         self.TexturelListSearch.setFixedHeight(40)
         self.TexturelListSearch.setPlaceholderText(lang['TexturelListSearch_placeholder']) # 输入要搜索的贴图球名称
         # TexturelListSearch 搜索框一些控件
@@ -1889,7 +1889,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 使用 QTimer 延迟处理选择
 
         # 刷新到贴图表格
-        QtCore.QTimer.singleShot(0, self.refresh_to_texture_table)
+        QtCore.QTimer.singleShot(0, lambda *args: self.refresh_to_texture_table())
 
         # 选择选中的材质球
         QtCore.QTimer.singleShot(0, lambda *args:  self.select_nodes([item.text() for item in self.MaterialList.selectedItems()]))
@@ -3912,35 +3912,19 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
     # 转换格式按钮
     def image_conversion(self):
+        # 代码大概流程：
+        # 1,加载配置文件：从指定路径加载配置文件，检查是否需要进行格式转换或缩放。
+        # 2,检查操作条件：如果既不需要格式转换，也不需要缩放，或没有选中任何项目，则直接返回，不执行任何操作。
+        # 3,图像路径处理：对选中的每个图像路径进行处理。检查图像路径是否有效，获取路径中的文件名和后缀，准备进行后续操作。
+        # 4,图像后缀处理：如果图像已经带有处理后的后缀，去除后缀并重新定位源文件。如果找不到源文件，则直接使用删除后缀的图像文件作为源文件。
+        # 5,生成新文件路径：为处理后的图像生成新的文件路径，并标准化路径。
+        # 6,格式转换：如果配置文件要求转换格式，则根据指定格式将图像转换为目标格式，同时处理压缩质量等选项。随后删除相同名称的其他格式文件。
+        # 7,图像缩放：在需要的情况下对图像进行缩放。
+        # 8,更新Maya节点：将转换或缩放后的图像路径更新到Maya中的相关节点。
+        # 9,刷新缓存：更新主窗口缓存数据并刷新窗口显示
 
-        # 缓存文件
-        cache_data = self.dataM.bin_load_data(self.TM_image_processing_cache_FilePath)
         # 配置文件
         initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
-
-        # 写入图片缓存数据
-        def write_image_processing_cache(old_extension, backup_image_file_path):
-            # 获取文件名称
-            tex_file_name = os.path.basename(backup_image_file_path)
-
-            # 分离文件名和扩展名
-            tex_file_name_without_extension, tex_file_name_extension = os.path.splitext(tex_file_name)
-
-            # 检查 cache_data 中是否存在该文件名
-            if tex_file_name_without_extension not in cache_data:
-                # 如果不存在，创建新的条目
-                cache_data[tex_file_name_without_extension] = [old_extension,
-                                                               tex_file_name_extension,
-                                                               backup_image_file_path]
-            else:
-                # 如果已存在，修改扩展名和备份文件路径
-                cache_data[tex_file_name_without_extension][1] = tex_file_name_extension
-                cache_data[tex_file_name_without_extension][2] = backup_image_file_path
-
-            # 保存缓存文件
-            self.dataM.bin_save_data(self.TM_image_processing_cache_FilePath, cache_data)
-
-
 
         # 如果没有勾选转换格式和缩放比例那不会有任何操作，会直接退出函数
         if not initial_config.get('convert_format', False) and not initial_config.get('scale_texture', False):
@@ -3949,8 +3933,6 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 如果没有选中内容不会执行
         if self.get_selected_rows_data() == []:
             return
-
-
 
         # 图像处理后的后缀名称
         image_processed_suffix = initial_config['processed_suffix']
@@ -3965,72 +3947,74 @@ class TM_ImageProcessing(QtWidgets.QDialog):
             'jpg': 'jpg',
             'jpeg': 'jpg',
             'png': 'png',
-            'tif': 'tif',
+            'tif': 'tiff',
             'bmp': 'bmp',
         }
 
         need_update_dict = {}
 
         for val in self.get_selected_rows_data():
-
-            old_info_path = old_MterialNodeAllInfoDict[val[1]][val[0]]['Path']
+            # 获取旧路径并标准化路径
+            old_info_path = os.path.normpath(old_MterialNodeAllInfoDict[val[1]][val[0]]['Path'])
 
             # 如果路径不存在会直接跳过这个循环
             if not os.path.exists(old_info_path):
                 self.feedback.CP('你的这张图片路径连接失败： ' + old_info_path)
                 continue
 
-            # 判断目前表格中的文件名称是否已经包含后缀
-            if image_processed_suffix in os.path.basename(old_info_path):
-                old_info_path = old_info_path.replace("_TM_processed", "")
 
-            # -----------------
-            old_tex_name = os.path.basename(old_info_path)
+            # 逻辑分析：
+            # 1，检测旧的路径是否包含后缀如果包含后缀就删除后缀
+            # 2, 检查删除后缀的文件是否存在，不存在就用旧路径删除文件的后缀用这个文件去进行处理
+
+            # 分离文件路径和文件名
+            file_dir, file_name = os.path.split(old_info_path)
+
             # 分离文件名和扩展名
-            old_tex_name_without_extension, old_tex_extension = os.path.splitext(old_tex_name)
-            old_dir_path = os.path.dirname(old_info_path)
+            name, ext = os.path.splitext(file_name)
+
+            # 列出目录下的所有文件
+            files_in_directory = os.listdir(file_dir)
+
+            # 如果文件名中已经包含处理后的后缀，移除后缀处理
+            if image_processed_suffix in name:
+                # 删除后缀
+                delete_suffix_name = name.replace(image_processed_suffix, '')
+
+                # [plan2方案] 如果有源文件可以找到源文件就无序在进行删除并创建 尝试找到不带后缀的原始文件
+                try:
+                    # 遍历文件列表，找到与已知文件名匹配的文件
+                    for file in files_in_directory:
+                        # 分离文件名和扩展名
+                        name, ext = os.path.splitext(file)
+
+                        # 检查文件名是否匹配
+                        if name == delete_suffix_name:
+                            known_file_suffix = ext
+                            break
+
+                    old_info_path = os.path.join(file_dir, delete_suffix_name+ known_file_suffix)
+
+                except UnboundLocalError:
+                    # [plam2方案] 如果找不到原文件，使用删除后缀的修改文件作为源文件
+                    new_info_path = old_info_path.replace(image_processed_suffix, '')
+                    os.rename(old_info_path, new_info_path)
+                    old_info_path = new_info_path
 
 
-            # old_tex_name 带格式的旧贴图名称
-            # old_tex_name_without_extension 不带格式的旧贴图名称
-            # old_tex_extension 旧贴图格式
-            # old_dir_path # 这是旧贴图路径
+            # -------在文件名中添加处理后缀并生成新路径----------
+            # 分离文件名和扩展名
+            name, ext = os.path.splitext(os.path.basename(old_info_path))
+            # 在文件名中的适当位置添加后缀
+            new_name = f"{name}{image_processed_suffix}{ext}"
+            # 生成新的完整文件路径 并标准化路径
+            backup_image_file_path = os.path.normpath(os.path.join(file_dir, new_name))
             # -----------------
-
-
-
-            # 添加后缀并生成新的文件路径
-            backup_image_file_path = os.path.normpath(
-                f"{os.path.join(old_dir_path, old_tex_name_without_extension)}{image_processed_suffix}{old_tex_extension}")
-
-            # 缓存中的图像的文件名（不带扩展名）
-            backup_image_name = old_tex_name_without_extension + image_processed_suffix
-
-            # 检查缓存中是否存在相同的备份图像
-            if backup_image_name in cache_data:
-                if cache_data[backup_image_name][0] != old_tex_extension:
-                    cache_ori_path = self.modify_file_extension(old_info_path, cache_data[backup_image_name][0])
-                    if os.path.exists(cache_ori_path):
-                        old_info_path = cache_ori_path
-
-            # 判断处理过的名称格式是否和这次选择的格式名称一样，如果一样就删除掉之前的格式名称，防止残留文件
-            # 如果缓存中存在同名的图像文件
-            if backup_image_name in cache_data:
-                cached_old_format , cached_format, cached_file_path = cache_data[backup_image_name]
-                # 如果缓存的文件格式与当前选择的格式不同
-                if cached_format != initial_config['format']:
-                    # 删除旧的缓存文件，防止残留文件
-                    if os.path.exists(cached_file_path):
-                        try:
-                            os.remove(cached_file_path)  # 删除旧的缓存文件
-                        except Exception as e:
-                            self.feedback.CP('无法删除{}残留文件，原因：{}'.format(cached_file_path, e))
 
 
 
             # 检查是否需要转换格式
             if initial_config['convert_format']:
-
                 # 根据输出格式生成输出路径
                 if initial_config['format'] in format_mapping:
                     # 通过分割文件名，去掉原文件扩展名，并添加新的扩展名
@@ -4040,12 +4024,20 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                     self.feedback.CP(f"不支持的格式: {initial_config['format']}")
                     return
 
+
                 # 执行格式转换，使用备份图像文件名作为输入和输出路径
-                self.imageP.convert_image_format(input_path=old_info_path,
-                                                 output_path=backup_image_file_path,
-                                                 output_format=initial_config['format'],
-                                                 jpg_quality=initial_config['JPG_quality'],
-                                                 png_compression=initial_config['PNG_quality'])
+                convert_image_format_state = self.imageP.convert_image_format(input_path=old_info_path,
+                                                                             output_path=backup_image_file_path,
+                                                                             output_format=format_mapping[initial_config['format']],
+                                                                             jpg_quality=initial_config['JPG_quality'],
+                                                                             png_compression=initial_config['PNG_quality'])
+                if convert_image_format_state == False:
+                    return
+
+                # 删除相同名称的其他格式文件
+                self.delete_other_formats(file_dir, files_in_directory, os.path.basename(backup_image_file_path),
+                                          format_mapping[initial_config['format']])
+
                 # 如果需要缩放，则在转换格式后进行缩放
                 if initial_config['scale_texture']:
                     resize_image_state = self.imageP.resize_image(input_path=backup_image_file_path,
@@ -4056,7 +4048,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                         continue
 
                 # 写入缓存
-                write_image_processing_cache(val[4], backup_image_file_path)
+                # write_image_processing_cache(val[4], backup_image_file_path)
 
             # 如果没有进行格式转换，但需要缩放，则直接缩放
             elif initial_config['scale_texture']:
@@ -4069,10 +4061,8 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                     continue
 
 
-                # 写入缓存
-                write_image_processing_cache(val[4], backup_image_file_path)
 
-            # 更新节点为新的路径
+            # 更新 Maya 节点中的文件路径
             try:
                 cmds.setAttr(f"{val[0]}.fileTextureName", backup_image_file_path, type="string")
             except Exception as e:
@@ -4091,6 +4081,22 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
         self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
 
+    # 删除相同名称的其他格式文件
+    def delete_other_formats(self, file_dir, files_in_directory, name_with_suffix, format):
+        # 获取目标文件的名称（不包含后缀）
+        target_name = os.path.splitext(name_with_suffix)[0]
+
+        # 遍历目录中的所有文件
+        for file_name in files_in_directory:
+            # 分离文件名和后缀
+            file_name_without_suffix, file_format = os.path.splitext(file_name)
+
+            # 检查文件名是否与目标名称相同，且文件格式不同于指定的格式列表
+            if file_name_without_suffix == target_name and file_format != f".{format}":
+                # 构造完整路径并删除文件
+                file_path = os.path.join(file_dir, file_name)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
 
     # --------------------保存设置内容的函数
     def modify_config(self, key, cont):
