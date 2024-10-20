@@ -199,7 +199,8 @@ new_texture_processing_data_dict = {
         'GraysList' : ["base", 'diffuseRoughness', 'metalness', 'specularRoughness', 'subsurface', 'emission', 'ao', 'bump', 'displacement'],
         'ColorList' : ['baseColor', 'specularColor', 'subsurfaceColor', 'subsurfaceRadius', 'emissionColor', 'opacity', 'normalCamera'],
         'MagicConnectionSetColorSpace' : True,
-        'change_material_name' : True
+        'change_material_name' : True,
+        'change_UDIM' : True
     },
 }
 
@@ -217,7 +218,8 @@ path_detection_config_dict =  {
     'creation_day_range_tolerance' : 30,
     'auto_max_val': True,
     'change_material_name' : True,
-    'disable_feedback' : False
+    'disable_feedback' : False,
+    'change_UDIM' : True
 }
 
 

@@ -17,6 +17,7 @@ import json  # 用于序列化和反序列化 JSON 数据，方便与外部数�
 import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
 import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
 from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
+from Levenshtein import distance as levenshtein_distance  # 导入 Levenshtein 库中的 distance 函数
 import numpy as np
 
 # 4. 字符串处理
@@ -515,14 +516,13 @@ class NodeProcessor(object):
         name, ext = os.path.splitext(file_name)
 
         # 删除所有标点符号
-        processed_name = re.sub(r'[^\w\s]', '', name)
+        processed_name = re.sub(r'[^\w\s]', ' ', name)
 
         # 清理下划线
         cleaned_name = re.sub(r'_+', ' ', processed_name)
 
         # 将名称转换为大写
         cleaned_name = cleaned_name.upper()
-
         return cleaned_name
     
     #   匹配贴图节点的通道
@@ -566,48 +566,58 @@ class NodeProcessor(object):
     #   把名字筛选出正确的通道
     def FilterData(self, NewTexName, FilterData):
         """
-        使用Aho-Corasick算法根据通道过滤贴图名称。
+        使用 Aho-Corasick 算法和 Levenshtein 距离根据通道过滤贴图名称，并计算匹配权重。
 
         参数：
             NewTexName (str)：处理后的贴图名称。
-            FilterData (dict)：包含通道名称和关联值列表的字典。
+            FilterData (dict)：包含通道名称和关联关键词列表的字典。
 
         返回：
-            str：匹配的通道名称；如果没有找到匹配项，则返回None。
+            str：匹配的通道名称；如果没有找到匹配项，则返回 None。
         """
+        tex_name_lower = NewTexName.lower()
 
-        # 构建关键词到通道的映射
-        value_to_channel = {}
-        for channel, value_list in FilterData.items():
-            for value in value_list:
-                value_to_channel[value.lower()] = channel
+        # 构建关键词到通道的映射，以及通道的关键词列表
+        channel_keywords = {}
+        keyword_to_channels = {}
+        for channel, keywords in FilterData.items():
+            channel_keywords[channel] = [kw.lower() for kw in keywords]
+            for keyword in keywords:
+                keyword_lower = keyword.lower()
+                keyword_to_channels.setdefault(keyword_lower, []).append(channel)
 
-        # 构建关键词树
+        # 构建关键词树（使用 ahocorapy）
         kwtree = KeywordTree(case_insensitive=True)
-        for value in value_to_channel.keys():
-            kwtree.add(value)
+        for keyword in keyword_to_channels.keys():
+            kwtree.add(keyword)
         kwtree.finalize()
 
-        # 保存所有匹配的结果
-        matches = []
+        # 记录每个通道的匹配次数
+        channel_scores = {}
 
-        # print(f"NewTexName: {NewTexName}")  # 打印调试信息，查看输入的名称
+        # 精确匹配阶段
+        for match in kwtree.search_all(tex_name_lower):
+            keyword = match[0].lower()
+            channels = keyword_to_channels.get(keyword, [])
+            for channel in channels:
+                channel_scores[channel] = channel_scores.get(channel, 0) + 1
 
-        # 在NewTexName中搜索模式
-        for keyword, index in kwtree.search_all(NewTexName):
-            matched_value_lower = keyword.lower()
-            channel = value_to_channel.get(matched_value_lower)
-            # print(f"Matched keyword: {keyword}, Channel: {channel}, Index: {index}")  # 打印每次匹配到的关键词和通道
+        # 如果未找到精确匹配，进行模糊匹配
+        if not channel_scores:
+            LEVENSHTEIN_THRESHOLD = 2  # 可根据需要调整阈值
+            for keyword, channels in keyword_to_channels.items():
+                dist = levenshtein_distance(keyword, tex_name_lower)
+                if dist <= LEVENSHTEIN_THRESHOLD:
+                    for channel in channels:
+                        # 根据距离设置权重（距离越小，权重越高）
+                        weight = LEVENSHTEIN_THRESHOLD - dist + 1
+                        channel_scores[channel] = channel_scores.get(channel, 0) + weight
 
-            # 使用正则表达式匹配完整的单词
-            pattern = re.compile(r'\b' + re.escape(keyword.lower()) + r'\b', re.IGNORECASE)
-            if pattern.search(NewTexName.lower()):
-                matches.append((channel, index))  # 保存匹配的通道和索引
-
-        # 根据索引返回最早匹配的通道
-        if matches:
-            matches.sort(key=lambda x: x[1])  # 按索引排序
-            return matches[0][0]  # 返回第一个匹配的通道
+        # 选择得分最高的通道
+        if channel_scores:
+            sorted_channels = sorted(channel_scores.items(), key=lambda x: x[1], reverse=True)
+            best_match_channel = sorted_channels[0][0]
+            return best_match_channel
 
         return None  # 未找到匹配项
     
@@ -1074,6 +1084,38 @@ class NodeProcessor(object):
         filename = re.sub(r'_+', '_', filename).strip('_')
 
         return filename
+
+    # 自动udim
+    def auto_set_udim(self, node_list):
+        """
+        作用：
+            - 通过输入的node_list去检测是否是udim类型
+
+        参数:
+            - node_list 列表类型，输入的是节点名称列表
+
+        返回:
+            无返回值。该函数直接对节点进行连接操作。
+        """
+
+        for node_name in node_list:
+            node_path = cmds.getAttr(node_name + '.fileTextureName')
+            process_file_name = self.processed_texture_name(os.path.basename(node_path))
+            if self.contains_udim_number(process_file_name):
+                cmds.setAttr(node_name + '.uvTilingMode', 3)
+                self.feedback.CP(f"{node_name} {self.language['ASU']['01']}")
+            else:
+                self.feedback.CP(f"{node_name} {self.language['ASU']['02']}")
+                cmds.setAttr(node_name + '.uvTilingMode', 0)
+
+    # 检测字符串中是否包含 UDIM 格式的数字（范围：1001-1999）
+    def contains_udim_number(self, text):
+        """
+        检测字符串中是否包含 UDIM 格式的数字（范围：1001-1999）。
+        """
+        pattern = r"\b1[0-9]{3}\b"  # 匹配1001到1999之间的四位数字
+        match = re.search(pattern, text)
+        return bool(match)
 
 #   获取节点数据的库
 class GetNodeData():

@@ -23,6 +23,7 @@
         "unify_uv_node": "统一UV",
         "uv_preset": ["禁用","0型(ZBrush)","1型(Mudbox)","UDIM(Mari)","显示平铺"],
         "zdsckj_button": "自动色彩空间",
+        "zdudim_button": "自动UDIM",
         "ai_aov_switch": "AOV开关"
       }
     },
@@ -47,8 +48,9 @@
         "auto_color_space_connection" : "连接时智能修改色彩空间",
         "magic_change_material_name_options" : "连接时修改材质名称",
         "zdyljdtt_label" : "自定义连接的贴图",
-        "zdyglmz_label" : "自定义过滤名字",
-        "mflj_tab" : "魔法连接"
+        "zdyglmz_label" : "自定义匹配权重名称",
+        "mflj_tab" : "魔法连接",
+        "magic_change_udim_options" : "连接时智能开启UDIM"
       },
       "create_color_space_tab": {
         "zdysckj_label": "自定义色彩空间",
@@ -63,6 +65,7 @@
       "create_path_matching_tab": {
         "ljsxgsz_label": "连接时相关设置",
         "path_matching_checkbox": "连接时智能修改色彩空间",
+        "path_matching_change_udim_checkbox" :"连接时智能开启UDIM",
         "path_matching_change_material_name_options": "连接时修改材质名称",
         "path_disable_feedback_options": "关闭反馈",
         "sxgczpchywzdwj_label": "筛选过程中排除含有文字的文件",
@@ -108,6 +111,10 @@
         "TexturelList_Processed_Image_Button": "处理图像",
         "TexturelList_Refresh_Button_ToolTip": "根据缓存进行重新刷新",
         "TexturelList_Headers": ["贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"]
+      },
+      "state" : {
+        "normal" : "正常",
+        "lack": "缺失"
       }
     },
 
@@ -240,6 +247,10 @@
       "ASTCS": {
         "01" : "节点设置为",
         "02" : "色彩空间"
+      },
+      "ASU" : {
+        "01": "UV平铺模式设置成<UDIM>模式",
+        "02": "UV平铺模式设置成<禁用>模式"
       }
     },
 

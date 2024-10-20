@@ -7,22 +7,23 @@
       "create_widgets": {
         "ttclgj_menu": "Texturverarbeitungswerkzeug",
         "ttglq_menu": "Texturmanager",
-        "ttpldrq_menu": "Textur-Massenimporteur",
-        "xryssz_menu": "Render-Voreinstellungen",
-        "tjxrys_menu": "Render-Voreinstellung hinzufügen",
-        "xgxrys_menu": "Render-Voreinstellung ändern",
-        "scxrys_menu": "Render-Voreinstellung löschen",
-        "dkxryswjj_menu": "Render-Voreinstellungsordner öffnen",
-        "default_rendering_properties_options": "Ausgabe Standardparameter",
-        "rendering_properties_options": "Ausgabe Arnold-Parameter",
-        "aov_properties_properties_options": "Ausgabe AOV-Parameter",
+        "ttpldrq_menu": "Batch-Texturimporteur",
+        "xryssz_menu": "Rendering-Voreinstellungseinstellungen",
+        "tjxrys_menu": "Rendering-Voreinstellung hinzufügen",
+        "xgxrys_menu": "Rendering-Voreinstellung ändern",
+        "scxrys_menu": "Rendering-Voreinstellung löschen",
+        "dkxryswjj_menu": "Rendering-Voreinstellung-Ordner öffnen",
+        "default_rendering_properties_options": "Standardparameter exportieren",
+        "rendering_properties_options": "Arnold-Parameter exportieren",
+        "aov_properties_properties_options": "AOV-Parameter exportieren",
         "sz_menu": "Einstellungen",
         "magic_connection": "Magische Verbindung",
-        "path_detection_connection": "Pfadauswahlverbindung",
+        "path_detection_connection": "Pfad-Erkennung-Verbindung",
         "direct_connection": "Direktverbindung",
         "unify_uv_node": "UV vereinheitlichen",
-        "uv_preset": ["Deaktivieren","Typ 0 (ZBrush)","Typ 1 (Mudbox)","UDIM (Mari)","Kacheln anzeigen"],
+        "uv_preset": ["Deaktivieren", "Typ 0 (ZBrush)", "Typ 1 (Mudbox)", "UDIM (Mari)", "Kacheln anzeigen"],
         "zdsckj_button": "Automatischer Farbraum",
+        "zdudim_button": "Automatisches UDIM",
         "ai_aov_switch": "AOV-Schalter"
       }
     },
@@ -35,20 +36,21 @@
         "settings_menu": "Einstellungen",
         "reset_data_action": "Einstellungsdaten zurücksetzen",
         "license_menu": "Lizenz",
-        "change_license_action": "Lizenz wechseln",
+        "change_license_action": "Lizenz ändern",
         "about_menu": "Über",
         "contact_feedback_action": "Kontakt/Feedback",
-        "help_document_action": "Hilfedokument",
-        "plugin_update_download_action": "Plugin-Update herunterladen",
+        "help_document_action": "Hilfedokumentation",
+        "plugin_update_download_action": "Plugin-Updates herunterladen",
         "plugin_home": "Plugin-Homepage"
       },
       "create_magic_connection_tab": {
-        "mfljsz_label": "Magische Verbindungs-Einstellungen",
-        "auto_color_space_connection": "Farbraum bei Verbindung intelligent ändern",
-        "magic_change_material_name_options": "Materialnamen bei Verbindung ändern",
-        "zdyljdtt_label": "Benutzerdefinierte Texturen für Verbindung",
-        "zdyglmz_label": "Benutzerdefinierte Filternamen",
-        "mflj_tab": "Magische Verbindung"
+        "mfljsz_label": "Magische Verbindungseinstellungen",
+        "auto_color_space_connection": "Farbraum beim Verbinden automatisch ändern",
+        "magic_change_material_name_options": "Materialnamen beim Verbinden ändern",
+        "zdyljdtt_label": "Benutzerdefinierte verbundene Texturen",
+        "zdyglmz_label": "Benutzerdefinierte Matching-Gewichtsnamen",
+        "mflj_tab": "Magische Verbindung",
+        "magic_change_udim_options": "UDIM beim Verbinden automatisch aktivieren"
       },
       "create_color_space_tab": {
         "zdysckj_label": "Benutzerdefinierter Farbraum",
@@ -56,37 +58,38 @@
         "sckj_label": "Farbraum"
       },
       "create_node_connection_tab": {
-        "zdljcljdsz_label": "Einstellungen für automatische Verbindungsprozessknoten",
-        "cljdsz_list": "Prozessknoteneinstellungen",
+        "zdljcljdsz_label": "Einstellungen für automatische Verbindungsbearbeitungs-Knoten",
+        "cljdsz_list": "Einstellungen für Bearbeitungsknoten",
         "jdlj_tab": "Knotenverbindung"
       },
       "create_path_matching_tab": {
-        "ljsxgsz_label": "Verbindungseinstellungen",
-        "path_matching_checkbox": "Farbraum bei Verbindung intelligent ändern",
-        "path_matching_change_material_name_options": "Materialnamen bei Verbindung ändern",
+        "ljsxgsz_label": "Verwandte Einstellungen beim Verbinden",
+        "path_matching_checkbox": "Farbraum beim Verbinden automatisch ändern",
+        "path_matching_change_udim_checkbox": "UDIM beim Verbinden automatisch aktivieren",
+        "path_matching_change_material_name_options": "Materialnamen beim Verbinden ändern",
         "path_disable_feedback_options": "Feedback deaktivieren",
-        "sxgczpchywzdwj_label": "Dateien mit Text während des Filterprozesses ausschließen",
-        "zjxxsdjcsyczfczdtdnc_label": "Spezifische Inhalte aus Strings bei Ähnlichkeitserkennung entfernen",
-        "ppsxgsz_label": "Einstellungen für die Übereinstimmung",
-        "auto_max_val_checkbox": "Automatisch die beste Übereinstimmung auswählen",
-        "auto_max_val_checkbox_tip": "Wenn aktiviert, verwendet das Programm automatisch den höchsten Ähnlichkeitswert als Schwellenwert, ohne manuelle Einstellung.",
-        "ppysqz_label": "Gewichtung der Übereinstimmungselemente",
-        "mzqz_label": "Namensgewichtung",
-        "fblqz_label": "Auflösungsgewichtung",
-        "gsqz_label": "Formatgewichtung",
-        "cjsjqz_label": "Erstellungszeitgewichtung",
-        "xsdjs_label": "Berechnung der Ähnlichkeit",
+        "sxgczpchywzdwj_label": "Dateien mit Text während des Filtervorgangs ausschließen",
+        "zjxxsdjcsyczfczdtdnc_label": "Bestimmte Inhalte in Zeichenketten bei der Ähnlichkeitserkennung entfernen",
+        "ppsxgsz_label": "Verwandte Einstellungen beim Matching",
+        "auto_max_val_checkbox": "Beste Übereinstimmung automatisch auswählen",
+        "auto_max_val_checkbox_tip": "Wenn aktiviert, verwendet das Programm den höchsten Ähnlichkeitswert als Match-Schwellenwert, ohne manuelle Einstellung.",
+        "ppysqz_label": "Gewichte der Matching-Elemente",
+        "mzqz_label": "Gewicht des Namens",
+        "fblqz_label": "Gewicht der Auflösung",
+        "gsqz_label": "Gewicht des Formats",
+        "cjsjqz_label": "Gewicht des Erstellungsdatums",
+        "xsdjs_label": "Ähnlichkeitsberechnung",
         "similarity_max_slider_label": "Benutzerdefinierter Ähnlichkeitsschwellenwert:",
-        "similarity_max_slider_tip": "Bitte geben Sie den Ähnlichkeitsschwellenwert (0.0 - 1.0) ein. Das Programm wird Ergebnisse mit einer Ähnlichkeit über diesem Schwellenwert abgleichen.",
+        "similarity_max_slider_tip": "Bitte geben Sie einen Ähnlichkeitsschwellenwert (0.0 - 1.0) ein. Das Programm wird Ergebnisse mit einer Ähnlichkeit über diesem Schwellenwert abgleichen.",
         "similarity_range_slider_label": "Ähnlichkeitstoleranzbereich",
-        "similarity_range_slider_tip": "Stellen Sie den Toleranzbereich für den Übereinstimmungsschwellenwert (0.0 - 1.0) ein. Das Programm wird Ergebnisse abgleichen, deren Ähnlichkeit innerhalb dieses Bereichs um den Schwellenwert schwankt.",
-        "day_range_slider_label": "Bereichstoleranzwert für Erstellungszeit in Tagen:",
-        "jdljpp_tab": "Knotenpfadübereinstimmung"
+        "similarity_range_slider_tip": "Stellen Sie den Toleranzbereich für den Ähnlichkeitsschwellenwert (0.0 - 1.0) ein. Das Programm wird Ergebnisse mit einer Ähnlichkeit innerhalb dieses Bereichs um den Schwellenwert herum abgleichen.",
+        "day_range_slider_label": "Toleranzwert für den Erstellungsdatumsbereich:",
+        "jdljpp_tab": "Knotenpfad-Matching"
       },
       "create_configure_ui_layout_tab": {
-        "yyszd_label": "Spracheinstellungen etc.",
+        "yyszd_label": "Spracheneinstellungen usw.",
         "yy_label": "Sprache:",
-        "jmybjsz_tab": "Interface- und Layout-Einstellungen"
+        "jmybjsz_tab": "Schnittstellen- und Layout-Einstellungen"
       }
     },
 
@@ -97,17 +100,21 @@
         "day": "Tage"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "Geben Sie den Namen des zu suchenden Materialballs ein....",
-        "TexturelListSearch_placeholder": "Geben Sie den Namen des zu suchenden Texturballs ein....",
-        "TexturelList_Unselect_All_Button": "Alle Abwählen",
-        "TexturelList_reverse_selection": "Auswahl Umkehren",
-        "TexturelList_Find_Missing_Textures_Button": "Fehlende auswählen",
-        "TexturelList_Intelligent_Find_Max_Size_Button": "Große Texturen auswählen",
+        "MaterialListSearch_placeholder": "Geben Sie den Namen des zu suchenden Materials ein....",
+        "TexturelListSearch_placeholder": "Geben Sie den Namen der zu suchenden Textur ein....",
+        "TexturelList_Unselect_All_Button": "Alle Auswahl aufheben",
+        "TexturelList_reverse_selection": "Auswahl umkehren",
+        "TexturelList_Find_Missing_Textures_Button": "Fehlende finden",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "Große Texturen finden",
         "TexturelList_Search_And_Replace_Date_Button": "Suchen und Ersetzen",
         "TexturelList_Replace_Data_Button": "Pfad automatisch reparieren",
         "TexturelList_Processed_Image_Button": "Bild verarbeiten",
-        "TexturelList_Refresh_Button_ToolTip": "Neu laden basierend auf dem Cache",
-        "TexturelList_Headers": ["Texturknotenname", "Materialball", "Größe", "Pixelgröße", "Format", "Verwendungsanzahl", "Status", "Pfad"]
+        "TexturelList_Refresh_Button_ToolTip": "Basierend auf dem Cache aktualisieren",
+        "TexturelList_Headers": ["Texturknotenname", "Material", "Größe", "Pixelgröße", "Format", "Referenzanzahl", "Status", "Pfad"]
+      },
+      "state": {
+        "normal": "Normal",
+        "lack": "Fehlend"
       }
     },
 
@@ -117,20 +124,20 @@
       },
       "create_widgets": {
         "label_data_to_edit_options": "Zu ändernder Inhalt",
-        "label_data_to_edit_options_02": "Bitte wählen Sie basierend auf dem zu ändernden Inhalt",
+        "label_data_to_edit_options_02": "Sie müssen basierend auf dem zu ändernden Inhalt auswählen",
         "sl_material": "Material",
         "sl_texture": "Textur",
         "sl_texture_path": "Texturpfad",
         "label_modify_options": "Bereich des zu ändernden Inhalts",
         "radio_all": "Alle",
-        "radio_table": "Im Tabellenfeld",
+        "radio_table": "In Tabelle",
         "radio_selection": "Ausgewählt",
-        "label_find": "Suchinhalt",
-        "line_edit_find_placeholder": "Bitte geben Sie den Suchinhalt ein...",
+        "label_find": "Zu suchender Inhalt",
+        "line_edit_find_placeholder": "Bitte geben Sie den zu suchenden Inhalt ein...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-        "line_edit_replace_placeholder": "Bitte geben Sie den Ersatzinhalt ein...",
+        "line_edit_replace_placeholder": "Bitte geben Sie den zu ersetzenden Inhalt ein...",
         "checkbox_case_sensitive": "Groß-/Kleinschreibung ignorieren",
-        "checkbox_regex": "Regulären Ausdruck verwenden",
+        "checkbox_regex": "Reguläre Ausdrücke verwenden",
         "button_replace": "Ersetzen"
       }
     },
@@ -140,11 +147,11 @@
         "WINDOWS_NAME": "Pfad automatisch reparieren-"
       },
       "create_widgets": {
-        "memory_search_mode_checkbox": "Suchmodus speichern",
-        "search_subfolders_checkbox": "Unterordner durchsuchen",
-        "multiple_subfolder_search_checkbox": "Mehrere Unterordner durchsuchen",
+        "memory_search_mode_checkbox": "Speichersuchmodus",
+        "search_subfolders_checkbox": "In Unterordnern suchen",
+        "multiple_subfolder_search_checkbox": "In mehreren Unterordnern suchen",
         "ignore_case_checkbox": "Groß-/Kleinschreibung ignorieren",
-        "fix_path_button": "Pfad reparieren starten"
+        "fix_path_button": "Pfadreparatur starten"
       }
     },
 
@@ -154,7 +161,7 @@
       },
       "menu_widgets": {
         "edit_menu": "Bearbeiten",
-        "clear_cache": "Cache löschen  !Vorsicht löschen!",
+        "clear_cache": "Cache leeren! Vorsichtig löschen!",
         "redo_action": "Bild wiederherstellen",
         "help_menu": "Hilfe",
         "instructions_action": "Anleitung"
@@ -162,10 +169,10 @@
       "create_widgets": {
         "format_combo_box_label": "Format:",
         "zoom_ratios_combo_box_label": "Zoom:",
-        "resampling_mode_combo_box_label": "Neuabtastmodus:",
-        "resampling_mode_list": ["Nächstes Nachbar-Interpolation", "Durchschnittsinterpolation", "Bilineare Interpolation", "Schärfende Interpolation", "Kubische Interpolation", "Hochpräzise Interpolation"],
-        "jpg_label": "JPG Qualität: ",
-        "png_label": "PNG Qualität: ",
+        "resampling_mode_combo_box_label": "Neusampling:",
+        "resampling_mode_list": ["Nächster Nachbar Interpolation", "Durchschnittliche Interpolation", "Bilineare Interpolation", "Schärfende Interpolation", "Kubische Interpolation", "Hochpräzise Interpolation"],
+        "jpg_label": "JPG-Qualität: ",
+        "png_label": "PNG-Qualität: ",
         "convert_format_check_box": "Format konvertieren",
         "scale_texture_check_box": "Textur skalieren",
         "conversion_button": "Konvertierung starten"
@@ -173,31 +180,31 @@
     },
 
     "UVPM": {
-      "01": "Hat bereits",
-      "02": "den UV-Tiling-Modus des Knotens auf:",
+      "01": "Bereits eingestellt ",
+      "02": "UV-Kachelmodus des Knotens auf:",
       "03": "Fehler beim Einstellen:",
-      "04": "Bitte wählen Sie einen Texturknoten"
+      "04": "Bitte wählen Sie einen Texturknoten aus"
     },
 
     "CSPM": {
-      "01": "Bitte wählen Sie einen Texturknoten!",
-      "02": "Hat bereits",
-      "03": "aufgesetzt auf"
+      "01": "Bitte wählen Sie einen Texturknoten aus!",
+      "02": "Bereits eingestellt ",
+      "03": "zu"
     },
 
     "ASTCS": {
-      "01": "Bitte wählen Sie einen Texturknoten!"
+      "01": "Bitte wählen Sie einen Texturknoten aus!"
     },
 
     "DC_Button": {
       "__init__": {
         "01": "Knoten erfolgreich eingestellt",
-        "02": "Bitte wählen Sie zuerst einen Ausgabeknoten"
+        "02": "Bitte wählen Sie zuerst den Ausgabeknoten"
       },
       "connection_node": {
-        "01": "Ihr",
-        "02": "Knoten kann nicht mit",
-        "03": "Knoten verbunden werden"
+        "01": "Ihr ",
+        "02": "Knoten kann nicht mit ",
+        "03": "Knoten auf"
       }
     },
 
@@ -207,8 +214,8 @@
       "premium_license": "Premium-Version",
       "developer_license": "Entwicklerlizenz",
       "educational_license": "Bildungslizenz",
-      "permanent_standard_license": "Permanent Standardversion",
-      "permanent_premium_license": "Permanent Premium-Version",
+      "permanent_standard_license": "Permanente Standardversion",
+      "permanent_premium_license": "Permanente Premium-Version",
       "expiry_date_01": "Permanent"
     }
   },
@@ -217,90 +224,94 @@
 
     "PathD": {
       "DPC": {
-        "01": "Verzeichnis nicht zugänglich",
+        "01": "Verzeichnis kann nicht zugegriffen werden",
         "02": "Detaillierter Fehler",
-        "03": "Kann nicht geöffnet werden oder ist keine Bilddatei",
-        "04": "Diese Datei hat keine Zugriffsrechte, detaillierter Fehler"
+        "03": "Kann nicht als Bilddatei geöffnet oder verifiziert werden",
+        "04": "Diese Datei hat keine Zugriffsberechtigungen, detaillierter Fehler"
       },
       "CN": {
         "01": "Dieser Pfad kann nicht verbunden werden:"
       },
       "GFI": {
-        "01": "Fehler beim Abfragen der Texturmetadaten, Fehlergrund: "
+        "01": "Fehler beim Abfragen der Textur-Metaattribute, Fehlergrund: "
       }
     },
 
     "NodeP": {
       "CTFNTPN": {
-        "01": "Position des Materialkanals:"
+        "01": "Materialkanal nach Position:"
       },
       "ASTCS": {
-        "01": "Knoten aufgesetzt auf",
+        "01": "Knoten auf eingestellt",
         "02": "Farbraum"
+      },
+      "ASU": {
+        "01": "UV-Kachelmodus auf <UDIM> Modus eingestellt",
+        "02": "UV-Kachelmodus auf <Deaktiviert> Modus eingestellt"
       }
     },
 
     "DataP": {
       "SSARD": {
-        "01": "Die übergebenen Daten sind kein String-Typ",
-        "02": "Regulärer Ausdruck Fehler :"
+        "01": "Die übergebenen Daten sind kein Zeichenketten-Typ",
+        "02": "Regulärer Ausdrucksfehler:"
       }
     },
 
     "ImageP": {
       "RI": {
-        "01": "Ungültiger Skalierungsfaktor",
-        "02": "Bitte geben Sie einen gültigen Wert zwischen 0 und 100 ein",
+        "01": "Ungültiges Skalierungsverhältnis",
+        "02": "Bitte legen Sie einen gültigen Wert zwischen 0 und 100 fest",
         "03": "Bild konnte nicht gelesen werden",
-        "04": "Fehler bei Schreibrechten der Datei",
+        "04": "Dateischreibberechtigungsfehler",
         "05": "Bild konnte nicht gespeichert werden",
         "06": "Bildverarbeitung fehlgeschlagen"
       },
       "CIF": {
-        "01": "Formatkonvertierung - Bild konnte nicht gelesen werden",
-        "02": "Formatkonvertierung - Bild-Cache konnte nicht gelesen werden",
-        "03": "Wurde konvertiert zu",
+        "01": "Format konvertieren - Bild konnte nicht gelesen werden",
+        "02": "Format konvertieren - Bild-Cache konnte nicht gelesen werden",
+        "03": "Konvertiert zu",
         "04": "Format Neuer Pfad",
-        "05": "Formatkonvertierung - Bild konnte nicht gespeichert werden Fehlergrund"
+        "05": "Format konvertieren - Bild konnte nicht gespeichert werden, Fehlergrund"
       }
     },
 
     "FeedbackPrompt": {
-      "01": "@Arnold Tool Plugin Erinnerung",
-      "02": "Fehlerwarnung, das Problem ist unten aufgeführt",
-      "03": "Schwerwiegender Fehler, bitte kontaktieren Sie den Entwickler zur Behebung"
+      "01": "@Arnold Tool Plugin-Benachrichtigung",
+      "02": "Fehlerwarnung, das Fehlerproblem ist unten aufgeführt",
+      "03": "Schwerwiegender Fehler aufgetreten, bitte kontaktieren Sie den Entwickler zur Behebung, Kontaktinformationen"
     },
 
     "process_sl_data": {
-      "01": "Bitte wählen Sie zuerst den entsprechenden Knoten!"
+      "01": "Bitte wählen Sie zuerst den entsprechenden Knoten aus!"
     }
 
   },
 
   "LicenseV": {
     "GMI": {
-      "01": "Windows-System kann die Hauptplatinenseriennummer nicht finden",
-      "02": "Windows-System Fehler beim Abrufen der Hauptplatinenseriennummer:",
-      "03": "Linux/Unix-System kann die Hauptplatinenseriennummer nicht finden",
-      "04": "Linux/Unix-System Fehler beim Abrufen der Hauptplatinenseriennummer:"
+      "01": "Windows-System kann die Motherboard-Seriennummer nicht finden",
+      "02": "Fehler beim Abrufen der Motherboard-Seriennummer auf Windows-System:",
+      "03": "Linux/Unix-System kann die Motherboard-Seriennummer nicht finden",
+      "04": "Fehler beim Abrufen der Motherboard-Seriennummer auf Linux/Unix-System:"
     },
     "GWTS": {
-      "01": "Zeitstempel von Taobao kann nicht abgerufen werden",
-      "02": "Link-Zeit konnte nicht abgerufen werden:"
+      "01": "Kann Taobao-Zeitstempel nicht erhalten",
+      "02": "Fehler beim Abrufen der Link-Zeit:"
     },
     "GNTS": {
       "01": "NTP-Zeit konnte nicht abgerufen werden:"
     },
     "VL": {
-      "01": "Lizenzformat ungültig",
-      "02": "Gerätekennungsnummer stimmt nicht überein",
+      "01": "Ungültiges Lizenzformat",
+      "02": "Geräteidentifizierungscode stimmt nicht überein",
       "03": "Lizenz ist abgelaufen!",
       "04": "Signaturüberprüfung fehlgeschlagen, Lizenz könnte manipuliert sein",
       "05": "Lizenzformatfehler",
-      "06": "Unbekannter Fehler während der Überprüfung, bitte kontaktieren Sie den Entwickler"
+      "06": "Während der Überprüfung ist ein unbekannter Fehler aufgetreten, bitte kontaktieren Sie den Entwickler"
     },
     "LW": {
-      "DIL": "Gerätekennungsnummer (muss dem Entwickler bereitgestellt werden)",
+      "DIL": "Geräteidentifizierungscode (muss dem Entwickler bereitgestellt werden)",
       "SUL": "Seriennummer eingeben",
       "SNT": "Bitte geben Sie die Seriennummer ein",
       "VB": "Lizenz überprüfen",
@@ -313,15 +324,15 @@
   },
 
   "DLibs": {
-    "FP": "@Arnold Tool Plugin Erinnerung {} | ",
-    "CVF": "Konfigurationsordner der Bibliothek existiert ╭(●｀∀´●)╯ Applaus Applaus",
+    "FP": "@Arnold Tool Plugin-Benachrichtigung {} | ",
+    "CVF": "Bibliothekskonfigurationsordner existiert sehr gut ╭(●｀∀´●)╯ Applaus Applaus",
     "DL": {
-      "01": "Gefunden",
-      "02": "Bibliothek existiert nicht ◔ ‸◔？   Wird heruntergeladen≖‿≖✧ Bitte warten Sie geduldig",
-      "03": "Super！！！！Umgebungskonfiguration hat keine Probleme ♪（＾∀＾●）ﾉｼ"
+      "01": "Entdeckt",
+      "02": "Bibliothek existiert nicht ◔ ‸◔？   Wird heruntergeladen ≖‿≖✧ Bitte warten Sie geduldig",
+      "03": "Großartig!!!! Die Umgebungskonfiguration hat keine Probleme ♪（＾∀＾●）ﾉｼ "
     },
     "MP": {
-      "01": "Bibliotheksüberprüfungszeit: ",
+      "01": "Bibliothekssuchzeit: ",
       "02": " Sekunden"
     }
   }

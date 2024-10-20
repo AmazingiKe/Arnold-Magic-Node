@@ -80,7 +80,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.7.1"
+SoftwareVersion = "0.8.1"
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -295,7 +295,13 @@ class Arnold_Magic_Node_UI(object):
             cmds.menuItem(label = color_space_name)
 
         # 自动色彩空间的按钮
-        cmds.button(label=self.language['create_widgets']['zdsckj_button'],c=lambda *args: AutoSet_TexColorSpace()) # 自动色彩空间
+        cmds.button(label=self.language['create_widgets']['zdsckj_button'],
+                    c=lambda *args: AutoSet_TexColorSpace()) # 自动色彩空间
+
+        # 自动UDIM
+        cmds.button(label=self.language['create_widgets']['zdudim_button'],
+                    c=lambda *args: auto_set_file_node_udim())
+
 
         cmds.text(label=" "*2)
 
@@ -493,6 +499,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.auto_color_space_connection.setChecked(
             self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'])
 
+        # 初始化 连接时UDIM 控件值
+        self.magic_change_udim_options.setChecked(
+            self.texture_processing_data['ProcSet_Options']['change_UDIM'])
+
         # 初始化 连接时修改材质名称 控件值
         self.magic_change_material_name_options.setChecked(
             self.texture_processing_data['ProcSet_Options']['change_material_name'])
@@ -539,6 +549,17 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.auto_color_space_connection)
 
+        self.magic_change_udim_options = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
+                                                                                    ['magic_change_udim_options'])# '连接时智能UDIM'
+
+        # auto_color_space_connection 连接修改配置函数
+        self.magic_change_udim_options.stateChanged.connect(lambda *args: self.modify_nested_config(
+                self.magic_change_udim_options.isChecked(),
+                ['ProcSet_Options', 'change_UDIM']))
+
+        layout.addWidget(self.magic_change_udim_options)
+
+
         self.magic_change_material_name_options = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
                                                                                     ['magic_change_material_name_options'])# '连接时修改材质名称'
 
@@ -549,7 +570,12 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         layout.addWidget(self.magic_change_material_name_options)
 
-        
+
+
+
+
+
+
         # [2] 自定义连接的贴图
         self.add_line_with_text(layout , self.language['create_magic_connection_tab']['zdyljdtt_label']) # 自定义连接的贴图
          
@@ -876,6 +902,20 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             'path_detection_config.bin'))
 
         layout.addWidget(self.path_matching_checkbox)
+
+
+
+        self.path_matching_change_udim_checkbox = QtWidgets.QCheckBox(
+            self.language['create_path_matching_tab']['path_matching_change_udim_checkbox'])  # 连接时智能修改色彩空间
+        self.path_matching_change_udim_checkbox.setChecked(path_detection_config['change_UDIM'])
+        # 连接复选框的状态变化信号到修改配置函数
+        self.path_matching_change_udim_checkbox.stateChanged.connect(lambda *args: self.modify_config(
+            'change_UDIM',
+            self.path_matching_change_udim_checkbox.isChecked(),
+            'path_detection_config.bin'))
+
+        layout.addWidget(self.path_matching_change_udim_checkbox)
+
 
         self.path_matching_change_material_name_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_change_material_name_options']) # 连接时修改材质名称
 
@@ -1551,16 +1591,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TextureManager_texture_table_data_temp_path = os.path.join(SCRIPT_PATH, 'Temp', 'TM_texture_table.bin')
         self.TextureManager_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_config.bin')
 
-        # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
-        # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
-        language_config = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH , 'Datas', 'settings', 'language_config.json') )['language_config']
-
-        # 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
-        # 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
-        # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
-        self.language = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH , 'Datas', 'languages', f'{language_config}.json') )['ArnoldMagicNode']['TM_WIN']
+        # 加载语言配置
+        self.language =  language_loading()['ArnoldMagicNode']['TM_WIN']
 
         # 如果有这个TM_texture_table_data文件删除并新创建一个空数据文件
         if os.path.exists(self.TextureManager_texture_table_data_temp_path):
@@ -1735,8 +1767,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 选出最大贴图的按钮
         self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton() # 选出大贴图 lang['TexturelList_Intelligent_Find_Max_Size_Button']
-        self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(
-                                                                            lambda *args:  self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
+        self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(lambda *args:  self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedHeight(40)
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedWidth(40)
         self.TexturelList_Intelligent_Find_Max_Size_Button.setIconSize(QtCore.QSize(38, 38))
@@ -1808,7 +1839,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList.setItemDelegateForColumn(7, left_align_delegate)
 
         # 编辑表格中的数据
-        self.TEXTURELIST_MODEL.dataChanged.connect(self.texture_list_texture_update)
+        self.TEXTURELIST_MODEL.dataChanged.connect(lambda top_left, bottom_right, roles: self.texture_list_texture_update(top_left, bottom_right, roles))
 
         # 设置初始化值
         self.initial_settings()
@@ -2462,9 +2493,9 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         """
 
-
         if use_cache == True:
             # 从缓存中获取表格数据
+
             temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManager_texture_table_data_temp_path)
 
             # 在加载选择对应的行之前先清除之前的
@@ -2472,12 +2503,15 @@ class TextureManagerWin(QtWidgets.QDialog):
 
             # 把缓存表格数据加载到模型中
             self.add_multiple_rows(self.TEXTURELIST_MODEL, temp_TextureManager_texture_table_data, True)
+
         else:
             self.add_multiple_rows(self.TEXTURELIST_MODEL, self.MterialNodeAllInfoDict)
+
         # 把模型加载到表格
         self.TexturelList.setModel(self.TEXTURELIST_MODEL)
 
         # 返回缓存数据
+
         return temp_TextureManager_texture_table_data
 
     # TexturelList的功能++++++++++++++++++++++++++++++++++结束
@@ -2490,33 +2524,37 @@ class TextureManagerWin(QtWidgets.QDialog):
         tm_FindAndReplaceWin.show()
 
         # 连接信号和槽
-        tm_FindAndReplaceWin.base_data_signal.connect(self.replace_base_data_and_refresh_ui)
-        tm_FindAndReplaceWin.base_data_bundle_signal.connect(self.replace_path_data_and_refresh_ui)
+        tm_FindAndReplaceWin.base_data_signal.connect(lambda new_MterialNodeAllInfoDict: self.replace_base_data_and_refresh_ui(new_MterialNodeAllInfoDict))
+        tm_FindAndReplaceWin.base_data_bundle_signal.connect(lambda new_MterialNodeAllInfoDict, select_texture_dict:
+                                                             self.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict))
 
     def find_path_re_Win(self):
         tm_RepathFiles = TM_RepathFiles(self.WINDOWS_NAME, parent=self)
         tm_RepathFiles.show()
 
-        tm_RepathFiles.new_MterialNodeAllInfoDict_signal.connect(self.replace_path_data_and_refresh_ui)
+        tm_RepathFiles.new_MterialNodeAllInfoDict_signal.connect(lambda new_MterialNodeAllInfoDict, select_texture_dict:
+                                                                 self.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict))
 
     def image_processing_Win(self):
         tm_ImageProcessing = TM_ImageProcessing(self.WINDOWS_NAME, parent=self)
         tm_ImageProcessing.show()
 
-        tm_ImageProcessing.new_MterialNodeAllInfoDict_signal.connect(self.replace_path_data_and_refresh_ui)
+        tm_ImageProcessing.new_MterialNodeAllInfoDict_signal.connect(lambda new_MterialNodeAllInfoDict, select_texture_dict:
+                                                                     self.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict))
 
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
+
         # 遍历模型中的每一行
         for row in range(model.rowCount()):
             # 获取第六列（索引为5）的值
             status_item = model.item(row, 6)
             status_value = status_item.text()
 
-            if status_value == "正常":
+            if status_value == self.language['state']['normal']: # 正常
                 # 更细致的绿色 (RGB: 34, 177, 76) 和 50% 透明度
                 color = QtGui.QColor(34, 177, 76, 128)  # RGB + Alpha
-            elif status_value == "缺失":
+            elif status_value == self.language['state']['lack']: # 缺失
                 # 更细致的红色 (RGB: 237, 28, 36) 和 50% 透明度
                 color = QtGui.QColor(237, 28, 36, 128)  # RGB + Alpha
             else:
@@ -2535,6 +2573,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
             item.setData(color, QtCore.Qt.BackgroundRole)
 
+            continue
     # 刷新获取场景的数据
     def refresh_scene_node_info(self):
 
@@ -2597,9 +2636,9 @@ class TextureManagerWin(QtWidgets.QDialog):
                 usageCount = str(MterialNodeAllInfoDict[matName][texName]['usageCount'])  # 获取贴图的引用次数并转为字符串
                 # 根据是否加载设置状态文本 ('正常' 或 '缺失')
                 if MterialNodeAllInfoDict[matName][texName]['isLoaded'] == True:
-                    isLoaded = '正常'
+                    isLoaded = self.language['state']['normal'] # 正常
                 else:
-                    isLoaded = '缺失'
+                    isLoaded = self.language['state']['lack'] # 缺失
 
                 Path = MterialNodeAllInfoDict[matName][texName]['Path']  # 获取贴图路径
 
@@ -2676,10 +2715,10 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         self.TexturelList.setModel(self.TEXTURELIST_MODEL)
 
-        # 把刷新的贴图数据存入缓存中
+        # # 把刷新的贴图数据存入缓存中
         self.dataM.bin_save_data(self.TextureManager_texture_table_data_temp_path, TextureManager_texture_table_data)
 
-        # 刷新表格
+        # # 刷新表格
         self.refresh_texture_table()
 
 # 贴图管理器的搜索与替换界面
@@ -2700,13 +2739,8 @@ class TM_FindAndReplace(QtWidgets.QDialog):
 
         self.config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
 
-        # 加载语言配置文件并获取 'language_config' 键的值
-        language_config = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
-
-        # 动态加载相应语言的JSON文件，并读取 'ArnoldMagicNode' 中的 'TM_FAR_WIN' 键
-        self.language = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['TM_FAR_WIN']
+        # 加载语言配置
+        self.language =  language_loading()['ArnoldMagicNode']['TM_FAR_WIN']
 
         # 命名常量命名
         WINDOWS_NAME =  self.language['__init__']['WINDOWS_NAME'] + WinName #Win名称
@@ -3231,16 +3265,9 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.getnodedata = GetNodeData() # 获取节点数据模块
 
 
-        # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
-        # 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
-        language_config = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
 
-        # 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
-        # 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
-        # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
-        self.language = self.dataM.ascii_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['TM_RF_WIN']
+        # 加载语言配置
+        self.language =  language_loading()['ArnoldMagicNode']['TM_RF_WIN']
 
 
         self.TM_repath_files_config_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager", "TM_repath_files_config.bin")
@@ -4342,6 +4369,20 @@ def AutoSet_TexColorSpace():
 
     NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , select_node['file'], FilterData)
 
+def auto_set_file_node_udim():
+    NodePro = NodeProcessor()
+
+    select_node = process_sl_data()
+
+    if select_node == None:
+        return
+
+    if 'file' not in select_node:
+        feedback.CP(lang['01']) # 请选纹理贴图节点
+        return
+
+    NodePro.auto_set_udim(select_node['file'])
+
 # !!!!!!!!!!如果要绑定到键位需要另外调整，需要让他有个写出路径，然后读取路径
 
 direct_node_select = False
@@ -5122,6 +5163,9 @@ class Path_Detection_Connection:
                         node_list=need_connect_node_list,
                         filter_data=self.texture_filter_dict)
 
+            # ——————————————————————————————————————————————————————————————————————————> 自动udim
+            self.auto_set_file_udim(need_connect_node_lists)
+
             # shift 会创建材质并连接
             if keyboard.is_pressed('shift'):
                 for need_connect_node_list in need_connect_node_lists:
@@ -5151,8 +5195,11 @@ class Path_Detection_Connection:
                     # 判断是否要修改颜色空间
                     if self.path_detection_data['PathDetectionConnectionSetColorSpace']:
                         self.nodeP.AutoSetTexColorSpace(
-                            auto_set_color_space_config=self.texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
-                            matching_channel=matching_dict)
+                            auto_set_color_space_config= self.texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                            matching_channel= matching_dict)
+
+                    # ——————————————————————————————————————————————————————————————————————————> 自动udim 以为这里是创建材质球的，只需有一层列表
+                    self.nodeP.auto_set_udim([key for key in matching_dict.keys()])
 
     def detect_and_calculate_similarity(self):
         # 用来储存匹配完成的数据字典
@@ -5248,6 +5295,13 @@ class Path_Detection_Connection:
 
         return need_connect_node_lists
 
+    def auto_set_file_udim(self, node_lists):
+        if self.path_detection_data['change_UDIM']:
+            for node_list in node_lists:
+                self.nodeP.auto_set_udim(node_list)
+        else:
+            return
+
 class Magic_Node_Connection:
     def __init__(self):
         ### 实例各种模块
@@ -5288,6 +5342,7 @@ class Magic_Node_Connection:
         else:
             self.magic_processing_node_connection()
 
+
     # 魔法连接处理节点
     def magic_processing_node_connection(self):
         # 检查SlNode字典中是否有file key 如果没有直接退出函数
@@ -5309,7 +5364,11 @@ class Magic_Node_Connection:
                                                         self.magic_connection_options,
                                                         self.auto_node_connection_options,
                                                         shadingEngine)
+        # 自动UDIM
+        self.auto_set_file_udim()
 
+        # 自动色彩空间
+        self.modify_color_space()
 
         # 如果材质变量是None的话就不需要处理
         if mat_name is None:
@@ -5319,7 +5378,7 @@ class Magic_Node_Connection:
 
         self.feedback.CP('已完成 {} 材质连接'.format(new_mat_name))
 
-        self.modify_color_space()
+
 
     # 检测并创建材质
     def detect_and_create_materials(self):
@@ -5364,6 +5423,18 @@ class Magic_Node_Connection:
                 matching_channel = self.matching_dict)
         else:
             return
+
+    def auto_set_file_udim(self):
+        texture_processing_data = self.dataM.bin_load_data(
+            os.path.join(settings_path, 'texture_processing_data.bin'))
+
+        if texture_processing_data['ProcSet_Options']['change_UDIM']:
+            node_list = [key for key in self.matching_dict.keys()]
+            self.nodeP.auto_set_udim(node_list)
+        else:
+            return
+
+
 
 def path_detection_connection_button():
     PDC = Path_Detection_Connection()

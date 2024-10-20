@@ -35,7 +35,8 @@ LibsFilesDict = {
     'requests' : 'requests',
     'ntplib.py' : 'ntplib',
     'aiohttp' : 'aiohttp',
-    'ahocorapy' : 'ahocorapy'
+    'ahocorapy' : 'ahocorapy',
+    'Levenshtein' : 'python-Levenshtein'
 }
 
 def ascii_load_data(file_path):
