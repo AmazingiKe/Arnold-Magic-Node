@@ -7,260 +7,262 @@
       "create_widgets": {
         "ttclgj_menu": "Outil de traitement des textures",
         "ttglq_menu": "Gestionnaire de textures",
-        "ttpldrq_menu": "Importateur de textures en masse",
-        "xryssz_menu": "Paramètres de préconfiguration de rendu",
-        "tjxrys_menu": "Ajouter une préconfiguration de rendu",
-        "xgxrys_menu": "Modifier la préconfiguration de rendu",
-        "scxrys_menu": "Supprimer la préconfiguration de rendu",
-        "dkxryswjj_menu": "Ouvrir le dossier de préconfigurations de rendu",
-        "default_rendering_properties_options": "Exporter les paramètres par défaut",
-        "rendering_properties_options": "Exporter les paramètres Arnold",
-        "aov_properties_properties_options": "Exporter les paramètres AOV",
+        "ttpldrq_menu": "Importateur en lot de textures",
+        "xryssz_menu": "Paramètres de préréglage de rendu",
+        "tjxrys_menu": "Ajouter un préréglage de rendu",
+        "xgxrys_menu": "Modifier un préréglage de rendu",
+        "scxrys_menu": "Supprimer un préréglage de rendu",
+        "dkxryswjj_menu": "Ouvrir le dossier des préréglages de rendu",
+        "default_rendering_properties_options": "Sortie Paramètres par défaut",
+        "rendering_properties_options": "Sortie Paramètres Arnold",
+        "aov_properties_properties_options": "Sortie Paramètres AOV",
         "sz_menu": "Paramètres",
-        "magic_connection": "Connexion magique",
-        "path_detection_connection": "Connexion de détection de chemin",
-        "direct_connection": "Connexion directe",
-        "unify_uv_node": "Uniformiser UV",
-        "uv_preset": ["Désactiver", "Type 0 (ZBrush)", "Type 1 (Mudbox)", "UDIM (Mari)", "Afficher les tuiles"],
-        "zdsckj_button": "Espace colorimétrique automatique",
-        "zdudim_button": "UDIM automatique",
+        "magic_connection": "Connexion Magique",
+        "color_mix": "Mélange de Couleurs",
+        "gray_mix": "Mélange de Gris",
+        "path_detection_connection": "Connexion de Détection de Chemin",
+        "direct_connection": "Connexion Directe",
+        "unify_uv_node": "Unifier UV",
+        "uv_preset": ["Désactivé", "Type 0 (ZBrush)", "Type 1 (Mudbox)", "UDIM (Mari)", "Affichage en Tuiles"],
+        "zdsckj_button": "Espace Colorimétrique Automatique",
+        "zdudim_button": "UDIM Automatique",
         "ai_aov_switch": "Interrupteur AOV"
       }
     },
 
-    "AMNSP_WIN" : {
+    "AMNSP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "Paramètres du plugin Arnold_Magic_Node"
+        "WINDOWS_NAME": "Paramètres du Plugin Arnold_Magic_Node"
       },
-      "create_menu" : {
-        "settings_menu" : "Paramètres",
-        "reset_data_action" : "Réinitialiser les données de paramètres",
-        "license_menu" : "Licence",
-        "change_license_action" : "Changer de licence",
-        "about_menu" : "À propos",
-        "contact_feedback_action" : "Contact/Retour",
-        "help_document_action" : "Documentation d'aide",
-        "plugin_update_download_action" : "Télécharger les mises à jour du plugin",
-        "plugin_home" : "Page d'accueil du plugin"
+      "create_menu": {
+        "settings_menu": "Paramètres",
+        "reset_data_action": "Réinitialiser les données des paramètres",
+        "license_menu": "Licence",
+        "change_license_action": "Changer la licence",
+        "about_menu": "À propos",
+        "contact_feedback_action": "Contact/Feedback",
+        "help_document_action": "Documentation d'aide",
+        "plugin_update_download_action": "Télécharger la mise à jour du plugin",
+        "plugin_home": "Page d'accueil du plugin"
       },
-      "create_magic_connection_tab" : {
-        "mfljsz_label" : "Paramètres de connexion magique",
-        "auto_color_space_connection" : "Modifier automatiquement l'espace colorimétrique lors de la connexion",
-        "magic_change_material_name_options" : "Modifier le nom du matériau lors de la connexion",
-        "zdyljdtt_label" : "Textures personnalisées à connecter",
-        "zdyglmz_label" : "Noms de poids de correspondance personnalisés",
-        "mflj_tab" : "Connexion magique",
-        "magic_change_udim_options" : "Activer automatiquement UDIM lors de la connexion"
+      "create_magic_connection_tab": {
+        "mfljsz_label": "Paramètres de Connexion Magique",
+        "auto_color_space_connection": "Modifier intelligemment l'espace colorimétrique lors de la connexion",
+        "magic_change_material_name_options": "Modifier le nom du matériau lors de la connexion",
+        "zdyljdtt_label": "Textures Connectées Personnalisées",
+        "zdyglmz_label": "Noms de Poids de Correspondance Personnalisés",
+        "mflj_tab": "Connexion Magique",
+        "magic_change_udim_options": "Activer intelligemment UDIM lors de la connexion"
       },
       "create_color_space_tab": {
-        "zdysckj_label": "Espace colorimétrique personnalisé",
-        "zdszsckj_label": "Configurer automatiquement l'espace colorimétrique",
-        "sckj_label": "Espace colorimétrique"
+        "zdysckj_label": "Espace Colorimétrique Personnalisé",
+        "zdszsckj_label": "Configuration Automatique de l'Espace Colorimétrique",
+        "sckj_label": "Espace Colorimétrique"
       },
       "create_node_connection_tab": {
-        "zdljcljdsz_label": "Paramètres de connexion automatique des nœuds de traitement",
-        "cljdsz_list": "Paramètres des nœuds de traitement",
-        "jdlj_tab": "Connexion des nœuds"
+        "zdljcljdsz_label": "Paramètres de Connexion Automatique des Nœuds",
+        "cljdsz_list": "Paramètres de Traitement des Nœuds",
+        "jdlj_tab": "Connexion des Nœuds"
       },
       "create_path_matching_tab": {
-        "ljsxgsz_label": "Paramètres connexes lors de la connexion",
-        "path_matching_checkbox": "Modifier automatiquement l'espace colorimétrique lors de la connexion",
-        "path_matching_change_udim_checkbox": "Activer automatiquement UDIM lors de la connexion",
+        "ljsxgsz_label": "Paramètres Associés lors de la Connexion",
+        "path_matching_checkbox": "Modifier intelligemment l'espace colorimétrique lors de la connexion",
+        "path_matching_change_udim_checkbox": "Activer intelligemment UDIM lors de la connexion",
         "path_matching_change_material_name_options": "Modifier le nom du matériau lors de la connexion",
-        "path_disable_feedback_options": "Désactiver le retour",
+        "path_disable_feedback_options": "Désactiver les retours",
         "sxgczpchywzdwj_label": "Exclure les fichiers contenant du texte lors du filtrage",
-        "zjxxsdjcsyczfczdtdnc_label": "Supprimer des contenus spécifiques dans les chaînes lors de la détection de similarité",
-        "ppsxgsz_label": "Paramètres connexes lors du matching",
+        "zjxxsdjcsyczfczdtdnc_label": "Supprimer des contenus spécifiques des chaînes lors de la détection de similarité",
+        "ppsxgsz_label": "Paramètres Associés lors de la Correspondance",
         "auto_max_val_checkbox": "Sélectionner automatiquement la meilleure correspondance",
-        "auto_max_val_checkbox_tip" : "Si coché, le programme utilisera automatiquement la valeur de similarité la plus élevée comme seuil de correspondance sans réglage manuel.",
-        "ppysqz_label": "Poids des éléments de correspondance",
-        "mzqz_label": "Poids du nom",
-        "fblqz_label": "Poids de la résolution",
-        "gsqz_label": "Poids du format",
-        "cjsjqz_label": "Poids de la date de création",
-        "xsdjs_label" : "Calcul de similarité",
-        "similarity_max_slider_label": "Seuil de similarité personnalisé:",
-        "similarity_max_slider_tip" : "Veuillez entrer un seuil de similarité (0.0 - 1.0). Le programme correspondra les résultats avec une similarité au-dessus de ce seuil.",
-        "similarity_range_slider_label": "Plage de tolérance de similarité",
-        "similarity_range_slider_tip" : "Définissez la plage de tolérance pour le seuil de similarité (0.0 - 1.0). Le programme correspondra les résultats avec une similarité flottant dans cette plage autour du seuil.",
-        "day_range_slider_label": "Valeur de tolérance pour la plage de jours de création:",
-        "jdljpp_tab": "Matching des chemins de nœuds"
+        "auto_max_val_checkbox_tip": "Si sélectionné, le programme utilisera automatiquement la valeur de similarité la plus élevée comme seuil de correspondance, sans besoin de réglage manuel.",
+        "ppysqz_label": "Poids des Éléments de Correspondance",
+        "mzqz_label": "Poids du Nom",
+        "fblqz_label": "Poids de la Résolution",
+        "gsqz_label": "Poids du Format",
+        "cjsjqz_label": "Poids du Temps de Création",
+        "xsdjs_label": "Calcul de la Similarité",
+        "similarity_max_slider_label": "Seuil de Similarité Personnalisé:",
+        "similarity_max_slider_tip": "Veuillez entrer le seuil de similarité (0.0 - 1.0). Le programme correspondra les résultats avec une similarité supérieure à ce seuil.",
+        "similarity_range_slider_label": "Plage de Tolérance de Similarité",
+        "similarity_range_slider_tip": "Définissez la plage de tolérance pour le seuil de similarité (0.0 - 1.0). Le programme correspondra les résultats avec une similarité fluctuante dans cette plage autour du seuil.",
+        "day_range_slider_label": "Valeur de Tolérance de la Plage de Jours de Création:",
+        "jdljpp_tab": "Correspondance des Chemins des Nœuds"
       },
       "create_configure_ui_layout_tab": {
-        "yyszd_label": "Paramètres de langue, etc.",
+        "yyszd_label": "Paramètres de Langue et Autres",
         "yy_label": "Langue:",
-        "jmybjsz_tab": "Paramètres d'interface et de disposition"
+        "jmybjsz_tab": "Paramètres de l'Interface et de la Disposition"
       }
     },
 
     "TM_WIN": {
       "__init__": {
-        "WINDOWS_NAME": "Gestionnaire de textures",
+        "WINDOWS_NAME": "Gestionnaire de Textures",
         "remaining_time": "Temps restant de la licence",
         "day": "jours"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "Entrez le nom de la matière à rechercher....",
+        "MaterialListSearch_placeholder": "Entrez le nom du matériau à rechercher....",
         "TexturelListSearch_placeholder": "Entrez le nom de la texture à rechercher....",
-        "TexturelList_Unselect_All_Button": "Tout désélectionner",
-        "TexturelList_reverse_selection": "Inverser la sélection",
-        "TexturelList_Find_Missing_Textures_Button": "Sélectionner les manquantes",
-        "TexturelList_Intelligent_Find_Max_Size_Button": "Sélectionner les grandes textures",
-        "TexturelList_Search_And_Replace_Date_Button": "Rechercher et remplacer",
-        "TexturelList_Replace_Data_Button": "Réparer automatiquement le chemin",
-        "TexturelList_Processed_Image_Button": "Traiter l'image",
+        "TexturelList_Unselect_All_Button": "Tout Désélectionner",
+        "TexturelList_reverse_selection": "Inverser la Sélection",
+        "TexturelList_Find_Missing_Textures_Button": "Sélectionner les Manquantes",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "Sélectionner les Grandes Textures",
+        "TexturelList_Search_And_Replace_Date_Button": "Rechercher et Remplacer",
+        "TexturelList_Replace_Data_Button": "Réparer Automatiquement le Chemin",
+        "TexturelList_Processed_Image_Button": "Traiter l'Image",
         "TexturelList_Refresh_Button_ToolTip": "Rafraîchir en fonction du cache",
-        "TexturelList_Headers": ["Nom du nœud de texture", "Matériau", "Taille", "Taille en pixels", "Format", "Nombre de références", "État", "Chemin"]
+        "TexturelList_Headers": ["Nom du Nœud de Texture", "Matériau", "Taille", "Taille en Pixels", "Format", "Nombre de Références", "État", "Chemin"]
       },
-      "state" : {
-        "normal" : "Normal",
+      "state": {
+        "normal": "Normal",
         "lack": "Manquant"
       }
     },
 
     "TM_FAR_WIN": {
       "__init__": {
-        "WINDOWS_NAME": "Recherche et Remplacement-"
+        "WINDOWS_NAME": "Rechercher et Remplacer-"
       },
       "create_widgets": {
-        "label_data_to_edit_options": "Contenu à modifier",
-        "label_data_to_edit_options_02": "Vous devez choisir en fonction du contenu que vous souhaitez modifier",
+        "label_data_to_edit_options": "Contenu à Modifier",
+        "label_data_to_edit_options_02": "Vous devez sélectionner en fonction du contenu que vous souhaitez modifier",
         "sl_material": "Matériau",
         "sl_texture": "Texture",
-        "sl_texture_path": "Chemin de texture",
-        "label_modify_options": "Portée du contenu à modifier",
+        "sl_texture_path": "Chemin de Texture",
+        "label_modify_options": "Portée de la Modification du Contenu",
         "radio_all": "Tout",
-        "radio_table": "Dans le tableau",
-        "radio_selection": "Sélectionné",
-        "label_find": "Contenu à rechercher",
+        "radio_table": "Dans le Tableau",
+        "radio_selection": "Dans la Sélection",
+        "label_find": "Contenu à Rechercher",
         "line_edit_find_placeholder": "Veuillez entrer le contenu à rechercher...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
         "line_edit_replace_placeholder": "Veuillez entrer le contenu de remplacement...",
-        "checkbox_case_sensitive": "Ignorer la casse",
-        "checkbox_regex": "Utiliser des expressions régulières",
+        "checkbox_case_sensitive": "Ignorer la Casse",
+        "checkbox_regex": "Utiliser des Expressions Régulières",
         "button_replace": "Remplacer"
       }
     },
 
     "TM_RF_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "Réparer automatiquement le chemin-"
+        "WINDOWS_NAME": "Réparation Automatique du Chemin-"
       },
       "create_widgets": {
-        "memory_search_mode_checkbox" : "Mode de recherche mémoire",
-        "search_subfolders_checkbox": "Rechercher dans les sous-dossiers",
-        "multiple_subfolder_search_checkbox": "Rechercher dans plusieurs sous-dossiers",
-        "ignore_case_checkbox": "Ignorer la casse",
-        "fix_path_button": "Commencer la réparation du chemin"
+        "memory_search_mode_checkbox": "Mode de Recherche Mémoire",
+        "search_subfolders_checkbox": "Rechercher dans les Sous-Dossiers",
+        "multiple_subfolder_search_checkbox": "Recherche dans Plusieurs Sous-Dossiers",
+        "ignore_case_checkbox": "Ignorer la Casse",
+        "fix_path_button": "Commencer la Réparation du Chemin"
       }
     },
 
     "TM_IP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "Traitement d'image-"
+        "WINDOWS_NAME": "Traitement d'Image-"
       },
       "menu_widgets": {
         "edit_menu": "Éditer",
-        "clear_cache": "Effacer le cache ! Supprimer avec précaution !",
-        "redo_action": "Rétablir l'image",
+        "clear_cache": "Vider le Cache  Soyez Prudent lors de la Suppression !",
+        "redo_action": "Rétablir l'Image",
         "help_menu": "Aide",
-        "instructions_action": "Instructions"
+        "instructions_action": "Instructions d'Utilisation"
       },
       "create_widgets": {
         "format_combo_box_label": "Format :",
         "zoom_ratios_combo_box_label": "Zoom :",
         "resampling_mode_combo_box_label": "Rééchantillonnage :",
-        "resampling_mode_list": ["Interpolation du plus proche voisin", "Interpolation moyenne", "Interpolation bilinéaire", "Interpolation affûtée", "Interpolation cubique", "Interpolation haute précision"],
+        "resampling_mode_list": ["Voisin le Plus Proche", "Interpolation Moyenne", "Interpolation Bilinéaire", "Interpolation de Netteté", "Interpolation Cubique", "Interpolation Haute Précision"],
         "jpg_label": "Qualité JPG : ",
         "png_label": "Qualité PNG : ",
-        "convert_format_check_box": "Convertir le format",
-        "scale_texture_check_box": "Redimensionner la texture",
-        "conversion_button": "Commencer la conversion"
+        "convert_format_check_box": "Convertir le Format",
+        "scale_texture_check_box": "Redimensionner la Texture",
+        "conversion_button": "Commencer la Conversion"
       }
     },
 
-    "UVPM" : {
-      "01": "Déjà configuré ",
-      "02": "mode de tuilage UV du nœud défini sur :",
-      "03": "Erreur lors de la configuration :",
-      "04" : "Veuillez sélectionner un nœud de texture"
+    "UVPM": {
+      "01": "Déjà défini",
+      "02": "Le mode de tuile UV du nœud a été défini sur :",
+      "03": "Erreur lors de la définition :",
+      "04": "Veuillez sélectionner un nœud de texture"
     },
 
-    "CSPM" : {
+    "CSPM": {
       "01": "Veuillez sélectionner un nœud de texture !",
-      "02": "Déjà configuré ",
-      "03": "à"
+      "02": "Déjà défini",
+      "03": "sur"
     },
 
     "ASTCS": {
-      "01" : "Veuillez sélectionner un nœud de texture !"
+      "01": "Veuillez sélectionner un nœud de texture !"
     },
 
-    "DC_Button" : {
-      "__init__" : {
-        "01": "Paramètres du nœud réussis",
+    "DC_Button": {
+      "__init__": {
+        "01": "Configuration du nœud réussie",
         "02": "Veuillez d'abord sélectionner un nœud de sortie"
       },
       "connection_node": {
-        "01": "Votre ",
-        "02": "nœud ne peut pas être connecté à ",
-        "03": "nœud sur"
+        "01": "Votre",
+        "02": "nœud ne peut pas être connecté à",
+        "03": "nœud"
       }
     },
 
-    "licenses_name" : {
-        "free_license": "Version gratuite",
-        "standard_license": "Version standard",
-        "premium_license": "Version premium",
-        "developer_license": "Licence développeur",
-        "educational_license": "Licence éducative",
-        "permanent_standard_license": "Version standard permanente",
-        "permanent_premium_license": "Version premium permanente",
-        "expiry_date_01" : "Permanent"
+    "licenses_name": {
+      "free_license": "Version Gratuite",
+      "standard_license": "Version Standard",
+      "premium_license": "Version Premium",
+      "developer_license": "Licence Développeur",
+      "educational_license": "Licence Éducative",
+      "permanent_standard_license": "Version Standard Permanente",
+      "permanent_premium_license": "Version Premium Permanente",
+      "expiry_date_01": "Permanente"
     }
   },
 
   "ArnoldMagicNodeLibs": {
 
-    "PathD" : {
-      "DPC" : {
+    "PathD": {
+      "DPC": {
         "01": "Impossible d'accéder au répertoire",
         "02": "Erreur détaillée",
         "03": "Impossible d'ouvrir ou de vérifier en tant que fichier image",
-        "04": "Ce fichier n'a pas les permissions d'accès, erreur détaillée"
+        "04": "Vous n'avez pas les permissions pour accéder à ce fichier, erreur détaillée"
       },
-      "CN" : {
-        "01" : "Ce chemin ne peut pas être connecté :"
+      "CN": {
+        "01": "Impossible de se connecter à ce chemin :"
       },
-      "GFI" : {
-        "01" : "Erreur lors de la consultation des attributs de la texture, raison de l'erreur : "
+      "GFI": {
+        "01": "Une erreur est survenue lors de la requête des méta-attributs de texture, raison de l'erreur : "
       }
     },
 
     "NodeP": {
-      "CTFNTPN" : {
-        "01": "Canal de matériau par position :"
+      "CTFNTPN": {
+        "01": "Canal de matériau de position :"
       },
       "ASTCS": {
-        "01" : "Nœud configuré sur",
-        "02" : "espace colorimétrique"
+        "01": "Le nœud est défini comme",
+        "02": "espace colorimétrique"
       },
-      "ASU" : {
-        "01": "Mode de tuilage UV configuré sur <UDIM> mode",
-        "02": "Mode de tuilage UV configuré sur <Désactivé> mode"
+      "ASU": {
+        "01": "Le mode de tuile UV a été défini sur <UDIM>",
+        "02": "Le mode de tuile UV a été défini sur <Désactivé>"
       }
     },
 
     "DataP": {
       "SSARD": {
-        "01": "Les données que vous avez fournies ne sont pas de type chaîne",
+        "01": "Les données fournies ne sont pas de type chaîne",
         "02": "Erreur d'expression régulière :"
       }
     },
 
     "ImageP": {
       "RI": {
-        "01": "Ratio de mise à l'échelle invalide",
+        "01": "Ratio de redimensionnement invalide",
         "02": "Veuillez définir une valeur valide entre 0 et 100",
         "03": "Échec de la lecture de l'image",
         "04": "Erreur de permission d'écriture de fichier",
@@ -269,17 +271,17 @@
       },
       "CIF": {
         "01": "Conversion de format - Échec de la lecture de l'image",
-        "02": "Conversion de format - Échec de la lecture du cache d'image",
-        "03": "Converti en",
+        "02": "Conversion de format - Échec de la lecture du cache de l'image",
+        "03": "converti en",
         "04": "Format Nouveau Chemin",
         "05": "Conversion de format - Échec de l'enregistrement de l'image, raison de l'erreur"
       }
     },
 
-    "FeedbackPrompt" : {
-      "01": "@Arnold Tool Notification du plugin",
+    "FeedbackPrompt": {
+      "01": "@Arnold Tool Rappel du Plugin {} | ",
       "02": "Avertissement d'erreur, le problème d'erreur est ci-dessous",
-      "03": "Erreur grave survenue, si déclenchée veuillez contacter le développeur pour corriger, informations de contact"
+      "03": "Erreur grave, en cas de déclenchement veuillez contacter le développeur pour corriger, coordonnées"
     },
 
     "process_sl_data": {
@@ -290,14 +292,14 @@
 
   "LicenseV": {
     "GMI": {
-      "01": "Le système Windows ne peut pas trouver le numéro de série de la carte mère",
-      "02": "Erreur lors de l'obtention du numéro de série de la carte mère sur le système Windows :",
-      "03": "Le système Linux/Unix ne peut pas trouver le numéro de série de la carte mère",
-      "04": "Erreur lors de l'obtention du numéro de série de la carte mère sur le système Linux/Unix :"
+      "01": "Le système Windows n'a pas pu trouver le numéro de série de la carte mère",
+      "02": "Erreur lors de l'obtention du numéro de série de la carte mère sous Windows :",
+      "03": "Les systèmes Linux/Unix n'ont pas pu trouver le numéro de série de la carte mère",
+      "04": "Erreur lors de l'obtention du numéro de série de la carte mère sous Linux/Unix :"
     },
     "GWTS": {
       "01": "Impossible d'obtenir le timestamp Taobao",
-      "02": "Échec de l'obtention du temps du lien :"
+      "02": "Échec de l'obtention de l'heure du lien :"
     },
     "GNTS": {
       "01": "Échec de l'obtention de l'heure NTP :"
@@ -306,34 +308,34 @@
       "01": "Format de licence invalide",
       "02": "Code d'identification de l'appareil ne correspond pas",
       "03": "Licence expirée !",
-      "04": "Échec de la vérification de la signature, la licence peut avoir été falsifiée",
+      "04": "Échec de la vérification de la signature, la licence peut avoir été altérée",
       "05": "Erreur de format de licence",
       "06": "Une erreur inconnue s'est produite lors de la vérification, veuillez contacter le développeur"
     },
     "LW": {
-      "DIL": "Code d'identification de l'appareil (doit être fourni au développeur)",
-      "SUL": "Entrer le numéro de série",
+      "DIL": "Code d'identification de l'appareil (à fournir au développeur)",
+      "SUL": "Entrez le numéro de série",
       "SNT": "Veuillez entrer le numéro de série",
       "VB": "Vérifier la licence",
-      "01" : "Veuillez entrer le numéro de série"
+      "01": "Veuillez entrer le numéro de série"
     },
     "MP": {
-      "01": "Impossible d'obtenir le temps en ligne",
-      "02": "Impossible d'obtenir le temps"
+      "01": "Impossible d'obtenir l'heure en ligne",
+      "02": "Impossible d'obtenir l'heure"
     }
   },
 
-  "DLibs" : {
-    "FP" : "@Arnold Tool Notification du plugin {} | ",
-    "CVF" : "Le dossier de configuration de la bibliothèque existe très bien ╭(●｀∀´●)╯ Applaudissements",
-    "DL" : {
-      "01" : "Découvert",
-      "02" : "La bibliothèque n'existe pas ◔ ‸◔？   Téléchargement en cours ≖‿≖✧ Veuillez patienter",
-      "03" : "Super !!!! La configuration de l'environnement ne présente aucun problème ♪（＾∀＾●）ﾉｼ "
+  "DLibs": {
+    "FP": "@Arnold Tool Rappel du Plugin {} | ",
+    "CVF": "Le dossier de configuration des bibliothèques existe ╭(●｀∀´●)╯ Applaudissements applaudissements",
+    "DL": {
+      "01": "Découvert",
+      "02": "La bibliothèque n'existe pas ◔ ‸◔？   Téléchargement en cours≖‿≖✧ Veuillez patienter",
+      "03": "Super !!!! La configuration de l'environnement ne présente aucun problème♪（＾∀＾●）ﾉｼ "
     },
-    "MP" : {
-      "01" : "Temps de recherche de la bibliothèque : ",
-      "02" : " secondes"
+    "MP": {
+      "01": "Temps de recherche de la bibliothèque : ",
+      "02": " secondes"
     }
   }
 }

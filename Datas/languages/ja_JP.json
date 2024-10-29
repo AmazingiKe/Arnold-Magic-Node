@@ -7,55 +7,57 @@
       "create_widgets": {
         "ttclgj_menu": "テクスチャ処理ツール",
         "ttglq_menu": "テクスチャマネージャー",
-        "ttpldrq_menu": "バッチテクスチャインポーター",
-        "xryssz_menu": "レンダリングプリセット設定",
-        "tjxrys_menu": "レンダリングプリセットを追加",
-        "xgxrys_menu": "レンダリングプリセットを変更",
-        "scxrys_menu": "レンダリングプリセットを削除",
-        "dkxryswjj_menu": "レンダリングプリセットフォルダーを開く",
-        "default_rendering_properties_options": "デフォルトパラメータをエクスポート",
-        "rendering_properties_options": "Arnoldパラメータをエクスポート",
-        "aov_properties_properties_options": "AOVパラメータをエクスポート",
+        "ttpldrq_menu": "テクスチャバッチインポーター",
+        "xryssz_menu": "レンダープリセット設定",
+        "tjxrys_menu": "レンダープリセットを追加",
+        "xgxrys_menu": "レンダープリセットを変更",
+        "scxrys_menu": "レンダープリセットを削除",
+        "dkxryswjj_menu": "レンダープリセットフォルダを開く",
+        "default_rendering_properties_options": "出力 デフォルトパラメータ",
+        "rendering_properties_options": "出力 アーノルドパラメータ",
+        "aov_properties_properties_options": "出力 AOVパラメータ",
         "sz_menu": "設定",
-        "magic_connection": "マジックコネクション",
-        "path_detection_connection": "パス検出コネクション",
-        "direct_connection": "ダイレクトコネクション",
+        "magic_connection": "マジック接続",
+        "color_mix": "カラー混合",
+        "gray_mix": "グレーミックス",
+        "path_detection_connection": "パス検出接続",
+        "direct_connection": "ダイレクト接続",
         "unify_uv_node": "UV統一",
-        "uv_preset": ["無効", "タイプ0 (ZBrush)", "タイプ1 (Mudbox)", "UDIM (Mari)", "タイル表示"],
-        "zdsckj_button": "自動カラースペース",
+        "uv_preset": ["無効", "タイプ0(ZBrush)", "タイプ1(Mudbox)", "UDIM(Mari)", "タイル表示"],
+        "zdsckj_button": "自動カラー空間",
         "zdudim_button": "自動UDIM",
         "ai_aov_switch": "AOVスイッチ"
       }
     },
 
-    "AMNSP_WIN" : {
+    "AMNSP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "Arnold_Magic_Node プラグイン設定"
+        "WINDOWS_NAME": "Arnold_Magic_Node プラグイン設定"
       },
-      "create_menu" : {
-        "settings_menu" : "設定",
-        "reset_data_action" : "設定データをリセット",
-        "license_menu" : "ライセンス",
-        "change_license_action" : "ライセンスを変更",
-        "about_menu" : "情報",
-        "contact_feedback_action" : "連絡/フィードバック",
-        "help_document_action" : "ヘルプドキュメント",
-        "plugin_update_download_action" : "プラグインアップデートをダウンロード",
-        "plugin_home" : "プラグインホームページ"
+      "create_menu": {
+        "settings_menu": "設定",
+        "reset_data_action": "設定データをリセット",
+        "license_menu": "ライセンス",
+        "change_license_action": "ライセンスを変更",
+        "about_menu": "アバウト",
+        "contact_feedback_action": "連絡/フィードバック",
+        "help_document_action": "ヘルプドキュメント",
+        "plugin_update_download_action": "プラグイン更新ダウンロード",
+        "plugin_home": "プラグインホームページ"
       },
-      "create_magic_connection_tab" : {
-        "mfljsz_label" : "マジックコネクション設定",
-        "auto_color_space_connection" : "接続時にカラースペースを自動変更",
-        "magic_change_material_name_options" : "接続時にマテリアル名を変更",
-        "zdyljdtt_label" : "カスタム接続テクスチャ",
-        "zdyglmz_label" : "カスタムマッチングウェイト名",
-        "mflj_tab" : "マジックコネクション",
-        "magic_change_udim_options" : "接続時にUDIMを自動的に有効化"
+      "create_magic_connection_tab": {
+        "mfljsz_label": "マジック接続設定",
+        "auto_color_space_connection": "接続時にスマートにカラー空間を変更",
+        "magic_change_material_name_options": "接続時にマテリアル名を変更",
+        "zdyljdtt_label": "カスタム接続のテクスチャ",
+        "zdyglmz_label": "カスタムマッチング重み名",
+        "mflj_tab": "マジック接続",
+        "magic_change_udim_options": "接続時にスマートにUDIMを有効にする"
       },
       "create_color_space_tab": {
-        "zdysckj_label": "カスタムカラースペース",
-        "zdszsckj_label": "カラースペースを自動設定",
-        "sckj_label": "カラースペース"
+        "zdysckj_label": "カスタムカラー空間",
+        "zdszsckj_label": "自動カラー空間設定",
+        "sckj_label": "カラー空間"
       },
       "create_node_connection_tab": {
         "zdljcljdsz_label": "自動接続処理ノード設定",
@@ -64,26 +66,26 @@
       },
       "create_path_matching_tab": {
         "ljsxgsz_label": "接続時の関連設定",
-        "path_matching_checkbox": "接続時にカラースペースを自動変更",
-        "path_matching_change_udim_checkbox": "接続時にUDIMを自動的に有効化",
+        "path_matching_checkbox": "接続時にスマートにカラー空間を変更",
+        "path_matching_change_udim_checkbox": "接続時にスマートにUDIMを有効にする",
         "path_matching_change_material_name_options": "接続時にマテリアル名を変更",
-        "path_disable_feedback_options": "フィードバックを無効化",
-        "sxgczpchywzdwj_label": "フィルタリング中にテキストを含むファイルを除外",
-        "zjxxsdjcsyczfczdtdnc_label": "類似度検出時に文字列内の特定の内容を削除",
+        "path_disable_feedback_options": "フィードバックをオフにする",
+        "sxgczpchywzdwj_label": "フィルタリングプロセス中にテキストを含むファイルを除外",
+        "zjxxsdjcsyczfczdtdnc_label": "類似度検出時に文字列から特定の内容を削除",
         "ppsxgsz_label": "マッチング時の関連設定",
-        "auto_max_val_checkbox": "最適なマッチングを自動選択",
-        "auto_max_val_checkbox_tip" : "チェックすると、プログラムは手動設定なしで最も高い類似度値をマッチングの閾値として自動的に使用します。",
+        "auto_max_val_checkbox": "自動で最適なマッチを選択",
+        "auto_max_val_checkbox_tip": "選択すると、プログラムは自動的に最高の類似度値をマッチング閾値として使用し、手動設定は不要です。",
         "ppysqz_label": "マッチング要素の重み",
         "mzqz_label": "名前の重み",
         "fblqz_label": "解像度の重み",
         "gsqz_label": "フォーマットの重み",
-        "cjsjqz_label": "作成日時の重み",
-        "xsdjs_label" : "類似度の計算",
+        "cjsjqz_label": "作成時間の重み",
+        "xsdjs_label": "類似度の計算",
         "similarity_max_slider_label": "カスタム類似度閾値:",
-        "similarity_max_slider_tip" : "類似度閾値（0.0 - 1.0）を入力してください。プログラムはこの閾値を超える類似度の結果をマッチングします。",
+        "similarity_max_slider_tip": "類似度閾値（0.0 - 1.0）を入力してください。プログラムは、この閾値を上回る類似度の結果をマッチングします。",
         "similarity_range_slider_label": "類似度許容範囲",
-        "similarity_range_slider_tip" : "類似度マッチングの閾値の許容範囲（0.0 - 1.0）を設定します。プログラムはこの範囲内で閾値に浮動する類似度の結果をマッチングします。",
-        "day_range_slider_label": "作成日数範囲の許容値:",
+        "similarity_range_slider_tip": "マッチング閾値の許容範囲（0.0 - 1.0）を設定します。プログラムは、閾値の上下にこの範囲内で類似度の結果をマッチングします。",
+        "day_range_slider_label": "作成日数範囲の許容値を計算:",
         "jdljpp_tab": "ノードパスマッチング"
       },
       "create_configure_ui_layout_tab": {
@@ -100,21 +102,21 @@
         "day": "日"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "検索するマテリアル名を入力してください....",
-        "TexturelListSearch_placeholder": "検索するテクスチャ名を入力してください....",
+        "MaterialListSearch_placeholder": "検索するマテリアルボールの名前を入力してください....",
+        "TexturelListSearch_placeholder": "検索するテクスチャボールの名前を入力してください....",
         "TexturelList_Unselect_All_Button": "すべての選択を解除",
         "TexturelList_reverse_selection": "選択を反転",
         "TexturelList_Find_Missing_Textures_Button": "欠落を選択",
         "TexturelList_Intelligent_Find_Max_Size_Button": "大きなテクスチャを選択",
         "TexturelList_Search_And_Replace_Date_Button": "検索と置換",
-        "TexturelList_Replace_Data_Button": "パスを自動修正",
+        "TexturelList_Replace_Data_Button": "パスを自動修復",
         "TexturelList_Processed_Image_Button": "画像を処理",
-        "TexturelList_Refresh_Button_ToolTip": "キャッシュに基づいて再更新",
-        "TexturelList_Headers": ["テクスチャノード名", "マテリアル", "サイズ", "ピクセルサイズ", "フォーマット", "参照回数", "状態", "パス"]
+        "TexturelList_Refresh_Button_ToolTip": "キャッシュに基づいて再度更新",
+        "TexturelList_Headers": ["テクスチャノード名", "マテリアルボール", "サイズ", "ピクセルサイズ", "フォーマット", "参照回数", "状態", "パス"]
       },
-      "state" : {
-        "normal" : "正常",
-        "lack": "欠失"
+      "state": {
+        "normal": "正常",
+        "lack": "欠落"
       }
     },
 
@@ -123,12 +125,12 @@
         "WINDOWS_NAME": "検索と置換-"
       },
       "create_widgets": {
-        "label_data_to_edit_options": "変更内容",
-        "label_data_to_edit_options_02": "変更したい内容に応じて選択してください",
+        "label_data_to_edit_options": "修正内容",
+        "label_data_to_edit_options_02": "修正する内容に基づいて選択する必要があります",
         "sl_material": "マテリアル",
         "sl_texture": "テクスチャ",
         "sl_texture_path": "テクスチャパス",
-        "label_modify_options": "変更内容の範囲",
+        "label_modify_options": "修正内容の範囲",
         "radio_all": "すべて",
         "radio_table": "テーブル内",
         "radio_selection": "選択中",
@@ -144,24 +146,24 @@
 
     "TM_RF_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "パスを自動修正-"
+        "WINDOWS_NAME": "パスを自動修復-"
       },
       "create_widgets": {
-        "memory_search_mode_checkbox" : "メモリ検索モード",
+        "memory_search_mode_checkbox": "メモリ検索モード",
         "search_subfolders_checkbox": "サブフォルダを検索",
         "multiple_subfolder_search_checkbox": "複数のサブフォルダを検索",
         "ignore_case_checkbox": "大文字小文字を無視",
-        "fix_path_button": "パス修正を開始"
+        "fix_path_button": "パスの修復を開始"
       }
     },
 
     "TM_IP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "画像処理-"
+        "WINDOWS_NAME": "画像処理-"
       },
       "menu_widgets": {
         "edit_menu": "編集",
-        "clear_cache": "キャッシュをクリア！慎重に削除！",
+        "clear_cache": "キャッシュをクリア ！慎重に削除してください！",
         "redo_action": "画像を元に戻す",
         "help_menu": "ヘルプ",
         "instructions_action": "使用説明"
@@ -170,82 +172,82 @@
         "format_combo_box_label": "フォーマット：",
         "zoom_ratios_combo_box_label": "ズーム：",
         "resampling_mode_combo_box_label": "リサンプリング：",
-        "resampling_mode_list": ["最近傍補間", "平均補間", "双一次補間", "シャープ補間", "三次補間", "高精度補間"],
-        "jpg_label": "JPG品質： ",
-        "png_label": "PNG品質： ",
-        "convert_format_check_box": "フォーマットを変換",
+        "resampling_mode_list": ["ニアレストネイバー補間", "平均値補間", "バイリニア補間", "シャープ補間", "3次補間", "高精度補間"],
+        "jpg_label": "JPGの品質: ",
+        "png_label": "PNGの品質: ",
+        "convert_format_check_box": "フォーマット変換",
         "scale_texture_check_box": "テクスチャをスケール",
         "conversion_button": "変換を開始"
       }
     },
 
-    "UVPM" : {
-      "01": "既に設定済み ",
-      "02": "ノードのUVタイルモードを設定しました：",
+    "UVPM": {
+      "01": "すでに",
+      "02": "ノードのUVタイルモードを設定しました:",
       "03": "設定時のエラー：",
-      "04" : "テクスチャノードを選択してください"
+      "04": "テクスチャノードを選択してください"
     },
 
-    "CSPM" : {
-      "01": "テクスチャノードを選択してください！",
-      "02": "既に設定済み ",
+    "CSPM": {
+      "01": "テクスチャテクスチャノードを選択してください!",
+      "02": "すでに",
       "03": "に設定しました"
     },
 
     "ASTCS": {
-      "01" : "テクスチャノードを選択してください！"
+      "01": "テクスチャテクスチャノードを選択してください!"
     },
 
-    "DC_Button" : {
-      "__init__" : {
-        "01": "ノード設定に成功しました",
+    "DC_Button": {
+      "__init__": {
+        "01": "ノード設定が成功しました",
         "02": "まず出力ノードを選択してください"
       },
       "connection_node": {
-        "01": "あなたの ",
-        "02": "ノードは ",
-        "03": "ノードに接続できません"
+        "01": "あなたの",
+        "02": "ノードはに接続できません",
+        "03": "ノードに"
       }
     },
 
-    "licenses_name" : {
+    "licenses_name": {
       "free_license": "無料版",
       "standard_license": "標準版",
       "premium_license": "プレミアム版",
       "developer_license": "開発者ライセンス",
-      "educational_license": "教育用ライセンス",
+      "educational_license": "教育ライセンス",
       "permanent_standard_license": "永久標準版",
       "permanent_premium_license": "永久プレミアム版",
-      "expiry_date_01" : "永久"
+      "expiry_date_01": "永久"
     }
   },
 
   "ArnoldMagicNodeLibs": {
 
-    "PathD" : {
-      "DPC" : {
+    "PathD": {
+      "DPC": {
         "01": "ディレクトリにアクセスできません",
         "02": "詳細なエラー",
-        "03": "画像ファイルとして開くまたは検証できません",
-        "04": "このファイルにはアクセス権がありません、詳細なエラー"
+        "03": "開くことができない、または画像ファイルとして検証できません",
+        "04": "このファイルにアクセスする権限がありません。詳細なエラー"
       },
-      "CN" : {
-        "01" : "このパスは接続できません："
+      "CN": {
+        "01": "このパスに接続できません:"
       },
-      "GFI" : {
-        "01" : "テクスチャのメタ属性を照会中にエラーが発生しました、エラーの理由："
+      "GFI": {
+        "01": "テクスチャメタ属性をクエリ中にエラーが発生しました。エラーの理由: "
       }
     },
 
     "NodeP": {
-      "CTFNTPN" : {
-        "01": "位置によるマテリアルチャネル："
+      "CTFNTPN": {
+        "01": "位置のマテリアルチャネル："
       },
       "ASTCS": {
-        "01" : "ノードを設定しました",
-        "02" : "カラースペース"
+        "01": "ノードを",
+        "02": "カラー空間"
       },
-      "ASU" : {
+      "ASU": {
         "01": "UVタイルモードを<UDIM>モードに設定しました",
         "02": "UVタイルモードを<無効>モードに設定しました"
       }
@@ -253,14 +255,14 @@
 
     "DataP": {
       "SSARD": {
-        "01": "渡されたデータは文字列型ではありません",
-        "02": "正規表現エラー："
+        "01": "渡されたデータは文字列タイプではありません",
+        "02": "正規表現エラー :"
       }
     },
 
     "ImageP": {
       "RI": {
-        "01": "無効なスケーリング比率",
+        "01": "スケーリング比率が無効です",
         "02": "0から100の有効な値を設定してください",
         "03": "画像の読み込みに失敗しました",
         "04": "ファイル書き込み権限エラー",
@@ -272,14 +274,14 @@
         "02": "フォーマット変換 - 画像キャッシュの読み込みに失敗しました",
         "03": "に変換されました",
         "04": "フォーマット 新しいパス",
-        "05": "フォーマット変換 - 画像の保存に失敗しました、エラーの理由"
+        "05": "フォーマット変換 - 画像の保存に失敗しました エラーの理由"
       }
     },
 
-    "FeedbackPrompt" : {
-      "01": "@Arnold Tool プラグインからの通知",
-      "02": "エラー警告、エラー問題は以下にあります",
-      "03": "重大なエラーが発生しました。発生した場合は開発者に連絡して修正してください。連絡先情報"
+    "FeedbackPrompt": {
+      "01": "@Arnold Tool プラグインリマインダー {} | ",
+      "02": "エラー警告、エラーの問題は以下にあります",
+      "03": "重大なエラーが発生しました。発生した場合は開発者に連絡して修正してください。連絡先"
     },
 
     "process_sl_data": {
@@ -290,32 +292,32 @@
 
   "LicenseV": {
     "GMI": {
-      "01": "Windowsシステムはマザーボードのシリアル番号を見つけられません",
-      "02": "Windowsシステムでマザーボードのシリアル番号を取得中にエラーが発生しました：",
-      "03": "Linux/Unixシステムはマザーボードのシリアル番号を見つけられません",
-      "04": "Linux/Unixシステムでマザーボードのシリアル番号を取得中にエラーが発生しました："
+      "01": "Windowsシステム  マザーボードのシリアル番号が見つかりません",
+      "02": "Windowsシステム マザーボードのシリアル番号取得時にエラー:",
+      "03": "Linux/Unixシステム マザーボードのシリアル番号が見つかりません",
+      "04": "Linux/Unixシステム マザーボードのシリアル番号取得時にエラー:"
     },
     "GWTS": {
-      "01": "Taobaoのタイムスタンプを取得できません",
-      "02": "リンクタイムの取得に失敗しました："
+      "01": "淘宝タイムスタンプを取得できません",
+      "02": "リンク時間の取得に失敗しました:"
     },
     "GNTS": {
-      "01": "NTP時間の取得に失敗しました："
+      "01": "NTP時間の取得に失敗しました:"
     },
     "VL": {
-      "01": "無効なライセンス形式",
+      "01": "ライセンス形式が無効です",
       "02": "デバイス識別コードが一致しません",
       "03": "ライセンスが期限切れです！",
-      "04": "署名検証に失敗しました、ライセンスが改ざんされている可能性があります",
+      "04": "署名検証に失敗しました。ライセンスが改ざんされた可能性があります",
       "05": "ライセンス形式エラー",
-      "06": "検証中に不明なエラーが発生しました。開発者に連絡してください"
+      "06": "検証プロセス中に未知のエラーが発生しました。開発者に連絡してください"
     },
     "LW": {
       "DIL": "デバイス識別コード（開発者に提供する必要があります）",
       "SUL": "シリアル番号を入力",
       "SNT": "シリアル番号を入力してください",
       "VB": "ライセンスを検証",
-      "01" : "シリアル番号を入力してください"
+      "01": "シリアル番号を入力してください"
     },
     "MP": {
       "01": "オンライン時間を取得できません",
@@ -323,16 +325,16 @@
     }
   },
 
-  "DLibs" : {
-    "FP" : "@Arnold Tool プラグインからの通知 {} | ",
-    "CVF" : "ライブラリ設定フォルダが正常に存在します ╭(●｀∀´●)╯ 拍手拍手",
-    "DL" : {
-      "01" : "発見",
-      "02" : "ライブラリが存在しません ◔ ‸◔？   ダウンロード中 ≖‿≖✧ 忍耐強くお待ちください",
-      "03" : "素晴らしい!!!! 環境設定に問題はありません♪（＾∀＾●）ﾉｼ "
+  "DLibs": {
+    "FP": "@Arnold Tool プラグインリマインダー {} | ",
+    "CVF": "ライブラリフォルダが正常に構成されています ╭(●｀∀´●)╯ 拍手拍手",
+    "DL": {
+      "01": "発見",
+      "02": "ライブラリが存在しません ◔ ‸◔？ ダウンロード中≖‿≖✧ 忍耐強く待ってください",
+      "03": "素晴らしい！！！！環境構成に問題はありません♪（＾∀＾●）ﾉｼ "
     },
-    "MP" : {
-      "01": "ライブラリ検索時間：",
+    "MP": {
+      "01": "ライブラリ検索時間: ",
       "02": " 秒"
     }
   }

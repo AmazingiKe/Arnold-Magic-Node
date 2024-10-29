@@ -17,7 +17,8 @@ import json  # 用于序列化和反序列化 JSON 数据，方便与外部数�
 import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
 import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
 from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
-from Levenshtein import distance as levenshtein_distance  # 导入 Levenshtein 库中的 distance 函数
+import Levenshtein  # 导入 Levenshtein
+from collections import defaultdict
 import numpy as np
 
 # 4. 字符串处理
@@ -46,8 +47,7 @@ Script_path = os.path.dirname(os.path.abspath(__file__))
 
 # ##############################################################################################
 
-
-
+# 语言加载
 def language_loading():
     dataM = DataManager()
 
@@ -61,11 +61,7 @@ def language_loading():
 
     return language
 
-
-
-
-
-#   路径识别判断的库
+# 路径识别判断的库
 class PathDetection(object):
     """
     PathDetection 类用于处理路径检测和内容匹配。
@@ -487,7 +483,8 @@ class PathDetection(object):
 
         # 返回匹配列表
         return filtered_matches
-#   节点处理的库
+
+# 节点处理的库
 class NodeProcessor(object):
     def __init__(self):
         self.FP = FeedbackPrompt()
@@ -523,6 +520,10 @@ class NodeProcessor(object):
 
         # 将名称转换为大写
         cleaned_name = cleaned_name.upper()
+
+        # 使用正则表达式替换多个空格为一个空格
+        cleaned_name = re.sub(r'\s+', ' ', cleaned_name).strip()
+
         return cleaned_name
     
     #   匹配贴图节点的通道
@@ -555,68 +556,82 @@ class NodeProcessor(object):
             # 处理贴图名称
             processed_name = self.processed_texture_name(file_name)
 
+            # 预处理
+            keyword_to_channels, keywords_set = self.build_keyword_mapping(FilterData)
+
             # 匹配通道
-            MatchingChannels = self.FilterData(processed_name, FilterData)
+            MatchingChannels = self.FilterData(processed_name, keyword_to_channels, keywords_set)
 
             MatchingChannelsDict[NodeName] = MatchingChannels
 
         # 返回匹配的通道名称
         return MatchingChannelsDict
 
-    #   把名字筛选出正确的通道
-    def FilterData(self, NewTexName, FilterData):
+    # 构建关键词到通道的映射以及关键词集合
+    def build_keyword_mapping(self, FilterData):
         """
-        使用 Aho-Corasick 算法和 Levenshtein 距离根据通道过滤贴图名称，并计算匹配权重。
+        构建关键词到通道的映射以及关键词集合。
 
-        参数：
-            NewTexName (str)：处理后的贴图名称。
-            FilterData (dict)：包含通道名称和关联关键词列表的字典。
+        Args:
+            FilterData (dict): 通道到关键词的映射字典。
 
-        返回：
-            str：匹配的通道名称；如果没有找到匹配项，则返回 None。
+        Returns:
+            tuple: (keyword_to_channels, keywords_set)
+        """
+        keyword_to_channels = defaultdict(list)
+        keywords_set = set()
+        for channel, keywords in FilterData.items():
+            for keyword in keywords:
+                keyword_lower = keyword.lower()
+                keyword_to_channels[keyword_lower].append(channel)
+                keywords_set.add(keyword_lower)
+        return keyword_to_channels, keywords_set
+
+    # 根据纹理名称匹配对应的通道
+    def FilterData(self, NewTexName, keyword_to_channels, keywords_set):
+        """
+        根据纹理名称匹配对应的通道。
+
+        Args:
+            NewTexName (str): 纹理名称字符串。
+            keyword_to_channels (dict): 关键词到通道的映射字典。
+            keywords_set (set): 所有关键词的集合。
+
+        Returns:
+            str or None: 最佳匹配的通道名称，若无匹配则返回 None。
         """
         tex_name_lower = NewTexName.lower()
 
-        # 构建关键词到通道的映射，以及通道的关键词列表
-        channel_keywords = {}
-        keyword_to_channels = {}
-        for channel, keywords in FilterData.items():
-            channel_keywords[channel] = [kw.lower() for kw in keywords]
-            for keyword in keywords:
-                keyword_lower = keyword.lower()
-                keyword_to_channels.setdefault(keyword_lower, []).append(channel)
-
-        # 构建关键词树（使用 ahocorapy）
-        kwtree = KeywordTree(case_insensitive=True)
-        for keyword in keyword_to_channels.keys():
-            kwtree.add(keyword)
-        kwtree.finalize()
+        # 将贴图名称拆分为单词列表（以空格、下划线或连字符为分隔符）
+        tex_name_words = re.split(r'[\s_-]+', tex_name_lower)
 
         # 记录每个通道的匹配次数
-        channel_scores = {}
+        channel_scores = defaultdict(int)
 
-        # 精确匹配阶段
-        for match in kwtree.search_all(tex_name_lower):
-            keyword = match[0].lower()
-            channels = keyword_to_channels.get(keyword, [])
-            for channel in channels:
-                channel_scores[channel] = channel_scores.get(channel, 0) + 1
+        # 精确匹配阶段，仅匹配完整单词
+        for word in tex_name_words:
+            if word in keywords_set:
+                channels = keyword_to_channels[word]
+                for channel in channels:
+                    channel_scores[channel] += 1
 
         # 如果未找到精确匹配，进行模糊匹配
         if not channel_scores:
-            LEVENSHTEIN_THRESHOLD = 2  # 可根据需要调整阈值
-            for keyword, channels in keyword_to_channels.items():
-                dist = levenshtein_distance(keyword, tex_name_lower)
-                if dist <= LEVENSHTEIN_THRESHOLD:
-                    for channel in channels:
-                        # 根据距离设置权重（距离越小，权重越高）
-                        weight = LEVENSHTEIN_THRESHOLD - dist + 1
-                        channel_scores[channel] = channel_scores.get(channel, 0) + weight
+            LEVENSHTEIN_THRESHOLD = 1  # 可根据需要调整阈值
+            for word in tex_name_words:
+                for keyword in keywords_set:
+                    dist = Levenshtein.distance(word, keyword)
+                    if dist <= LEVENSHTEIN_THRESHOLD:
+                        channels = keyword_to_channels[keyword]
+                        for channel in channels:
+                            # 根据距离设置权重（距离越小，权重越高）
+                            weight = LEVENSHTEIN_THRESHOLD - dist + 1
+                            channel_scores[channel] += weight
 
         # 选择得分最高的通道
         if channel_scores:
-            sorted_channels = sorted(channel_scores.items(), key=lambda x: x[1], reverse=True)
-            best_match_channel = sorted_channels[0][0]
+            best_match_channel = max(channel_scores.items(), key=lambda x: x[1])[0]
+
             return best_match_channel
 
         return None  # 未找到匹配项
@@ -1117,7 +1132,7 @@ class NodeProcessor(object):
         match = re.search(pattern, text)
         return bool(match)
 
-#   获取节点数据的库
+# 获取节点数据的库
 class GetNodeData():
     
     def __init__(self):
@@ -1525,7 +1540,7 @@ class GetNodeData():
 
         return ContentsDict  # 返回包含内容路径和名称的字典
 
-#   专门负责各种数据的处理
+# 专门负责各种数据的处理
 class DataProcessor():
     def __init__(self):
         self.feedback = FeedbackPrompt() # 错误提示模块
@@ -1786,24 +1801,188 @@ class ImageProcessor():
         except Exception as e:
             self.feedback.CP(f"{lang['05']}: {e}") # 转换格式-保存图片失败 错误原因
 
+# 专门处理节点混合
+class BlendNodeManager():
+    def __init__(self):
+        self.select_node = process_sl_data()
+
+        self.connect_force = False
+
+        if keyboard.is_pressed('alt'):
+            self.connect_force = True
+
+    # ——————————————————————————————————————————————————————————————————————————> 灰度
+    def blend_aiLayerFloat_mask(self, aiLayerFloat_node_name = 'Blend_aiLayerFloat'):
+        """
+        创建一个 aiLayerFloat 节点，并将多个 file 或 aiLayerFloat 节点的输出连接到它的输入端口。
+        """
+        if 'aiLayerFloat' not in self.select_node:
+            # 创建 aiLayerRgba 节点
+            aiLayerFloat_name = cmds.shadingNode('aiLayerFloat', asTexture= True, name= aiLayerFloat_node_name)
+        else:
+            aiLayerFloat_name = self.select_node['aiLayerFloat'][0]
 
 
+        input_var = 0
+
+        # 遍历选定的 file 节点，将它们连接到 aiLayerRgba 节点的不同输入端口
+        for node_name in self.select_node['file']:
+            input_var += 1  # 增加端口索引
+
+            try:
+                # 连接 file 节点的 outColor 属性到 aiLayerRgba 的对应输入端口
+                cmds.connectAttr(f'{node_name}.outAlpha', f'{aiLayerFloat_name}.input{input_var}',
+                                 force = self.connect_force)
+            except :
+                while True:
+                    input_var += 1 # 尝试下一个端口
+
+                    # 检查该属性是否有连接
+                    connections = cmds.listConnections(f"{aiLayerFloat_name}.input{input_var}", source=True, destination=False)
+
+                    # 如果端口为空闲，则进行连接并退出循环
+                    if connections is None:
+                        cmds.connectAttr(f'{node_name}.outAlpha', f'{aiLayerFloat_name}.input{input_var}',
+                                         force=self.connect_force)
+                        break
+
+    def blend_aiLayerRgba_mask(self, aiLayerRgba_node_name = 'Blend_aiLayerRgba'):
+        """
+        创建一个 aiLayerRgba 节点，并将多个 file 或 aiLayerFloat 节点的输出连接到它的输入端口。
+        """
+
+        input_var = 0
 
 
+        # 遍历 file 节点并连接到 aiLayerRgba
+        for file_node in self.select_node['file']:
+            input_var += 1
+            try:
+                cmds.connectAttr(f'{file_node}.outAlpha', f'{self.select_node["aiLayerRgba"][0]}.mix{input_var}')
+            except:
+                while True:
+                    input_var += 1  # 尝试下一个端口
 
+                    # 检查该属性是否有连接
+                    connections = cmds.listConnections(f'{self.select_node["aiLayerRgba"][0]}.mix{input_var}', source=True,
+                                                       destination=False)
 
+                    # 如果端口为空闲，则进行连接并退出循环
+                    if connections is None:
+                        cmds.connectAttr(f'{file_node}.outAlpha',
+                                         f'{self.select_node["aiLayerRgba"][0]}.mix{input_var}')
+                        break
 
+    def blend_aiStandardSurface_mask(self):
 
+        input_var = 0
 
+        for file_node in self.select_node['file']:
+            input_var += 1  # 增加输入端口计数
+            try:
+                cmds.connectAttr(f"{file_node}.outAlpha", f"{self.select_node['aiLayerShader'][0]}.mix{input_var}",
+                                 force = self.connect_force)
+            except:
+                while True:
+                    input_var += 1  # 尝试下一个端口
 
+                    # 检查该属性是否有连接
+                    connections = cmds.listConnections(f"{self.select_node['aiLayerShader'][0]}.mix{input_var}", source=True,
+                                                       destination=False)
 
+                    # 如果端口为空闲，则进行连接并退出循环
+                    if connections is None:
+                        cmds.connectAttr(f"{file_node}.outAlpha",
+                                         f"{self.select_node['aiLayerShader'][0]}.mix{input_var}",
+                                         force=self.connect_force)
+                        break
+    # ——————————————————————————————————————————————————————————————————————————> 颜色
+    def blend_file_rgba_node(self, aiLayerRgba_node_name = 'Blend_aiLayerRgba'):
+        """
+        创建一个 aiLayerRgba 节点，并将多个文件节点的颜色输出连接到 aiLayerRgba 节点的输入端口。
 
+        逻辑：
+        - 创建 aiLayerRgba 节点。
+        - 遍历选定的 file 节点，将它们的颜色输出逐一连接到 aiLayerRgba 的输入端口。
+        """
 
+        if 'aiLayerRgba' not in self.select_node:
+            # 创建 aiLayerRgba 节点
+            aiLayerRgba_name = cmds.shadingNode('aiLayerRgba', asTexture= True, name= aiLayerRgba_node_name)
+        else:
+            aiLayerRgba_name = self.select_node['aiLayerRgba'][0]
 
+        # 初始化输入端口计数器
+        input_var = 0
 
+        # 遍历选定的 file 节点，将它们连接到 aiLayerRgba 节点的不同输入端口
+        for node_name in self.select_node['file']:
+            input_var += 1  # 增加端口索引
 
+            try:
+                # 连接 file 节点的 outColor 属性到 aiLayerRgba 的对应输入端口
+                cmds.connectAttr(node_name + '.outColor', aiLayerRgba_name + f'.input{input_var}', force = self.connect_force)
+            except :
+                while True:
+                    input_var += 1 # 尝试下一个端口
 
-#   错误提示的库
+                    # 检查该属性是否有连接
+                    connections = cmds.listConnections(f"{aiLayerRgba_name}.input{input_var}", source=True, destination=False)
+
+                    # 如果端口为空闲，则进行连接并退出循环
+                    if connections is None:
+                        cmds.connectAttr(node_name + '.outColor', aiLayerRgba_name + f'.input{input_var}', force = self.connect_force)
+                        break
+
+    def blend_rgba_aiLayerRgba_node(self, aiLayerRgba_node_name = 'Blend_aiLayerRgba'):
+        """
+        创建一个 aiLayerRgba 节点，并将多个 aiLayerRgba 节点的输出颜色连接到新的 aiLayerRgba 节点的输入端口。
+
+        逻辑：
+        - 创建一个新的 aiLayerRgba 节点，用于合并多个 aiLayerRgba 节点的输出。
+        - 遍历选定的 aiLayerRgba 节点，将它们的 outColor 连接到新节点的不同输入端口。
+        """
+
+        # 创建新的 aiLayerRgba 节点，用于混合输入
+        aiLayerRgba_name = cmds.shadingNode('aiLayerRgba', asTexture= True, name= aiLayerRgba_node_name)
+
+        # 初始化输入端口计数器
+        input_var = 0
+
+        # 遍历选定的 aiLayerRgba 节点，将它们的 outColor 连接到新节点的输入端口
+        for node_name in self.select_node['aiLayerRgba']:
+            input_var += 1  # 增加输入端口计数
+            try:
+                # 连接 aiLayerRgba 节点的 outColor 到新 aiLayerRgba 节点的 input 端口
+                cmds.connectAttr(f"{node_name}.outColor", f"{aiLayerRgba_name}.input{input_var}", force = self.connect_force)
+            except Exception as e:
+                pass
+
+    def blend_aiStandardSurface_rgba(self, Blend_aiStandardSurface_node_name = 'Blend_aiStandardSurface'):
+        """
+        创建一个 aiLayerShader 节点，并将多个 aiStandardSurface 节点的输出颜色连接到新的 aiLayerShader 节点的输入端口。
+
+        逻辑：
+        - 创建一个 aiLayerShader 节点，用于混合多个 aiStandardSurface 节点的输出。
+        - 遍历并删除现有的 aiLayerRgba 节点，确保场景中的旧数据不会影响结果。
+        - 遍历 aiStandardSurface 节点，将它们的 outColor 属性连接到 aiLayerShader 的不同输入端口。
+        """
+
+        # 创建新的 aiLayerShader 节点，用于混合材质层
+        aiLayerShader_name = cmds.shadingNode('aiLayerShader', asTexture= True, name= Blend_aiStandardSurface_node_name)
+
+        # 初始化输入端口计数器
+        input_var = 0
+
+        # 遍历 aiStandardSurface 节点，将它们的 outColor 连接到 aiLayerShader 的输入端口
+        for node_name in self.select_node['aiStandardSurface']:
+            input_var += 1  # 增加输入端口计数
+
+            cmds.connectAttr(f"{node_name}.outColor", f"{aiLayerShader_name}.input{input_var}", force = self.connect_force)
+
+    # ——————————————————————————————————————————————————————————————————————————> 其他
+
+# 错误提示的库
 class FeedbackPrompt():
     """
     FeedbackPrompt此类是一个反馈错误的模块
@@ -1845,8 +2024,7 @@ class FeedbackPrompt():
         # cmds.warning(error_message)
         raise ValueError(error_message)
 
-
-
+# 获取选择节点
 def process_sl_data(sl_data = None):
     """ 函数可以批量归类选择的节点 """
     language = language_loading()['ArnoldMagicNodeLibs']['process_sl_data']  # 加载相关语言模块
@@ -1876,8 +2054,7 @@ def process_sl_data(sl_data = None):
 
     return FilterData
 
-
-
+# 数据管理器
 class DataManager:
     def __init__(self):
         pass

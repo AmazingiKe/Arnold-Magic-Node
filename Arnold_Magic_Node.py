@@ -262,11 +262,17 @@ class Arnold_Magic_Node_UI(object):
 
 
         # Magic_Connection
-        self.magic_connection = cmds.button(label=self.language['create_widgets']['magic_connection'],c=lambda *args: magic_connection_button()) # 魔法连接
+        self.magic_connection = cmds.button(label=self.language['create_widgets']['magic_connection'],
+                                            c=lambda *args: magic_connection_button()) # 魔法连接
 
-        self.path_detection_connection = cmds.button(label=self.language['create_widgets']['path_detection_connection'],c=lambda *args: path_detection_connection_button()) # 路径拾取连接
+        self.path_detection_connection = cmds.button(label=self.language['create_widgets']['path_detection_connection'],
+                                                     c=lambda *args: path_detection_connection_button()) # 路径拾取连接
 
-        # Direct_Connection
+        self.color_mix = cmds.button(label = self.language['create_widgets']['color_mix'], # 颜色混合
+                                            c=lambda *args: blend_rgba_node())
+        self.gray_mix = cmds.button(label = self.language['create_widgets']['gray_mix'], # 灰度混合
+                                            c=lambda *args: blend_greg_manager())
+        # 直连
         self.direct_connection = cmds.button(label=self.language['create_widgets']['direct_connection'],c=lambda *args: direct_connection_button()) # 直连
         # Unify Uv Node
         self.unify_uv_node = cmds.button(label=self.language['create_widgets']['unify_uv_node'],c=lambda *args: unify_uv_node_button()) # 统一UV
@@ -1733,47 +1739,47 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.MaterialList_SelectAll_Button.setIconSize(QtCore.QSize(38, 38))
 
         # 取消所有选择
-        self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton() # 取消全选 lang['TexturelList_Unselect_All_Button']
+        self.TexturelList_Unselect_All_Button = QtWidgets.QPushButton(lang['TexturelList_Unselect_All_Button']) # 取消全选 lang['TexturelList_Unselect_All_Button']
         self.TexturelList_Unselect_All_Button.clicked.connect(lambda *args:  (
             self.MaterialList.clearSelection(),
             self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
         ))
         self.TexturelList_Unselect_All_Button.setFixedHeight(40)
-        self.TexturelList_Unselect_All_Button.setFixedWidth(40)
-        self.TexturelList_Unselect_All_Button.setIcon(QtGui.QIcon(
-            os.path.join(icon_path , 'deselect_all_icon.png')))
+        #self.TexturelList_Unselect_All_Button.setFixedWidth(40)
+        # self.TexturelList_Unselect_All_Button.setIcon(QtGui.QIcon(
+        #     os.path.join(icon_path , 'deselect_all_icon.png')))
         self.TexturelList_Unselect_All_Button.setIconSize(QtCore.QSize(38, 38))
 
         # 反选
-        self.TexturelList_reverse_selection = QtWidgets.QPushButton() # 反选 lang['TexturelList_reverse_selection']
+        self.TexturelList_reverse_selection = QtWidgets.QPushButton(lang['TexturelList_reverse_selection']) # 反选 lang['TexturelList_reverse_selection']
         self.TexturelList_reverse_selection.setFixedHeight(40)
-        self.TexturelList_reverse_selection.setFixedWidth(40)
+       # self.TexturelList_reverse_selection.setFixedWidth(40)
         self.TexturelList_reverse_selection.setIconSize(QtCore.QSize(42, 42))
         self.TexturelList_reverse_selection.clicked.connect(lambda *args:  self.texture_list_reverse_selection())
-        self.TexturelList_reverse_selection.setIcon(QtGui.QIcon(
-            os.path.join(icon_path , 'invert_selection_icon.png')
-        ))
+        # self.TexturelList_reverse_selection.setIcon(QtGui.QIcon(
+        #     os.path.join(icon_path , 'invert_selection_icon.png')
+        # ))
 
         # 一键选出所有缺失贴图
-        self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton() # 选出缺失 lang['TexturelList_Find_Missing_Textures_Button']
+        self.TexturelList_Find_Missing_Textures_Button = QtWidgets.QPushButton(lang['TexturelList_Find_Missing_Textures_Button']) # 选出缺失 lang['TexturelList_Find_Missing_Textures_Button']
         self.TexturelList_Find_Missing_Textures_Button.clicked.connect(
             lambda *args:  self.texture_list_find_missing_textures())
         self.TexturelList_Find_Missing_Textures_Button.setFixedHeight(40)
-        self.TexturelList_Find_Missing_Textures_Button.setFixedWidth(40)
+        #self.TexturelList_Find_Missing_Textures_Button.setFixedWidth(40)
         self.TexturelList_Find_Missing_Textures_Button.setIconSize(QtCore.QSize(38, 38))
-        self.TexturelList_Find_Missing_Textures_Button.setIcon(QtGui.QIcon(
-            os.path.join(icon_path , 'select_missing_icon.png')
-        ))
+        # self.TexturelList_Find_Missing_Textures_Button.setIcon(QtGui.QIcon(
+        #     os.path.join(icon_path , 'select_missing_icon.png')
+        # ))
 
         # 选出最大贴图的按钮
-        self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton() # 选出大贴图 lang['TexturelList_Intelligent_Find_Max_Size_Button']
+        self.TexturelList_Intelligent_Find_Max_Size_Button = QtWidgets.QPushButton(lang['TexturelList_Intelligent_Find_Max_Size_Button']) # 选出大贴图 lang['TexturelList_Intelligent_Find_Max_Size_Button']
         self.TexturelList_Intelligent_Find_Max_Size_Button.clicked.connect(lambda *args:  self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
         self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedHeight(40)
-        self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedWidth(40)
+       # self.TexturelList_Intelligent_Find_Max_Size_Button.setFixedWidth(40)
         self.TexturelList_Intelligent_Find_Max_Size_Button.setIconSize(QtCore.QSize(38, 38))
-        self.TexturelList_Intelligent_Find_Max_Size_Button.setIcon(QtGui.QIcon(
-            os.path.join(icon_path , 'select_large_textures_icon.png')
-        ))
+        # self.TexturelList_Intelligent_Find_Max_Size_Button.setIcon(QtGui.QIcon(
+        #     os.path.join(icon_path , 'select_large_textures_icon.png')
+        # ))
 
         # 选出最大贴图的容错率值
         self.tolerance_doubleSpinBox = QtWidgets.QDoubleSpinBox(self)
@@ -4286,9 +4292,6 @@ class TextureBatchImporterWin:
         def create_widgets(self):
             pass
 
-def test():
-    pass
-
 # 设置uv模式
 def uv_preset_menu(uv_preset):
     # 初始化反馈模块
@@ -4318,7 +4321,7 @@ def uv_preset_menu(uv_preset):
         if i == uv_preset:
             try:
                 # 遍历选中的节点文件，设置UV模式
-                for sl_node in sl_data["file"]:
+                for sl_node in select_node["file"]:
                     cmds.setAttr(sl_node + ".uvTilingMode",uv_mode_list[i])
                     feedback.CP(f'{UVPM_language["01"]}<{sl_node}>{UVPM_language["02"]}{i}')
                 return
@@ -5111,6 +5114,8 @@ def ai_aov_switch_button():
         else:
             cmds.setAttr(aov + ".enabled", 1)
 
+
+
 class Path_Detection_Connection:
     def __init__(self):
         ### 实例各种模块
@@ -5327,6 +5332,8 @@ class Magic_Node_Connection:
             'ProcSet_Options'][
             'Auto_Node_Connection_Options']  # 相应贴图是否要连接相应的节点
 
+        self.auto_connect_cache_path = os.path.join(SCRIPT_PATH, 'Temp', 'auto_connect_cache.bin')
+
 
         # 获取选择节点
         self.select_node = process_sl_data()
@@ -5337,11 +5344,11 @@ class Magic_Node_Connection:
         if self.select_node is None:
             return
 
-        if keyboard.is_pressed('alt'):
-            pass
-        else:
-            self.magic_processing_node_connection()
 
+        # if keyboard.is_pressed('alt'):
+        #     self.auto_connect_node()
+        # else:
+        self.magic_processing_node_connection()
 
     # 魔法连接处理节点
     def magic_processing_node_connection(self):
@@ -5377,8 +5384,6 @@ class Magic_Node_Connection:
         new_mat_name = self.modify_mat_name(original_mat_name=mat_name, file_name=self.select_node['file'][0])
 
         self.feedback.CP('已完成 {} 材质连接'.format(new_mat_name))
-
-
 
     # 检测并创建材质
     def detect_and_create_materials(self):
@@ -5424,6 +5429,7 @@ class Magic_Node_Connection:
         else:
             return
 
+    # 自动udim
     def auto_set_file_udim(self):
         texture_processing_data = self.dataM.bin_load_data(
             os.path.join(settings_path, 'texture_processing_data.bin'))
@@ -5434,8 +5440,6 @@ class Magic_Node_Connection:
         else:
             return
 
-
-
 def path_detection_connection_button():
     PDC = Path_Detection_Connection()
     PDC.main()
@@ -5443,6 +5447,45 @@ def path_detection_connection_button():
 def magic_connection_button():
     MC = Magic_Node_Connection()
     MC.main()
+
+    # 混合颜色节点
+
+# 颜色混合
+def blend_rgba_node():
+    
+    BlendNM = BlendNodeManager() # 混合节点模块
+    feedback = FeedbackPrompt()  # 错误提示模块
+
+    for key in process_sl_data():
+        if key == 'file':
+            BlendNM.blend_file_rgba_node()
+            return
+        elif key == 'aiLayerRgba':
+            BlendNM.blend_rgba_aiLayerRgba_node()
+            return
+        elif key == 'aiStandardSurface':
+            BlendNM.blend_aiStandardSurface_rgba()
+            return
+
+
+def blend_greg_manager():
+
+    BlendNM = BlendNodeManager() # 混合节点模块
+    feedback = FeedbackPrompt()  # 错误提示模块
+
+    # 根据选择的节点类型调用对应的处理函数
+    for key in process_sl_data():
+        if  'aiLayerRgba' in process_sl_data() and 'file' in  process_sl_data():
+            BlendNM.blend_aiLayerRgba_mask()
+            return
+        elif 'aiLayerShader' in process_sl_data() and 'file' in  process_sl_data():
+            BlendNM.blend_aiStandardSurface_mask()
+            return
+
+        elif key == 'file':
+            BlendNM.blend_aiLayerFloat_mask()
+            return
+
 
 def Main_program(cached_device_fingerprint, public_key, public_password, validating):
     # cached_device_fingerprint, public_key, public_password, remaining_time
@@ -5480,3 +5523,7 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
 
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
+
+
+def test_program():
+    pass
