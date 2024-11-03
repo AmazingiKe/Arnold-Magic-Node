@@ -38,10 +38,6 @@ from datetime import datetime  # 提供日期和时间的对象和操作方法�
 import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
 import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
 
-# 8. 依赖管理
-import DependenciesLibs  # 导入自定义的依赖管理模块，用于加载和初始化项目所需的其他库
-
-DependenciesLibs.importLibs()  # 调用自定义模块中的函数，动态导入和初始化所需的依赖库
 
 Script_path = os.path.dirname(os.path.abspath(__file__))
 

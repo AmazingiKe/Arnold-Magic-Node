@@ -59,9 +59,6 @@ import Arnold_Magic_Node_lib  # 导入自定义的 Arnold 魔法节点库
 importlib.reload(Arnold_Magic_Node_lib)  # 在开发阶段，重新加载模块以反映对库的更改
 from Arnold_Magic_Node_lib import *  # 从自定义库中导入所有内容
 
-import DependenciesLibs  # 导入自定义的依赖管理模块
-DependenciesLibs.importLibs()  # 调用自定义模块中的函数，动态导入和初始化所需的依赖库
-
 import InitialConfigFile
 
 # 10. 初始化变量
@@ -80,7 +77,7 @@ AMN_UI_WorkSpaceControl = None
 
 # --------------------初始变量开始
 SoftwareState = "Beta"
-SoftwareVersion = "0.8.1"
+SoftwareVersion = "0.8.2"
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"

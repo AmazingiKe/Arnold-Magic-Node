@@ -50,9 +50,7 @@ except ImportError:
     from PySide2.QtWidgets import QAction  # 创建菜单和工具栏的动作
     from shiboken2 import wrapInstance  # Maya中将C++对象封装为Python对象
 
-
 ##############################################################################################
-
 
 Script_path = os.path.join(os.path.dirname(__file__))
 
@@ -73,7 +71,6 @@ lwIDAQAB
 
 public_password = "ea54b522ed180be0691d084cde28c930".encode()
 
-
 # 获取语言
 # 获取语言设置
 language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json' ))['language_config']
@@ -82,42 +79,43 @@ language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages',
 
 ##############################################################################################
 
-
-#   获取主板的ID
+# 获取主板的ID
 def get_motherboard_id():
     LT = language['GMI']
 
     # Windows 系统
     if os.name == 'nt':  # 'nt' 表示 Windows 系统
         try:
-            # 使用 subprocess 获取主板序列号
+            # 尝试使用 subprocess 获取主板序列号
             output = subprocess.check_output("wmic baseboard get serialnumber", shell=True)
             lines = output.decode().split('\n')
             if len(lines) > 1:
-                serial_number = lines[1].strip()
+                serial_number = lines[1].strip()  # 获取序列号并去除空白
                 if serial_number:
-                    return serial_number
-            feedback.CPW(LT['01']) # "Windows系统 无法找到主板序列号"
-            return False
-        except Exception as e:
-            feedback.CPW(f"{LT['02']} {str(e)}") # "Windows系统 获取主板序列号时出:"
-            return False
+                    return serial_number  # 返回获取到的序列号
+            return False  # 序列号为空，返回 False
+        except Exception:
+            # 如果获取序列号失败，则使用 WMI 作为备选方案
+            try:
+                c = wmi.WMI()  # 创建 WMI 客户端
+                for board in c.Win32_BaseBoard():  # 遍历主板信息
+                    return board.SerialNumber  # 返回主板序列号
+            except Exception:
+                return False  # 如果 WMI 也失败，则返回 False
 
     # Linux/Unix 系统
     else:
         try:
             # 使用 subprocess 获取产品 UUID
             output = subprocess.check_output("cat /sys/class/dmi/id/product_uuid", shell=True)
-            uuid = output.decode().strip()
+            uuid = output.decode().strip()  # 获取 UUID 并去除空白
             if uuid:
-                return uuid
-            feedback.CPW(LT['03']) # "Linux/Unix系统 无法找到主板序列号"
-            return False
+                return uuid  # 返回获取到的 UUID
+            feedback.CPW(LT['03'])  # "Linux/Unix系统 无法找到主板序列号"
+            return False  # 如果 UUID 为空，返回 False
         except Exception as e:
-            feedback.CPW(f"{LT['04']} {str(e)}") # Linux/Unix系统 获取主板序列号时出错:
-            return False
-
-
+            feedback.CPW(f"{LT['04']} {str(e)}")  # 输出错误信息
+            return False  # 捕获到异常，返回 False
 
 #   Hardware Identifier 设别标识符
 def generate_device_fingerprint(motherboard_id):
@@ -136,10 +134,6 @@ def generate_device_fingerprint(motherboard_id):
     sha256_hash.update(motherboard_id.encode('utf-8'))
     device_fingerprint = sha256_hash.hexdigest()
     return device_fingerprint
-
-
-
-
 
 #------------------------------------------获取时间戳
 # 获取淘宝时间戳
@@ -227,8 +221,6 @@ def generate_encryption_key(password, salt = None, iterations=100000, length=32)
     )
     encryption_key = kdf.derive(password)
     return encryption_key, salt
-
-
 
 #   检查给定的字符串是否是有效的 JSON 格式
 def is_valid_json(data):
@@ -403,17 +395,6 @@ def get_license_remaining_time(license_package_b64, password=public_password):
     # 如果剩余时间为负值，说明许可证已经过期，返回0
     return max(remaining_time, 0) , expiry_date
 
-
-
-
-
-
-
-
-
-
-
-
 #-------------------------------------------------------验证窗口
 
 #   获取Maya主窗口
@@ -421,8 +402,6 @@ def MayaMainWindows():
     """获取Maya主窗口"""
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr),QtWidgets.QWidget)
-
-
 
 class LicenseWin(QtWidgets.QDialog):
     WINDOWS_NAME = "ArnoldMagic_Node_Tool_Node  License_Window"
@@ -530,17 +509,8 @@ class LicenseWin(QtWidgets.QDialog):
             cmds.deleteUI(LicenseWin.WINDOWS_NAME)
             #   打开主程序
             MainStart(cached_device_fingerprint, public_key, public_password, validating)
+
 #-------------------------------------------------------验证窗口
-
-
-
-
-
-
-
-
-
-
 
 def MainStart(cached_device_fingerprint, public_key, public_password, validating):
 
@@ -548,19 +518,20 @@ def MainStart(cached_device_fingerprint, public_key, public_password, validating
     importlib.reload(Arnold_Magic_Node)
     Arnold_Magic_Node.Main_program(cached_device_fingerprint, public_key, public_password, validating)
 
-
-
-
-
-
-
 def Main_program():
     global cached_device_fingerprint
 
-    # 如果没有身份识别码会创建一个
-    if cached_device_fingerprint == None:
-        cached_device_fingerprint = generate_device_fingerprint(get_motherboard_id())
+    # 如果没有身份识别码，则创建一个新的识别码
+    if cached_device_fingerprint is None:
+        # 获取主板ID
+        motherboard_id = get_motherboard_id()
 
+        # 检查是否成功获取主板ID
+        if motherboard_id is False:
+            feedback.CPW(language['MP']['03'])  # 无法获取设备码
+        else:
+            # 生成设备指纹
+            cached_device_fingerprint = generate_device_fingerprint(motherboard_id)
 
     if not os.path.exists(os.path.join(Script_path, "Datas", "keys", "license.bin")):
         LicenseM = LicenseWin()

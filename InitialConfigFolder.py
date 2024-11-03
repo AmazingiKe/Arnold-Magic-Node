@@ -11,7 +11,7 @@ import os
 ScriptPath = os.path.join(os.path.dirname(__file__))  # 脚本路径
 
 # 要检查或创建的文件夹列表（位于 'Datas' 文件夹下）
-datas_folder_list = ['languages', 'render_settings', 'settings', 'texture_manager', 'keys']
+datas_folder_list = ['languages', 'render_settings', 'settings', 'texture_manager', 'keys', 'execution_logs', 'logs']
 
 # 要检查或创建的文件夹列表（位于脚本根目录下）
 scrip_of_folder_list = ['Libs', 'Datas', 'Temp']
