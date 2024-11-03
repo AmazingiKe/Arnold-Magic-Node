@@ -321,7 +321,8 @@
     },
     "MP": {
       "01": "Cannot obtain online time",
-      "02": "Cannot obtain time"
+      "02": "Cannot obtain time",
+      "03": "Unable to obtain device code."
     }
   },
 
@@ -336,6 +337,16 @@
     "MP": {
       "01": "Library search time: ",
       "02": " seconds"
+    },
+    "upgrade_pip": {
+      "01": "Upgrading pip library...",
+      "02": "pip library has been successfully upgraded!",
+      "03": "Failed to upgrade pip due to: "
+    },
+    "check_and_install_pywin32": {
+      "01": "Detected that pywin32 cannot be found",
+      "02": "Attempting to reinstall pywin32...",
+      "03": "pywin32 installation complete, please restart Maya"
     }
   }
 }
