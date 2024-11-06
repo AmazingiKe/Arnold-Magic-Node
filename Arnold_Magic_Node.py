@@ -35,6 +35,7 @@ from datetime import datetime  # 提供日期和时间的对象和操作方法�
 # 7. 网络操作
 import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
 import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
+from scipy.constants import value
 
 # 8. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
@@ -51,7 +52,7 @@ except ImportError:
 
 # ------------------------------------------
 # 获取脚本路径
-SCRIPT_PATH = os.path.join(os.path.dirname(__file__))  # 获取当前脚本的目录路径
+Script_Path = os.path.normpath(os.path.join(os.path.dirname(__file__)))  # 获取当前脚本的目录路径
 # ------------------------------------------
 
 # 9. 自定义库导入与依赖管理
@@ -84,13 +85,15 @@ pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a9190
 pluginUpdateDownloadURL = r'https://flowus.cn/amazingike/share/84422156-5158-4b73-9a5f-c5cadbb6625a?code=LZVF69'
 pluginHelpDocumentURL = r'https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69'
 
-datas_path = os.path.join(SCRIPT_PATH, "Datas") # 定义数据文件夹  ->全局变量
+datas_path = os.path.normpath(os.path.join(Script_Path, "Datas")) # 定义数据文件夹  ->全局变量
 
-settings_path = os.path.join(datas_path, "settings") # 定义设置配置文件夹  ->全局变量
+settings_path = os.path.normpath(os.path.join(datas_path, "settings")) # 定义设置配置文件夹  ->全局变量
 
-icon_path = os.path.join(SCRIPT_PATH, "icon") # 定义图标路径  ->全局变量
+icon_path = os.path.normpath(os.path.join(Script_Path, "icon")) # 定义图标路径  ->全局变量
 
+render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))
 
+AMS_Config = "Arnold_Magic_Settings.bin" # Arnold_Magic_Settings
 # 定义全局字体大小变量
 SMALL_FONT_SIZE = 10
 NORMAL_FONT_SIZE = 14
@@ -151,11 +154,11 @@ def language_loading():
 
     # 加载语言配置文件并获取 'language_config' 键的值
     language_config = dataM.ascii_load_data(
-        os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+        os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json'))['language_config']
 
     # 动态加载相应语言的JSON文件
     language = dataM.ascii_load_data(
-        os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))
+        os.path.join(Script_Path, 'Datas', 'languages', f'{language_config}.json'))
 
     return language
 
@@ -217,7 +220,7 @@ class Arnold_Magic_Node_UI(object):
                           cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
 
         cmds.menuItem(label= self.language['create_widgets']['dkxryswjj_menu'], # 打开渲染预设文件夹
-                      c= lambda *args: os.startfile(os.path.join(SCRIPT_PATH, 'Datas', 'render_settings')))
+                      c= lambda *args: os.startfile(os.path.join(Script_Path, 'Datas', 'render_settings')))
 
         cmds.menuItem(divider=True)
 
@@ -279,22 +282,17 @@ class Arnold_Magic_Node_UI(object):
         self.uv_preset = cmds.optionMenu(mvi = 8, cc=lambda* args:uv_preset_menu(cmds.optionMenu(self.uv_preset, query=True, value=True)))
         # 用循环创建uv_mode_list 的menu
         uv_mode_list = self.language['create_widgets']['uv_preset'] # ['禁用','0型(ZBrush)','1型(Mudbox)','UDIM(Mari)','显示平铺']
+
+        # 吧uv_mode添加到多选项菜单中
         for uv_mode_name in uv_mode_list:
             cmds.menuItem(label=uv_mode_name)
 
-
-
-
-        self.color_space_preset = cmds.optionMenu(mvi = 16, cc=lambda* args:color_space_preset_menu(cmds.optionMenu(self.color_space_preset, query=True, value=True)))
         # 用循环创建color_space_list的menu
+        self.color_space_preset = cmds.optionMenu(mvi = 16, cc=lambda* args:color_space_preset_menu(
+            cmds.optionMenu(self.color_space_preset, query=True, value=True)))
 
-        # 读取settings_path文件夹下的texture_processing_data文件
-        texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin')
-        )
-        
         # 循环创建色彩空间菜单选项
-        for color_space_name in texture_processing_data['ColorSpace']['ColorSpaceData']:
+        for color_space_name in self.config['color_space_params']['config']:
             cmds.menuItem(label = color_space_name)
 
         # 自动色彩空间的按钮
@@ -313,27 +311,20 @@ class Arnold_Magic_Node_UI(object):
         # 渲染预设的菜单 —————————————————— 开始
         self.rendering_preset_name = {}
         self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
-        # self.rendering_preset_settings = cmds.button(label="添加预设",c=lambda *args: rendering_preset_settings_button(self.rendering_preset))
-
-
-        renderer_data_path =  SCRIPT_PATH + r"\Datas\Render_settings"
 
         # 获取文件名字
-        file_names = os.listdir(renderer_data_path)
+        file_names = os.listdir(render_preset_path)
 
         # 删除文件名中的 ".json" 部分并存储在列表中
-        file_names_without_json_list = [file_name.replace(".json", "") for file_name in file_names]
+        file_names_without_json_list = [file_name.replace(".bin", "") for file_name in file_names]
 
         for renderer_data_mode_name in file_names_without_json_list:
-            self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name.replace('.bin', ''))
-
+            self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
 
         # 渲染预设的菜单 —————————————————— 结束
 
-
         cmds.text(label="                     "*1)
-        # self.Arnold_Magic_Node_Settings_Panel = cmds.button(label="设置",c=lambda *args: Arnold_Magic_Node_Settings_Panel())
-        # self.test = cmds.iconTextButton(i=SCRIPT_PATH+ r'\icon\TEST.png',c=lambda *args: test(), h=37.5/1.8,w=80)
+
         cmds.iconTextButton(i = os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
                             h=37.5/1.8,
                             w=155/1.8,
@@ -350,6 +341,10 @@ class Arnold_Magic_Node_UI(object):
 
         # 加载语言
         self.language = language_loading()['ArnoldMagicNode']['AMDUI_WIN']
+
+        # 加载设置配置
+        self.config = self.dataM.bin_load_data(os.path.normpath(os.path.join(settings_path, AMS_Config)))
+
 
     # 修改渲染属性写入选项
     def modify_rendering_properties_write_options(self, write_name, val):
@@ -390,6 +385,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 显示窗口
         self.show()
 
+
     def initial_global_config(self):
         ### 实例各种模块
         self.dataM = DataManager()  # 数据管理模块
@@ -397,15 +393,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.pathD = PathDetection()  # 数据检测模块
 
         ### 初始化配置数据
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
+        self.config = self.dataM.bin_load_data(
+           os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
         # 加载语言配置
         self.language = language_loading()['ArnoldMagicNode']['AMNSP_WIN']
 
-        self.languages_folder_path = os.path.join(SCRIPT_PATH, 'Datas', 'languages')  # 语言文件夹路径
 
-        print(self.languages_folder_path)
+        self.languages_folder_path = os.path.join(Script_Path, 'Datas', 'languages')  # 语言文件夹路径
+
 
 
     def initialize_window_config(self):
@@ -433,7 +429,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 创建“重置数据”动作
         self.reset_data_action = QAction(self.language['create_menu']['reset_data_action'], self) # 重置设置数据
         # 连接“重置数据”动作的触发信号到对应的槽函数
-        self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, 'texture_processing_data.bin')),
+        self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, AMS_Config)),
                                                           InitialConfigFile.Main_program()))
 
         self.settings_menu.addAction(self.reset_data_action)
@@ -500,20 +496,20 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     def initial_widgets_settings(self):
         # 初始化 连接时智能修改色彩空间 控件值
         self.auto_color_space_connection.setChecked(
-            self.texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace'])
+            self.config['magic_conn_config']['set_color_space'])
 
         # 初始化 连接时UDIM 控件值
         self.magic_change_udim_options.setChecked(
-            self.texture_processing_data['ProcSet_Options']['change_UDIM'])
+            self.config['magic_conn_config']['set_udim'])
 
         # 初始化 连接时修改材质名称 控件值
         self.magic_change_material_name_options.setChecked(
-            self.texture_processing_data['ProcSet_Options']['change_material_name'])
+            self.config['magic_conn_config']['set_material_name'])
 
 
         # 初始化语言
         # 语言配置路径
-        lang_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json')
+        lang_config_path = os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json')
 
         # 加载语言配置文件
         lang_config = self.dataM.ascii_load_data(lang_config_path)
@@ -525,7 +521,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
                 self.language_combo_box.setCurrentText(lang['language_type'])
 
-        self.update_similarity_max_slider_ui()
+        # self.update_similarity_max_slider_ui()
 
     # 魔法连接的标签页面
     def create_magic_connection_tab(self):
@@ -547,8 +543,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # auto_color_space_connection 连接修改配置函数
         self.auto_color_space_connection.stateChanged.connect(lambda *args: self.modify_nested_config(
-                self.auto_color_space_connection.isChecked(),
-                ['ProcSet_Options', 'MagicConnectionSetColorSpace']))
+                key_path=['magic_conn_config', 'set_color_space'],
+                cont = self.auto_color_space_connection.isChecked()))
 
         layout.addWidget(self.auto_color_space_connection)
 
@@ -557,8 +553,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # auto_color_space_connection 连接修改配置函数
         self.magic_change_udim_options.stateChanged.connect(lambda *args: self.modify_nested_config(
-                self.magic_change_udim_options.isChecked(),
-                ['ProcSet_Options', 'change_UDIM']))
+                key_path = ['magic_conn_config', 'set_udim'],
+                cont = self.magic_change_udim_options.isChecked()))
 
         layout.addWidget(self.magic_change_udim_options)
 
@@ -568,15 +564,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # auto_color_space_connection 连接修改配置函数
         self.magic_change_material_name_options.stateChanged.connect(lambda *args: self.modify_nested_config(
-                self.magic_change_material_name_options.isChecked(),
-                ['ProcSet_Options', 'change_material_name']))
+                key_path = ['magic_conn_config', 'set_material_name'],
+                cont = self.magic_change_material_name_options.isChecked()))
 
         layout.addWidget(self.magic_change_material_name_options)
-
-
-
-
-
 
 
         # [2] 自定义连接的贴图
@@ -593,7 +584,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.tex_first_filter_options_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
 
         # 循环创建每一个选项
-        for name, value in self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options'].items():
+        for name, value in self.config['magic_conn_config']['params'].items():
             item = QtWidgets.QListWidgetItem(name.capitalize()) # 让名称的第一个字大写
             item.setFont(font)
             self.tex_first_filter_options_list.addItem(item)
@@ -612,7 +603,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.texture_filter_fields = {}
 
-        for channel, filters in self.texture_processing_data['TexFirstFilter'].items():
+        for channel, filters in self.config['texture_filter_params'].items():
             # 创建标题 第一个字母大写
             channel_label = QtWidgets.QLabel(f"{channel.capitalize()} :")
             # 加粗字体
@@ -661,7 +652,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         font.setBold(True)  # 设置加粗
 
         # 初始化变量
-        color_spaces_data = self.texture_processing_data['ColorSpace']  # 示例色彩空间列表
+        color_spaces_data = self.config['color_space_params']['config']  # 示例色彩空间列表
 
 
         # 创建一个用于存放内容的 QWidget
@@ -677,7 +668,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 设置 color_space_text 的内容
         self.color_space_text.setPlainText(
-            str(color_spaces_data['ColorSpaceData'])
+            str(color_spaces_data)
             .replace('[', '')
             .replace(']', '')
             .replace("'", "")
@@ -705,7 +696,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 用来储存图标变量
         AutoSetColorSpaceMenuName = {}
 
-        channels = self.texture_processing_data['TexFirstFilter']  # 示例通道列表
+        channels = self.config['color_space_params']['params']  # 示例通道列表
 
         for channel in channels:
             h_layout = QtWidgets.QHBoxLayout()
@@ -717,17 +708,16 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
             AutoSetColorSpaceMenuName[channel] = QtWidgets.QComboBox()
 
-            AutoSetColorSpaceMenuName[channel].addItems(color_spaces_data['ColorSpaceData'])
+            AutoSetColorSpaceMenuName[channel].addItems(color_spaces_data)
 
             # 设置默认值
-            AutoSetColorSpaceMenuName[channel].setCurrentText(color_spaces_data['AutoSetColorSpaceConfig'][channel])
+            AutoSetColorSpaceMenuName[channel].setCurrentText(self.config['color_space_params']['params'][channel])
 
             # 设置激活函数
             AutoSetColorSpaceMenuName[channel].currentIndexChanged.connect(
                 lambda _, ch=channel:
-                self.modify_nested_config(AutoSetColorSpaceMenuName[ch].currentText(), ['ColorSpace',
-                                                                                        'AutoSetColorSpaceConfig',
-                                                                                        ch]))
+                self.modify_nested_config(key_path = ['color_space_params', 'params', ch],
+                                          cont = AutoSetColorSpaceMenuName[ch].currentText()))
 
 
             # self.auto_color_space_options[channel] = combo_box
@@ -754,7 +744,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # 节点连接的标签页面
     def create_node_connection_tab(self):
         # 创建配置变量
-        node_connection_config = self.texture_processing_data['ProcSet_Options']
+        config = self.config['proc_node_config']
 
         # 设置字体
         font = QtGui.QFont()
@@ -778,7 +768,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
 
-        for channel, value in node_connection_config['Auto_Node_Connection_Options'].items():
+        for channel, value in config['conn_params'].items():
             item = QtWidgets.QListWidgetItem(channel.capitalize())  # 让名称的第一个字大写
             item.setSelected(True)
             item.setFont(font)
@@ -801,7 +791,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         output_port_combo = {}
         self.node_list_edit = {}
         # 动态创建节点连接设置
-        for channel, data in node_connection_config['ProcessingNodeData'].items():
+        for channel, data in config['params'].items():
 
             # 通道的名称标题
             layout.addWidget(self.create_section_label(channel.capitalize()+':'))
@@ -811,20 +801,19 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
             # 输入端的多选
             input_port_combo[channel] = QtWidgets.QComboBox()
-            input_port_combo[channel].addItems(node_connection_config['InputPortList'])  # 示例输入端口
+            input_port_combo[channel].addItems(config['first_node_input'])  # 示例输入端口
             input_port_combo[channel].setCurrentText(
-                node_connection_config['ProcessingNodeData'][channel]['InputPort'])
+                config['params'][channel]['InputPort'])
             input_port_combo[channel].setFixedWidth(130)
             input_port_combo[channel].currentIndexChanged.connect(
                 lambda _, ch=channel:
-                self.modify_nested_config(input_port_combo[ch].currentText(), ['ProcSet_Options',
-                                                                                        'ProcessingNodeData',
-                                                                                        ch, 'InputPort']))
+                self.modify_nested_config(key_path = ['proc_node_config', 'params', ch, 'InputPort'],
+                                          cont = input_port_combo[ch].currentText()))
 
             # 创建的节点输入列表
             self.node_list_edit[channel] = QtWidgets.QLineEdit()
             self.node_list_edit[channel].setText(
-                str(node_connection_config['ProcessingNodeData'][channel]['NodeList'])
+                str(config['params'][channel]['NodeList'])
                 .replace('[', '')
                 .replace(']', '')
                 .replace("'", "")
@@ -835,15 +824,14 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
             # 输出端的多选
             output_port_combo[channel] = QtWidgets.QComboBox()
-            output_port_combo[channel].addItems(node_connection_config['OutputPortList'])  # 示例输出端口
+            output_port_combo[channel].addItems(config['last_node_output'])  # 示例输出端口
             output_port_combo[channel].setCurrentText(
-                node_connection_config['ProcessingNodeData'][channel]['OutputPort'])
+                config['params'][channel]['OutputPort'])
             output_port_combo[channel].setFixedWidth(130)
             output_port_combo[channel].currentIndexChanged.connect(
                 lambda _, ch=channel:
-                self.modify_nested_config(output_port_combo[ch].currentText(), ['ProcSet_Options',
-                                                                                        'ProcessingNodeData',
-                                                                                        ch, 'OutputPort']))
+                self.modify_nested_config(key_path = ['proc_node_config','params', ch,'OutputPort'],
+                                          cont = output_port_combo[ch].currentText()))
             # 加入到创建节点的列表中
             add_node_button = QtWidgets.QPushButton("<")
             add_node_button.setFixedWidth(30)
@@ -875,15 +863,14 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 定义一个通用的更新函数，用于更新滑杆的值和配置
         def update_slider_value(slider_name, value):
             adjusted_value = value * 0.001  # 将滑杆的整数值转换为小数
-            self.modify_config(slider_name, adjusted_value, 'path_detection_config.bin')  # 更新配置文件
+            self.modify_config(slider_name, adjusted_value)  # 更新配置文件
             # 动态获取对应的标签并更新显示
             label = getattr(self, f"{slider_name}_label")
             label.setText("{:.3f}".format(adjusted_value))
 
         # 加载路径检测配置
         path_detection_config = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'path_detection_config.bin')
-        )
+            os.path.normpath(os.path.join(settings_path, AMS_Config)))['path_detection_params']
 
         # 创建节点路径匹配选项卡，使用QScrollArea实现滚动
         scroll_area = QtWidgets.QScrollArea()
@@ -897,12 +884,11 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
          
 
         self.path_matching_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_checkbox']) # 连接时智能修改色彩空间
-        self.path_matching_checkbox.setChecked(path_detection_config['PathDetectionConnectionSetColorSpace'])
+        self.path_matching_checkbox.setChecked(path_detection_config['set_color_space'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_checkbox.stateChanged.connect(lambda *args:  self.modify_config(
-            'PathDetectionConnectionSetColorSpace',
-            self.path_matching_checkbox.isChecked(),
-            'path_detection_config.bin'))
+            key = 'set_color_space',
+            value = self.path_matching_checkbox.isChecked()))
 
         layout.addWidget(self.path_matching_checkbox)
 
@@ -910,24 +896,22 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.path_matching_change_udim_checkbox = QtWidgets.QCheckBox(
             self.language['create_path_matching_tab']['path_matching_change_udim_checkbox'])  # 连接时智能修改色彩空间
-        self.path_matching_change_udim_checkbox.setChecked(path_detection_config['change_UDIM'])
+        self.path_matching_change_udim_checkbox.setChecked(path_detection_config['set_udim'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_change_udim_checkbox.stateChanged.connect(lambda *args: self.modify_config(
-            'change_UDIM',
-            self.path_matching_change_udim_checkbox.isChecked(),
-            'path_detection_config.bin'))
+            'set_udim',
+            self.path_matching_change_udim_checkbox.isChecked()))
 
         layout.addWidget(self.path_matching_change_udim_checkbox)
 
 
         self.path_matching_change_material_name_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_change_material_name_options']) # 连接时修改材质名称
 
-        self.path_matching_change_material_name_options.setChecked(path_detection_config['change_material_name'])
+        self.path_matching_change_material_name_options.setChecked(path_detection_config['set_material_name'])
         # 连接复选框的状态变化信号到修改配置函数
         self.path_matching_change_material_name_options.stateChanged.connect(lambda *args:  self.modify_config(
-            'change_material_name',
-            self.path_matching_change_material_name_options.isChecked(),
-            'path_detection_config.bin'))
+            'set_material_name',
+            self.path_matching_change_material_name_options.isChecked()))
 
         layout.addWidget(self.path_matching_change_material_name_options)
 
@@ -948,7 +932,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         
         self.exclude_list_text = QtWidgets.QPlainTextEdit()
         # 设置默认排除列表，并格式化显示
-        self.exclude_list_text.setPlainText(str(path_detection_config['exclude_list'])
+        self.exclude_list_text.setPlainText(str(path_detection_config['exclude'])
                                             .replace('[', '')
                                             .replace(']', '')
                                             .replace("'", "")
@@ -970,7 +954,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         
         self.detection_excluded_list = QtWidgets.QPlainTextEdit()
         # 设置默认格式列表，并格式化显示
-        self.detection_excluded_list.setPlainText(str(path_detection_config['detection_excluded_list'])
+        self.detection_excluded_list.setPlainText(str(path_detection_config['detection_excluded'])
                                            .replace('[', '')
                                            .replace(']', '')
                                            .replace("'", "")
@@ -1185,9 +1169,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.day_range_slider.valueChanged.connect(lambda value: (
             self.day_range_label.setText(str(value)),
-            self.modify_config('creation_day_range_tolerance'
-                               , value,
-                               'path_detection_config.bin')))  # 更新配置文件
+            self.modify_config('creation_day_range_tolerance', value)))  # 更新配置文件
 
         # 将path_matching_widget设置为scroll_area的子组件
         scroll_area.setWidget(path_matching_widget)
@@ -1310,7 +1292,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # --------------------保存设置内容的函数 开始
 
     # -----通用
-    def modify_config(self, key, cont, file_name = 'texture_processing_data.bin'):
+    def modify_config(self, key, cont, file_name = AMS_Config):
 
         config = self.dataM.bin_load_data(
             os.path.join(settings_path, file_name))
@@ -1320,7 +1302,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.dataM.bin_save_data(
             os.path.join(settings_path, file_name), config)
 
-    def modify_nested_config(self, value, key_path):
+    def modify_nested_config(self, key_path, cont):
         """
         修改配置文件的特定键值。
 
@@ -1335,22 +1317,22 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         """
 
         # 加载二进制配置数据
-        texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin')
+        config = self.dataM.bin_load_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config))
         )
 
         # 根据给定的键路径逐层访问数据
-        current_level = texture_processing_data
+        current_level = config
         for key in key_path[:-1]:  # 遍历到倒数第二个键
             current_level = current_level[key]  # 进入下一层级
 
         # 设置最终键的值为新值
-        current_level[key_path[-1]] = value
+        current_level[key_path[-1]] = cont
 
         # 保存修改后的配置数据
         self.dataM.bin_save_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'),
-            texture_processing_data
+            os.path.normpath(os.path.join(settings_path, AMS_Config)),
+            config
         )
 
 
@@ -1373,20 +1355,19 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             selected_values_uppercase = [s.upper() for s in selected_values]
 
             # 遍历处理数据中的每个通道
-            for channel in self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options']:
+            for channel in self.config['magic_conn_config']['params']:
                 # 检查当前通道（大写）是否在选中的大写值中
                 if channel.upper() in selected_values_uppercase:
                     # 如果匹配，更新配置文件为真
-                    self.modify_nested_config(True, ['ProcSet_Options', 'Magic_Connection_Options', channel])
+                    self.modify_nested_config(key_path = ['magic_conn_config', 'params', channel],
+                                              cont = True)
                 else:
                     # 如果不匹配，更新配置文件为假
-                    self.modify_nested_config(False, ['ProcSet_Options', 'Magic_Connection_Options', channel])
+                    self.modify_nested_config(key_path = ['magic_conn_config', 'params', channel],
+                                              cont = False)
 
-            # 重新刷新设置属性
-            self.texture_processing_data = self.dataM.bin_load_data(
-                os.path.join(settings_path, 'texture_processing_data.bin'))
-            # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
 
+        # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
         QtCore.QTimer.singleShot(0, lambda *args:main())
 
     # 修改 texture_filter_fields 过滤配置文件
@@ -1396,7 +1377,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         output_list = [item.strip().upper() for item in val.split(",")]
 
         # 保存修改值
-        self.modify_nested_config(output_list, ['TexFirstFilter', channel])
+        self.modify_nested_config(key_path = ['texture_filter_params', channel],
+                                  cont = output_list)
 
         # 刷新输入框
         self.texture_filter_fields[channel].setText(
@@ -1406,9 +1388,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 .replace("'", "")
                 .replace(",", " , "))
 
-        # 重新刷新设置属性
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
 
     # 修改 color_space_text 过滤配置文件
     def modify_color_space_text_config(self):
@@ -1418,19 +1397,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         output_list = [item.strip() for item in val.split(",")]
 
         # 保存修改值
-        self.modify_nested_config(output_list, ['ColorSpace', 'ColorSpaceData'])
-
-        # 重新刷新设置属性
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
-
-        # 刷新输入框 (BUG)
-        # self.color_space_text.setPlainText(
-        #     str(output_list)
-        #     .replace('[', '')
-        #     .replace(']', '')
-        #     .replace("'", "")
-        #     .replace(",", " , "))
+        self.modify_nested_config(key_path = ['color_space_params', 'config'],
+                                  cont = output_list)
 
     def modify_auto_node_connection_config(self):
         def main():
@@ -1447,20 +1415,18 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             selected_values_uppercase = [s.upper() for s in selected_values]
 
             # 遍历处理数据中的每个通道
-            for channel in self.texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options']:
+            for channel in self.config['proc_node_config']['conn_params']:
                 # 检查当前通道（大写）是否在选中的大写值中
                 if channel.upper() in selected_values_uppercase:
                     # 如果匹配，更新配置文件为真
-                    self.modify_nested_config(True, ['ProcSet_Options', 'Auto_Node_Connection_Options', channel])
+                    self.modify_nested_config(key_path = ['proc_node_config', 'conn_params', channel],
+                                              cont = True)
                 else:
                     # 如果不匹配，更新配置文件为假
-                    self.modify_nested_config(False, ['ProcSet_Options', 'Auto_Node_Connection_Options', channel])
+                    self.modify_nested_config(key_path = ['proc_node_config', 'conn_params', channel],
+                                              cont =False)
 
-            # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
-
-            # 重新刷新设置属性
-            self.texture_processing_data = self.dataM.bin_load_data(
-                os.path.join(settings_path, 'texture_processing_data.bin'))
+        # 使用定时器确保 main 函数在事件队列的下一次迭代中执行
         QtCore.QTimer.singleShot(0, main)
 
     def modify_pro_node_list_config(self, channel, val):
@@ -1468,9 +1434,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         output_list = [item.strip() for item in val.split(",")]
 
         # 保存修改值
-        self.modify_nested_config(output_list, ['ProcSet_Options',
-                                                'ProcessingNodeData',
-                                                channel, 'NodeList'])
+        self.modify_nested_config(key_path = ['proc_node_config','params', channel, 'NodeList'],
+                                  cont = output_list)
 
         # 刷新输入框
         self.node_list_edit[channel].setText(
@@ -1480,16 +1445,12 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             .replace("'", "")
             .replace(",", " , "))
 
-        # 重新刷新设置属性
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
-
     def add_pro_node_to_list(self, channel):
 
 
         # 按住alt键可以清除全部的输入
         if keyboard.is_pressed('alt'):
-            output_list = self.texture_processing_data["ProcSet_Options"]["ProcessingNodeData"][channel]["NodeList"]
+            output_list = self.config["proc_node_config"]["params"][channel]["NodeList"]
             output_list.pop()
         else:
             # 获取选择到的节点
@@ -1498,10 +1459,11 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             except AttributeError:
                 return self.feedback.CP('添加到处理节点输入框 ->无法获取选择节点数据')
 
-            output_list = self.texture_processing_data["ProcSet_Options"]["ProcessingNodeData"][channel]["NodeList"]
+            output_list = self.config["proc_node_config"]["params"][channel]["NodeList"]
             output_list.append(select_node)
 
-            self.modify_nested_config(output_list, key_path = ['ProcSet_Options', 'ProcessingNodeData', channel, 'NodeList'])
+            self.modify_nested_config(key_path = ['proc_node_config', 'params', channel, 'NodeList'],
+                                      cont = output_list)
 
         self.node_list_edit[channel].setText(str(output_list)
         .replace('[', '')
@@ -1509,9 +1471,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         .replace("'", "")
         .replace(",", " , "))
 
-        # 重新刷新设置属性
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
 
     def replace_license(self):
         win_list = ['ArnoldMagicNodeSettingsPanel',
@@ -1558,7 +1517,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         selected_lang = self.language_combo_box.currentText()
 
         # 语言配置路径
-        lang_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json')
+        lang_config_path = os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json')
 
         # 加载语言配置文件
         lang_config = self.dataM.ascii_load_data(lang_config_path)
@@ -1591,8 +1550,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM = DataManager() # 储存模块
         self.dataP = DataProcessor() # 数据处理模块
 
-        self.TextureManager_texture_table_data_temp_path = os.path.join(SCRIPT_PATH, 'Temp', 'TM_texture_table.bin')
-        self.TextureManager_config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_config.bin')
+        self.TextureManager_texture_table_data_temp_path = os.path.join(Script_Path, 'Temp', 'TM_texture_table.bin')
+        self.TextureManager_config_path = os.path.join(Script_Path, 'Datas', 'texture_manager', 'TM_config.bin')
 
         # 加载语言配置
         self.language =  language_loading()['ArnoldMagicNode']['TM_WIN']
@@ -2740,7 +2699,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.dataP = DataProcessor()
         self.getnodedata = GetNodeData()
 
-        self.config_path = os.path.join(SCRIPT_PATH, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
+        self.config_path = os.path.join(Script_Path, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
 
         # 加载语言配置
         self.language =  language_loading()['ArnoldMagicNode']['TM_FAR_WIN']
@@ -3273,7 +3232,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.language =  language_loading()['ArnoldMagicNode']['TM_RF_WIN']
 
 
-        self.TM_repath_files_config_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager", "TM_repath_files_config.bin")
+        self.TM_repath_files_config_FilePath = os.path.join(Script_Path, "Datas", "texture_manager", "TM_repath_files_config.bin")
 
         # 如果TM_repath_files_config配置文件不存在会重新创建一次
         if not os.path.exists(self.TM_repath_files_config_FilePath):
@@ -3585,7 +3544,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
         # TM_ImageProcessing配置文件路径
-        self.TM_image_processing_config_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager",
+        self.TM_image_processing_config_FilePath = os.path.join(Script_Path, "Datas", "texture_manager",
                                                             "TM_image_processing_config.bin")
 
         # 如果TM_image_processing_config配置文件不存在会重新创建一次
@@ -3595,7 +3554,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
         # TM_ImageProcessing的缓存文件路径
-        self.TM_image_processing_cache_FilePath = os.path.join(SCRIPT_PATH, "Datas", "texture_manager",
+        self.TM_image_processing_cache_FilePath = os.path.join(Script_Path, "Datas", "texture_manager",
                                                             "TM_image_processing_cache.bin")
 
         # 如果TM_image_processing_cache缓存文件不存在会重新创建一次
@@ -4496,11 +4455,11 @@ class rendering_preset_menu(object):
 
 
         self.Render_settings_Data =  self.dataM.bin_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'render_settings' , menu_sl_val+ '.bin')
+            os.path.join(Script_Path, 'Datas', 'render_settings' , menu_sl_val+ '.bin')
         )
 
         rendering_write_option_dict = self.dataM.bin_load_data(
-            os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'render_preset_config.bin')) # 读取渲染文件
+            os.path.join(Script_Path, 'Datas', 'settings', 'render_preset_config.bin')) # 读取渲染文件
 
         if rendering_write_option_dict['default_rendering_properties_write_options'] == True:
             self.set_default_rendering_properties()
@@ -5022,7 +4981,7 @@ class rendering_preset_settings_button():
             default_rendering_properties = self.get_default_rendering_properties() # 获取默认渲染设置
             rendering_properties = self.get_rendering_properties() # 获取阿诺德渲染设置
             AOV_properties = self.get_AOV_properties() # 获取AOV设置
-            write_data_path =  SCRIPT_PATH + r"\Datas\Render_settings" # 路径
+            write_data_path =  Script_Path + r"\Datas\Render_settings" # 路径
 
             # 02 把变量写入数据结构
             Render_settings = {
@@ -5067,12 +5026,12 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
             cmds.deleteUI(new_rendering_preset_name[i], menuItem=True)
 
     # 2, 删除本地文件
-    file_path = SCRIPT_PATH + '\\Datas\\Render_settings\\'
+    file_path = Script_Path + '\\Datas\\Render_settings\\'
     os.remove(file_path + sl_name+ '.json')
 
 
     # # 3，重新添加控件的选项
-    # renderer_data_path =  SCRIPT_PATH + "\\Data\\Render_settings\\renderer"
+    # renderer_data_path =  Script_Path + "\\Data\\Render_settings\\renderer"
 
     # # 获取文件名字
     # file_names = os.listdir(renderer_data_path)
@@ -5111,6 +5070,16 @@ def ai_aov_switch_button():
         else:
             cmds.setAttr(aov + ".enabled", 1)
 
+# 场景名称优化函数
+class Scene_Name_optimization:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def node_rename(old_name, new_name):
+        renamed_node = cmds.rename(old_name, new_name)
+        return renamed_node
+
 
 
 class Path_Detection_Connection:
@@ -5132,7 +5101,7 @@ class Path_Detection_Connection:
         self.path_detection_data = self.dataM.bin_load_data(
             os.path.join(settings_path, 'path_detection_config.bin'))
 
-        self.texture_filter_dict = self.texture_processing_data["TexFirstFilter"]  # 过滤贴图的数据
+        self.texture_filter_dict = Script_Path["TexFirstFilter"]  # 过滤贴图的数据
 
         self.exclude_list = self.path_detection_data['exclude_list'] # 前期需要排除的名称列表
 
@@ -5329,7 +5298,7 @@ class Magic_Node_Connection:
             'ProcSet_Options'][
             'Auto_Node_Connection_Options']  # 相应贴图是否要连接相应的节点
 
-        self.auto_connect_cache_path = os.path.join(SCRIPT_PATH, 'Temp', 'auto_connect_cache.bin')
+        self.auto_connect_cache_path = os.path.join(Script_Path, 'Temp', 'auto_connect_cache.bin')
 
 
         # 获取选择节点
@@ -5464,7 +5433,6 @@ def blend_rgba_node():
             BlendNM.blend_aiStandardSurface_rgba()
             return
 
-
 def blend_greg_manager():
 
     BlendNM = BlendNodeManager() # 混合节点模块
@@ -5484,6 +5452,7 @@ def blend_greg_manager():
             return
 
 
+
 def Main_program(cached_device_fingerprint, public_key, public_password, validating):
     # cached_device_fingerprint, public_key, public_password, remaining_time
     global LicenseV_device_fingerprint, LicenseV_public_key, LicenseV_public_password, LicenseV_type, LicenseV_type_name,  LicenseV_remaining_time
@@ -5491,10 +5460,10 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
     dataM = DataManager()  # 数据管理
 
     language_config = dataM.ascii_load_data(
-        os.path.join(SCRIPT_PATH, 'Datas', 'settings', 'language_config.json'))['language_config']
+        os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json'))['language_config']
 
     language = dataM.ascii_load_data(
-        os.path.join(SCRIPT_PATH, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['licenses_name']
+        os.path.join(Script_Path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['licenses_name']
 
 
 
@@ -5520,7 +5489,6 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
 
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
-
 
 def test_program():
     pass

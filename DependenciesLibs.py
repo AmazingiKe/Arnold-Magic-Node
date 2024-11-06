@@ -165,7 +165,7 @@ def check_and_install_pywin32(mayapy_path):
 
     try:
         import wmi
-    except ModuleNotFoundError as e:
+    except ModuleNotFoundError:
         feedback.cp(language["check_and_install_pywin32"]["01"]) # 检测到pywin32无法找到
         feedback.cp(language["check_and_install_pywin32"]["02"])  # 正在尝试重新安装 pywin32...
 

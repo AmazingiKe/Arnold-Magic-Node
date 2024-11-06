@@ -10,6 +10,7 @@ import base64  # 提供用于Base64编码和解码的模块
 import importlib  # 提供动态加载和重新加载模块的功能
 import time  # 提供时间相关函数，如时间戳、睡眠等
 import subprocess  # 提供执行系统命令和启动新进程的功能
+import wmi
 from time import ctime  # 提供将时间戳转换为字符串格式的函数
 from datetime import datetime, timedelta  # 提供日期和时间的操作功能
 
