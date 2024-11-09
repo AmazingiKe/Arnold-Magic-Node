@@ -403,7 +403,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.languages_folder_path = os.path.join(Script_Path, 'Datas', 'languages')  # 语言文件夹路径
 
 
-
     def initialize_window_config(self):
 
         WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}  {LicenseV_type_name} : {str(LicenseV_remaining_time)} "  # Win名称
@@ -494,177 +493,162 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 初始化控件的设置，例如设置默认值，连接信号和槽等
     def initial_widgets_settings(self):
-        # 初始化 连接时智能修改色彩空间 控件值
-        self.auto_color_space_connection.setChecked(
-            self.config['magic_conn_config']['set_color_space'])
-
-        # 初始化 连接时UDIM 控件值
-        self.magic_change_udim_options.setChecked(
-            self.config['magic_conn_config']['set_udim'])
-
-        # 初始化 连接时修改材质名称 控件值
-        self.magic_change_material_name_options.setChecked(
-            self.config['magic_conn_config']['set_material_name'])
-
-
-        # 初始化语言
-        # 语言配置路径
-        lang_config_path = os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json')
-
-        # 加载语言配置文件
-        lang_config = self.dataM.ascii_load_data(lang_config_path)
-
-        # 遍历指定文件夹中的所有文件(设置默认的语言多选值)
-        for file_name in os.listdir(self.languages_folder_path):
-            # 检查文件名是否与所需的语言配置匹配
-            if lang_config['language_config'] == file_name.replace('.json', ''):
-                lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
-                self.language_combo_box.setCurrentText(lang['language_type'])
+        pass
+        # # 初始化语言
+        # # 语言配置路径
+        # lang_config_path = os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json')
+        #
+        # # 加载语言配置文件
+        # lang_config = self.dataM.ascii_load_data(lang_config_path)
+        #
+        # # 遍历指定文件夹中的所有文件(设置默认的语言多选值)
+        # for file_name in os.listdir(self.languages_folder_path):
+        #     # 检查文件名是否与所需的语言配置匹配
+        #     if lang_config['language_config'] == file_name.replace('.json', ''):
+        #         lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
+        #         self.language_combo_box.setCurrentText(lang['language_type'])
 
         # self.update_similarity_max_slider_ui()
 
     # 魔法连接的标签页面
     def create_magic_connection_tab(self):
+        # _______________________________________________________________>>> 字体设置
         # 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
         font.setBold(True)  # 设置加粗
 
+        # _______________________________________________________________>>> 创建内容区域
         # 创建一个用于存放内容的 QWidget
         content_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(content_widget)
 
-        # [1] 连接设置
-        
-        self.add_line_with_text(layout , self.language['create_magic_connection_tab']['mfljsz_label']) # "魔法连接设置"
+        # _______________________________________________________________>>> [1] 连接设置
+        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['mfljsz_label'])  # "魔法连接设置"
 
-        self.auto_color_space_connection = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
-                                                                            ['auto_color_space_connection']) # 连接时智能修改色彩空间
+        # 智能修改色彩空间选项
+        self.auto_color_space_connection = QtWidgets.QCheckBox(
+            self.language['create_magic_connection_tab']['auto_color_space_connection'])  # 连接时智能修改色彩空间
 
         # auto_color_space_connection 连接修改配置函数
         self.auto_color_space_connection.stateChanged.connect(lambda *args: self.modify_nested_config(
-                key_path=['magic_conn_config', 'set_color_space'],
-                cont = self.auto_color_space_connection.isChecked()))
+            key_path=['magic_conn_config', 'set_color_space'],
+            cont=self.auto_color_space_connection.isChecked()))
+
+        # 初始化连接时智能修改色彩空间控件值
+        self.auto_color_space_connection.setChecked(
+            self.config['magic_conn_config']['set_color_space'])
 
         layout.addWidget(self.auto_color_space_connection)
 
-        self.magic_change_udim_options = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
-                                                                                    ['magic_change_udim_options'])# '连接时智能UDIM'
+        # 智能 UDIM 选项
+        self.magic_change_udim_options = QtWidgets.QCheckBox(
+            self.language['create_magic_connection_tab']['magic_change_udim_options'])  # '连接时智能UDIM'
 
-        # auto_color_space_connection 连接修改配置函数
+        # magic_change_udim_options 连接修改配置函数
         self.magic_change_udim_options.stateChanged.connect(lambda *args: self.modify_nested_config(
-                key_path = ['magic_conn_config', 'set_udim'],
-                cont = self.magic_change_udim_options.isChecked()))
+            key_path=['magic_conn_config', 'set_udim'],
+            cont=self.magic_change_udim_options.isChecked()))
+
+        # 初始化连接时智能UDIM控件值
+        self.magic_change_udim_options.setChecked(
+            self.config['magic_conn_config']['set_udim'])
 
         layout.addWidget(self.magic_change_udim_options)
 
+        # 修改材质名称选项
+        self.magic_change_material_name_options = QtWidgets.QCheckBox(
+            self.language['create_magic_connection_tab']['magic_change_material_name_options'])  # '连接时修改材质名称'
 
-        self.magic_change_material_name_options = QtWidgets.QCheckBox(self.language['create_magic_connection_tab']
-                                                                                    ['magic_change_material_name_options'])# '连接时修改材质名称'
-
-        # auto_color_space_connection 连接修改配置函数
+        # magic_change_material_name_options 连接修改配置函数
         self.magic_change_material_name_options.stateChanged.connect(lambda *args: self.modify_nested_config(
-                key_path = ['magic_conn_config', 'set_material_name'],
-                cont = self.magic_change_material_name_options.isChecked()))
+            key_path=['magic_conn_config', 'set_material_name'],
+            cont=self.magic_change_material_name_options.isChecked()))
+
+        # 初始化连接时修改材质名称控件值
+        self.magic_change_material_name_options.setChecked(
+            self.config['magic_conn_config']['set_material_name'])
 
         layout.addWidget(self.magic_change_material_name_options)
 
+        # _______________________________________________________________>>> [2] 自定义连接的贴图
+        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['zdyljdtt_label'])  # 自定义连接的贴图
 
-        # [2] 自定义连接的贴图
-        self.add_line_with_text(layout , self.language['create_magic_connection_tab']['zdyljdtt_label']) # 自定义连接的贴图
-         
+        # 创建列表控件
         self.tex_first_filter_options_list = QtWidgets.QListWidget()
 
-        ## 设置tex_first_filter_options_list参数
-
-        # 设置大小
-        self.tex_first_filter_options_list.setFixedHeight(530)
-
-        # 设置选择模式
-        self.tex_first_filter_options_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        # 设置tex_first_filter_options_list参数
+        self.tex_first_filter_options_list.setFixedHeight(530)  # 设置大小
+        self.tex_first_filter_options_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)  # 设置选择模式
 
         # 循环创建每一个选项
         for name, value in self.config['magic_conn_config']['params'].items():
-            item = QtWidgets.QListWidgetItem(name.capitalize()) # 让名称的第一个字大写
+            item = QtWidgets.QListWidgetItem(name.capitalize())  # 让名称的第一个字母大写
             item.setFont(font)
             self.tex_first_filter_options_list.addItem(item)
+            item.setSelected(value)  # 设置默认值
 
-            item.setSelected(value)
-        # 触发绑定函数
+        # 绑定选择变更触发函数
         self.tex_first_filter_options_list.selectionModel().selectionChanged.connect(
             lambda *args: self.modify_tex_first_filter_options_list_config())
 
         layout.addWidget(self.tex_first_filter_options_list)
 
-        
-        # [3] 自定义过滤名字
-        self.add_line_with_text(layout , self.language['create_magic_connection_tab']['zdyglmz_label']) # 自定义过滤名字
-         
+        # _______________________________________________________________>>> [3] 自定义过滤名字
+        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['zdyglmz_label'])  # 自定义过滤名字
 
         self.texture_filter_fields = {}
 
+        # 循环创建每个通道的过滤输入框
         for channel, filters in self.config['texture_filter_params'].items():
-            # 创建标题 第一个字母大写
+            # 创建标题并设置样式
             channel_label = QtWidgets.QLabel(f"{channel.capitalize()} :")
-            # 加粗字体
-            channel_label.setStyleSheet("font-weight: bold;")
-            # 添加到layout
+            channel_label.setStyleSheet("font-weight: bold;")  # 加粗字体
             layout.addWidget(channel_label)
 
-            # 创建输入框，并设置初始文本为过滤器的组合
+            # 创建输入框并设置初始文本
             self.texture_filter_fields[channel] = QtWidgets.QLineEdit(", ".join(filters))
-
-            # 设置默认值
             self.texture_filter_fields[channel].setText(
-                str(filters)
-                .replace('[', '')
-                .replace(']', '')
-                .replace("'", "")
-                .replace(",", " , "))
+                str(filters).replace('[', '').replace(']', '').replace("'", "").replace(",", " , "))
 
-
-            # 编辑时触发函数，绑定到具体的 QLineEdit 对象
+            # 绑定文本修改触发函数
             self.texture_filter_fields[channel].textChanged.connect(
-                lambda text, ch=channel: self.modify_texture_filter_fields_config(ch, text)
-            )
+                lambda text, ch=channel: self.modify_texture_filter_fields_config(ch, text))
 
-            # 添加到layout
             layout.addWidget(self.texture_filter_fields[channel])
 
-        # 创建一个 QScrollArea，并将内容部件添加进去
+        # _______________________________________________________________>>> 滚动区域和选项卡
+        # 创建 QScrollArea 并设置内容
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)  # 使滚动区域自适应内容大小
         scroll_area.setWidget(content_widget)  # 将内容部件设置为滚动区域的部件
 
-        # 创建一个用于选项卡的 QWidget，并设置布局
+        # 创建用于选项卡的 QWidget 并设置布局
         magic_connection_tab = QtWidgets.QWidget()
         tab_layout = QtWidgets.QVBoxLayout(magic_connection_tab)
         tab_layout.addWidget(scroll_area)  # 将滚动区域添加到选项卡布局中
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(magic_connection_tab, self.language['create_magic_connection_tab']['mflj_tab']) # 魔法连接
+        self.tab_widget.addTab(magic_connection_tab, self.language['create_magic_connection_tab']['mflj_tab'])  # 魔法连接
 
     # 颜色空间的标签页面
     def create_color_space_tab(self):
-        # 设置字体
+        # _______________________________________________________________>>> 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
         font.setBold(True)  # 设置加粗
 
-        # 初始化变量
+        # _______________________________________________________________>>> 初始化变量
         color_spaces_data = self.config['color_space_params']['config']  # 示例色彩空间列表
 
-
-        # 创建一个用于存放内容的 QWidget
+        # _______________________________________________________________>>> 创建用于存放内容的 QWidget
         content_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(content_widget)
 
-        
         # [1] 自定义色彩空间
-        self.add_line_with_text(layout , self.language['create_color_space_tab']['zdysckj_label']) # 自定义色彩空间
-         
-        self.color_space_text = QtWidgets.QPlainTextEdit()
+        self.add_line_with_text(layout, self.language['create_color_space_tab']['zdysckj_label'])  # 自定义色彩空间标签
 
+        self.color_space_text = QtWidgets.QPlainTextEdit()
 
         # 设置 color_space_text 的内容
         self.color_space_text.setPlainText(
@@ -672,28 +656,26 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             .replace('[', '')
             .replace(']', '')
             .replace("'", "")
-            .replace(",", " , "))
+            .replace(",", " , ")
+        )
 
-        # 设置窗口高度是350
+        # 设置窗口高度为 350
         self.color_space_text.setFixedHeight(350)
 
         # 设置字体
         self.color_space_text.setFont(font)
 
-        # 修改激活函数 连接函数槽
+        # 连接函数槽，处理文本变更
         self.color_space_text.textChanged.connect(self.modify_color_space_text_config)
 
-
-
-
         layout.addWidget(self.color_space_text)
-         
+
         # [2] 自动设置色彩空间
-        self.add_line_with_text(layout , self.language['create_color_space_tab']['zdszsckj_label']) # 自动设置色彩空间
-        
+        self.add_line_with_text(layout, self.language['create_color_space_tab']['zdszsckj_label'])  # 自动设置色彩空间标签
+
         self.auto_color_space_options = {}
 
-        # 用来储存图标变量
+        # 用来存储图标变量
         AutoSetColorSpaceMenuName = {}
 
         channels = self.config['color_space_params']['params']  # 示例通道列表
@@ -702,30 +684,25 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             h_layout = QtWidgets.QHBoxLayout()
 
             label = QtWidgets.QLabel(f"{channel.capitalize()}:")
+            label.setStyleSheet("font-weight: bold;")  # 设置标签字体加粗
 
-            # 加粗字体
-            label.setStyleSheet("font-weight: bold;")
-
+            # 创建并设置下拉框
             AutoSetColorSpaceMenuName[channel] = QtWidgets.QComboBox()
-
             AutoSetColorSpaceMenuName[channel].addItems(color_spaces_data)
 
             # 设置默认值
             AutoSetColorSpaceMenuName[channel].setCurrentText(self.config['color_space_params']['params'][channel])
 
-            # 设置激活函数
+            # 设置激活函数，连接信号槽
             AutoSetColorSpaceMenuName[channel].currentIndexChanged.connect(
-                lambda _, ch=channel:
-                self.modify_nested_config(key_path = ['color_space_params', 'params', ch],
-                                          cont = AutoSetColorSpaceMenuName[ch].currentText()))
-
-
-            # self.auto_color_space_options[channel] = combo_box
+                lambda _, ch=channel: self.modify_nested_config(
+                    key_path=['color_space_params', 'params', ch],
+                    cont=AutoSetColorSpaceMenuName[ch].currentText()
+                )
+            )
 
             h_layout.addWidget(label)
-
             h_layout.addWidget(AutoSetColorSpaceMenuName[channel])
-
             layout.addLayout(h_layout)
 
         # 创建一个 QScrollArea，并将内容部件添加进去
@@ -733,112 +710,116 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(content_widget)
 
-        # 创建一个用于选项卡的 QWidget，并设置布局
+        # 创建用于选项卡的 QWidget，并设置布局
         color_space_tab = QtWidgets.QWidget()
         tab_layout = QtWidgets.QVBoxLayout(color_space_tab)
         tab_layout.addWidget(scroll_area)
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(color_space_tab, self.language['create_color_space_tab']['sckj_label']) # 颜色空间
+        self.tab_widget.addTab(color_space_tab, self.language['create_color_space_tab']['sckj_label'])  # 颜色空间选项卡
 
     # 节点连接的标签页面
     def create_node_connection_tab(self):
-        # 创建配置变量
+        #_______________________________________________________________>>> 创建配置变量
         config = self.config['proc_node_config']
 
-        # 设置字体
+        #_______________________________________________________________>>> 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
         font.setBold(True)  # 设置加粗
 
-        # 节点连接选项卡
+        #_______________________________________________________________>>> 节点连接选项卡
         node_connection_widget = QtWidgets.QWidget()
         node_connection_layout = QtWidgets.QVBoxLayout(node_connection_widget)
 
-        # 使用QScrollArea实现滚动
+        # 使用 QScrollArea 实现滚动
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_content_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(scroll_content_widget)
 
         # [1] 自定义连接的节点
-        
-        self.add_line_with_text(layout , self.language['create_node_connection_tab']['zdljcljdsz_label']) # 自动连接处理节点设置
-         
+        self.add_line_with_text(layout, self.language['create_node_connection_tab']['zdljcljdsz_label'])  # 自动连接处理节点设置标签
+
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
 
+        # 添加节点列表项
         for channel, value in config['conn_params'].items():
-            item = QtWidgets.QListWidgetItem(channel.capitalize())  # 让名称的第一个字大写
+            item = QtWidgets.QListWidgetItem(channel.capitalize())  # 名称首字母大写
             item.setSelected(True)
             item.setFont(font)
             self.auto_node_connection_list.addItem(item)
-
             item.setSelected(value)
 
-        # 设置大小
+        # 设置自动连接列表大小
         self.auto_node_connection_list.setFixedHeight(530)
 
-        # 绑定修改自动连接处理界定啊配置函数
+        # 绑定修改配置函数
         self.auto_node_connection_list.selectionModel().selectionChanged.connect(
-            lambda *args: self.modify_auto_node_connection_config())
+            lambda *args: self.modify_auto_node_connection_config()
+        )
 
         layout.addWidget(self.auto_node_connection_list)
 
-        self.add_line_with_text(layout, self.language['create_node_connection_tab']['cljdsz_list']) # 处理节点设置
+        # [2] 处理节点设置
+        self.add_line_with_text(layout, self.language['create_node_connection_tab']['cljdsz_list'])  # 处理节点设置标签
 
         input_port_combo = {}
         output_port_combo = {}
         self.node_list_edit = {}
+
         # 动态创建节点连接设置
         for channel, data in config['params'].items():
+            layout.addWidget(self.create_section_label(channel.capitalize() + ':'))  # 添加通道标题
 
-            # 通道的名称标题
-            layout.addWidget(self.create_section_label(channel.capitalize()+':'))
-
-            # 创建一个横着的layout
+            # 创建一个横向布局
             h_layout = QtWidgets.QHBoxLayout()
 
-            # 输入端的多选
+            # 创建输入端口多选框
             input_port_combo[channel] = QtWidgets.QComboBox()
-            input_port_combo[channel].addItems(config['first_node_input'])  # 示例输入端口
-            input_port_combo[channel].setCurrentText(
-                config['params'][channel]['InputPort'])
+            input_port_combo[channel].addItems(config['first_node_input'])  # 添加示例输入端口
+            input_port_combo[channel].setCurrentText(config['params'][channel]['InputPort'])
             input_port_combo[channel].setFixedWidth(130)
             input_port_combo[channel].currentIndexChanged.connect(
-                lambda _, ch=channel:
-                self.modify_nested_config(key_path = ['proc_node_config', 'params', ch, 'InputPort'],
-                                          cont = input_port_combo[ch].currentText()))
+                lambda _, ch=channel: self.modify_nested_config(
+                    key_path=['proc_node_config', 'params', ch, 'InputPort'],
+                    cont=input_port_combo[ch].currentText()
+                )
+            )
 
-            # 创建的节点输入列表
+            # 创建节点输入列表编辑框
             self.node_list_edit[channel] = QtWidgets.QLineEdit()
             self.node_list_edit[channel].setText(
                 str(config['params'][channel]['NodeList'])
                 .replace('[', '')
                 .replace(']', '')
                 .replace("'", "")
-                .replace(",", " , "))
+                .replace(",", " , ")
+            )
             self.node_list_edit[channel].textChanged.connect(
                 lambda text, ch=channel: self.modify_pro_node_list_config(ch, text)
             )
 
-            # 输出端的多选
+            # 创建输出端口多选框
             output_port_combo[channel] = QtWidgets.QComboBox()
-            output_port_combo[channel].addItems(config['last_node_output'])  # 示例输出端口
-            output_port_combo[channel].setCurrentText(
-                config['params'][channel]['OutputPort'])
+            output_port_combo[channel].addItems(config['last_node_output'])  # 添加示例输出端口
+            output_port_combo[channel].setCurrentText(config['params'][channel]['OutputPort'])
             output_port_combo[channel].setFixedWidth(130)
             output_port_combo[channel].currentIndexChanged.connect(
-                lambda _, ch=channel:
-                self.modify_nested_config(key_path = ['proc_node_config','params', ch,'OutputPort'],
-                                          cont = output_port_combo[ch].currentText()))
-            # 加入到创建节点的列表中
+                lambda _, ch=channel: self.modify_nested_config(
+                    key_path=['proc_node_config', 'params', ch, 'OutputPort'],
+                    cont=output_port_combo[ch].currentText()
+                )
+            )
+
+            # 创建添加节点按钮
             add_node_button = QtWidgets.QPushButton("<")
             add_node_button.setFixedWidth(30)
             add_node_button.setFixedHeight(28)
             add_node_button.clicked.connect(lambda *_, ch=channel: self.add_pro_node_to_list(ch))
 
-            # 全部加入到layout中
+            # 将组件添加到横向布局中
             h_layout.addWidget(input_port_combo[channel])
             h_layout.addWidget(self.node_list_edit[channel])
             h_layout.addWidget(output_port_combo[channel])
@@ -851,219 +832,153 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         node_connection_layout.addWidget(scroll_area)
 
         # 添加到选项卡
-        self.tab_widget.addTab(node_connection_widget, self.language['create_node_connection_tab']['jdlj_tab']) # 节点连接
+        self.tab_widget.addTab(node_connection_widget, self.language['create_node_connection_tab']['jdlj_tab'])  # 添加节点连接选项卡
+
 
     # 节点路径匹配页面
     def create_path_matching_tab(self):
-        # 设置字体
+        #_______________________________________________________________>>> 创建配置变量
+        config = self.config['path_detection_params']
+
+        #_______________________________________________________________>>> 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
         font.setBold(True)  # 设置加粗
 
-        # 定义一个通用的更新函数，用于更新滑杆的值和配置
+        #_______________________________________________________________>>> 定义更新滑杆值和配置的通用函数
         def update_slider_value(slider_name, value):
             adjusted_value = value * 0.001  # 将滑杆的整数值转换为小数
             self.modify_config(slider_name, adjusted_value)  # 更新配置文件
-            # 动态获取对应的标签并更新显示
+            # 更新对应的标签显示
             label = getattr(self, f"{slider_name}_label")
             label.setText("{:.3f}".format(adjusted_value))
 
-        # 加载路径检测配置
+        #_______________________________________________________________>>> 加载路径检测配置
         path_detection_config = self.dataM.bin_load_data(
             os.path.normpath(os.path.join(settings_path, AMS_Config)))['path_detection_params']
 
-        # 创建节点路径匹配选项卡，使用QScrollArea实现滚动
+        # 创建节点路径匹配选项卡
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)
         path_matching_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(path_matching_widget)
 
-        
         # [1] 连接时相关设置
-        self.add_line_with_text(layout , self.language['create_path_matching_tab']['ljsxgsz_label']) # 连接时相关设置
-         
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ljsxgsz_label'])  # 连接时相关设置标签
 
-        self.path_matching_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_checkbox']) # 连接时智能修改色彩空间
-        self.path_matching_checkbox.setChecked(path_detection_config['set_color_space'])
-        # 连接复选框的状态变化信号到修改配置函数
-        self.path_matching_checkbox.stateChanged.connect(lambda *args:  self.modify_config(
-            key = 'set_color_space',
-            value = self.path_matching_checkbox.isChecked()))
-
+        # 创建复选框并绑定配置修改函数
+        self.path_matching_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_checkbox'])
+        self.path_matching_checkbox.setChecked(config['set_color_space'])
+        self.path_matching_checkbox.stateChanged.connect(lambda *args: self.modify_nested_config(key_path =['path_detection_params', 'set_color_space'],
+                                                                                                 cont =  self.path_matching_checkbox.isChecked()))
         layout.addWidget(self.path_matching_checkbox)
 
-
-
-        self.path_matching_change_udim_checkbox = QtWidgets.QCheckBox(
-            self.language['create_path_matching_tab']['path_matching_change_udim_checkbox'])  # 连接时智能修改色彩空间
-        self.path_matching_change_udim_checkbox.setChecked(path_detection_config['set_udim'])
-        # 连接复选框的状态变化信号到修改配置函数
-        self.path_matching_change_udim_checkbox.stateChanged.connect(lambda *args: self.modify_config(
-            'set_udim',
-            self.path_matching_change_udim_checkbox.isChecked()))
-
+        self.path_matching_change_udim_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_change_udim_checkbox'])
+        self.path_matching_change_udim_checkbox.setChecked(config['set_udim'])
+        self.path_matching_change_udim_checkbox.stateChanged.connect(lambda *args: self.modify_nested_config(key_path =['path_detection_params', 'set_udim'],
+                                                                                                             cont = self.path_matching_change_udim_checkbox.isChecked()))
         layout.addWidget(self.path_matching_change_udim_checkbox)
 
-
-        self.path_matching_change_material_name_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_change_material_name_options']) # 连接时修改材质名称
-
-        self.path_matching_change_material_name_options.setChecked(path_detection_config['set_material_name'])
-        # 连接复选框的状态变化信号到修改配置函数
-        self.path_matching_change_material_name_options.stateChanged.connect(lambda *args:  self.modify_config(
-            'set_material_name',
-            self.path_matching_change_material_name_options.isChecked()))
-
+        self.path_matching_change_material_name_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_change_material_name_options'])
+        self.path_matching_change_material_name_options.setChecked(config['set_material_name'])
+        self.path_matching_change_material_name_options.stateChanged.connect(lambda *args: self.modify_nested_config(key_path=['path_detection_params', 'set_material_name'],
+                                                                                                                     cont = self.path_matching_change_material_name_options.isChecked()))
         layout.addWidget(self.path_matching_change_material_name_options)
 
-
-        self.path_disable_feedback_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_disable_feedback_options']) # 关闭反馈
-        self.path_disable_feedback_options.setChecked(path_detection_config['disable_feedback'])
-        # 连接复选框的状态变化信号到修改配置函数
-        self.path_disable_feedback_options.stateChanged.connect(lambda *args:  self.modify_config(
-            'disable_feedback',
-            self.path_disable_feedback_options.isChecked(),
-            'path_detection_config.bin'))
-
+        self.path_disable_feedback_options = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_disable_feedback_options'])
+        self.path_disable_feedback_options.setChecked(config['disable_feedback'])
+        self.path_disable_feedback_options.stateChanged.connect(lambda *args: self.modify_nested_config(key_path= ['path_detection_params', 'disable_feedback'],
+                                                                                                        cont = self.path_disable_feedback_options.isChecked()))
         layout.addWidget(self.path_disable_feedback_options)
 
-         
         # [2] 排除名称
-        self.add_line_with_text(layout , self.language['create_path_matching_tab']['sxgczpchywzdwj_label']) # 筛选过程中排除含有文字的文件
-        
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['sxgczpchywzdwj_label'])  # 排除含有文字的文件标签
+
         self.exclude_list_text = QtWidgets.QPlainTextEdit()
-        # 设置默认排除列表，并格式化显示
-        self.exclude_list_text.setPlainText(str(path_detection_config['exclude'])
-                                            .replace('[', '')
-                                            .replace(']', '')
-                                            .replace("'", "")
-                                            .replace(",", " , "))
+        self.exclude_list_text.setPlainText(str(config['exclude']).
+                                            replace('[', '').
+                                            replace(']', '').
+                                            replace("'", "").
+                                            replace(",", " , "))
         self.exclude_list_text.setFont(font)
-
-        # 当排除列表文本发生变化时，更新配置文件
-        self.exclude_list_text.textChanged.connect(
-            lambda *args:  self.modify_config(
-                'exclude_list',
-                [item.replace(' ', '') for item in self.exclude_list_text.toPlainText().split(",")]
-                , 'path_detection_config.bin'))
-
+        self.exclude_list_text.textChanged.connect(lambda *args: self.modify_nested_config(key_path= ['path_detection_params', 'exclude'],
+                                                                                           cont= [item.replace(' ', '') for item in self.exclude_list_text.toPlainText().split(",")], ))
         layout.addWidget(self.exclude_list_text)
 
-         
         # [3] 格式名称
-        self.add_line_with_text(layout , self.language['create_path_matching_tab']['zjxxsdjcsyczfczdtdnc_label']) # 在进行相似度检测时移除字符串中的特定内容
-        
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['zjxxsdjcsyczfczdtdnc_label'])  # 移除字符串中特定内容标签
+
         self.detection_excluded_list = QtWidgets.QPlainTextEdit()
-        # 设置默认格式列表，并格式化显示
-        self.detection_excluded_list.setPlainText(str(path_detection_config['detection_excluded'])
-                                           .replace('[', '')
-                                           .replace(']', '')
-                                           .replace("'", "")
-                                           .replace(",", " , "))
+        self.detection_excluded_list.setPlainText(str(config['detection_excluded']).
+                                                  replace('[', '').
+                                                  replace(']', '').
+                                                  replace("'", "").
+                                                  replace(",", " , "))
         self.detection_excluded_list.setFont(font)
-
-        # 当格式列表文本发生变化时，更新配置文件
-        self.detection_excluded_list.textChanged.connect(
-            lambda *args:  self.modify_config(
-                'detection_excluded_list',
-                [item.replace(' ', '') for item in self.detection_excluded_list.toPlainText().split(",")]
-                , 'path_detection_config.bin'))
-
+        self.detection_excluded_list.textChanged.connect(lambda *args: self.modify_nested_config(key_path= ['path_detection_params','detection_excluded'],
+                                                                                                 cont= [item.replace(' ', '') for item in self.detection_excluded_list.toPlainText().split(",")], ))
         layout.addWidget(self.detection_excluded_list)
 
-         
         # [4] 匹配时相关设置
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ppsxgsz_label'])  # 匹配时相关设置标签
 
-
-        self.add_line_with_text(layout ,  self.language['create_path_matching_tab']['ppsxgsz_label']) # 匹配时相关设置
-
-        self.auto_max_val_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['auto_max_val_checkbox']) # 自动选择最佳匹配
-        self.auto_max_val_checkbox.setChecked(path_detection_config['auto_max_val'])
-        self.auto_max_val_checkbox.stateChanged.connect(lambda *args:  (
-            self.modify_config(
-                'auto_max_val',
-                self.auto_max_val_checkbox.isChecked(),
-                'path_detection_config.bin'),self.update_similarity_max_slider_ui()))
-
-
-
+        self.auto_max_val_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['auto_max_val_checkbox'])
+        self.auto_max_val_checkbox.setChecked(config['auto_max_val'])
+        self.auto_max_val_checkbox.stateChanged.connect(lambda *args: (self.modify_config('auto_max_val', self.auto_max_val_checkbox.isChecked(), ), self.update_similarity_max_slider_ui()))
         layout.addWidget(self.auto_max_val_checkbox)
-        self.auto_max_val_checkbox.setToolTip(self.language['create_path_matching_tab']['auto_max_val_checkbox_tip']) # "如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。"
+        self.auto_max_val_checkbox.setToolTip(self.language['create_path_matching_tab']['auto_max_val_checkbox_tip'])
 
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ppysqz_label']) # 匹配元素权重
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ppysqz_label'])  # 匹配元素权重标签
 
         # 初始化滑杆的权重值
         slider_values = {
-            'name_weight': path_detection_config.get('name_weight', 0.25),  # 默认值为0.25
-            'resolution_weight': path_detection_config.get('resolution_weight', 0.25),
-            'format_weight': path_detection_config.get('format_weight', 0.25),
-            'creation_time_weight': path_detection_config.get('creation_time_weight', 0.25),
+            'name_weight': config['name_weight'],
+            'resolution_weight': config['resolution_weight'],
+            'format_weight': config['format_weight'],
+            'creation_time_weight': config['creation_time_weight'],
         }
 
         # 定义更新权重的函数
         def update_weight(slider_name, value):
-            # 更新当前滑杆的值
             current_value = value / 1000.0
             slider_values[slider_name] = current_value
-
-            # 计算剩余的值
             remaining = 1.0 - current_value
-
-            # 获取其他滑杆的名称和当前值
             other_sliders = {k: v for k, v in slider_values.items() if k != slider_name}
-
-            # 计算其他滑杆的总值
             total_other_values = sum(other_sliders.values())
-
-            # 防止除以零的情况
             if total_other_values == 0:
-                # 如果其他滑杆的总值为0，平均分配剩余的值
                 for key in other_sliders:
                     slider_values[key] = remaining / len(other_sliders)
             else:
-                # 按比例调整其他滑杆的值，保持它们之间的相对比例
                 for key in other_sliders:
                     proportion = other_sliders[key] / total_other_values
                     slider_values[key] = remaining * proportion
-
-            # 更新UI和配置
             update_ui_and_config()
 
         # 定义更新UI和配置文件的函数
         def update_ui_and_config():
-            # 阻断信号以防止递归调用
             self.name_weight_slider.blockSignals(True)
             self.resolution_weight_slider.blockSignals(True)
             self.format_weight_slider.blockSignals(True)
             self.creation_time_weight_slider.blockSignals(True)
-
-            # 更新滑杆和标签显示
             self.name_weight_slider.setValue(int(slider_values['name_weight'] * 1000))
             self.name_weight_label.setText("{:.3f}".format(slider_values['name_weight']))
-
             self.resolution_weight_slider.setValue(int(slider_values['resolution_weight'] * 1000))
             self.resolution_weight_label.setText("{:.3f}".format(slider_values['resolution_weight']))
-
             self.format_weight_slider.setValue(int(slider_values['format_weight'] * 1000))
             self.format_weight_label.setText("{:.3f}".format(slider_values['format_weight']))
-
             self.creation_time_weight_slider.setValue(int(slider_values['creation_time_weight'] * 1000))
             self.creation_time_weight_label.setText("{:.3f}".format(slider_values['creation_time_weight']))
-
-            # 解除信号阻断
             self.name_weight_slider.blockSignals(False)
             self.resolution_weight_slider.blockSignals(False)
             self.format_weight_slider.blockSignals(False)
             self.creation_time_weight_slider.blockSignals(False)
+            self.modify_config('name_weight', slider_values['name_weight'], )
+            self.modify_config('resolution_weight', slider_values['resolution_weight'], )
+            self.modify_config('format_weight', slider_values['format_weight'], )
+            self.modify_config('creation_time_weight', slider_values['creation_time_weight'], )
 
-            # 保存更新后的权重值到配置文件
-            self.modify_config('name_weight', slider_values['name_weight'], 'path_detection_config.bin')
-            self.modify_config('resolution_weight', slider_values['resolution_weight'], 'path_detection_config.bin')
-            self.modify_config('format_weight', slider_values['format_weight'], 'path_detection_config.bin')
-            self.modify_config('creation_time_weight', slider_values['creation_time_weight'],
-                               'path_detection_config.bin')
-
-        # 名字权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['mzqz_label'])) # 名字权重
+        # 创建权重滑杆和标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['mzqz_label']))  # 名字权重标签
         name_weight_layout = QtWidgets.QHBoxLayout()
         self.name_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.name_weight_slider.setMinimum(0)
@@ -1073,11 +988,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.name_weight_label = QtWidgets.QLabel("{:.3f}".format(slider_values['name_weight']))
         name_weight_layout.addWidget(self.name_weight_label)
         layout.addLayout(name_weight_layout)
-        # 连接滑杆的值变化信号到更新权重函数
         self.name_weight_slider.valueChanged.connect(lambda value: update_weight('name_weight', value))
 
-        # 分辨率权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['fblqz_label'])) # 分辨率权重
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['fblqz_label']))  # 分辨率权重标签
         resolution_weight_layout = QtWidgets.QHBoxLayout()
         self.resolution_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.resolution_weight_slider.setMinimum(0)
@@ -1089,8 +1002,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addLayout(resolution_weight_layout)
         self.resolution_weight_slider.valueChanged.connect(lambda value: update_weight('resolution_weight', value))
 
-        # 格式权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['gsqz_label'])) # 格式权重
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['gsqz_label']))  # 格式权重标签
         format_weight_layout = QtWidgets.QHBoxLayout()
         self.format_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.format_weight_slider.setMinimum(0)
@@ -1102,8 +1014,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addLayout(format_weight_layout)
         self.format_weight_slider.valueChanged.connect(lambda value: update_weight('format_weight', value))
 
-        # 创建时间权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['cjsjqz_label'])) # 创建时间权重
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['cjsjqz_label']))  # 创建时间权重标签
         creation_time_weight_layout = QtWidgets.QHBoxLayout()
         self.creation_time_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.creation_time_weight_slider.setMinimum(0)
@@ -1113,69 +1024,57 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.creation_time_weight_label = QtWidgets.QLabel("{:.3f}".format(slider_values['creation_time_weight']))
         creation_time_weight_layout.addWidget(self.creation_time_weight_label)
         layout.addLayout(creation_time_weight_layout)
-        self.creation_time_weight_slider.valueChanged.connect(
-            lambda value: update_weight('creation_time_weight', value))
+        self.creation_time_weight_slider.valueChanged.connect(lambda value: update_weight('creation_time_weight', value))
 
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['xsdjs_label']) # 相似度的计算
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['xsdjs_label'])  # 相似度的计算标签
 
-        # 相似度判断值滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_max_slider_label'])) # 自定义相似度阈值:
+        # 创建相似度最大值滑杆和标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_max_slider_label']))  # 相似度阈值标签
         similarity_max_layout = QtWidgets.QHBoxLayout()
         self.similarity_max_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_max_slider.setMinimum(0)
         self.similarity_max_slider.setMaximum(1000)
-        self.similarity_max_slider.setValue(int(path_detection_config['similarity_max'] * 1000))
+        self.similarity_max_slider.setValue(int(config['similarity_max'] * 1000))
         similarity_max_layout.addWidget(self.similarity_max_slider)
-        self.similarity_max_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_max']))
+        self.similarity_max_label = QtWidgets.QLabel("{:.3f}".format(config['similarity_max']))
         similarity_max_layout.addWidget(self.similarity_max_label)
         layout.addLayout(similarity_max_layout)
-        self.similarity_max_slider.setToolTip(self.language['create_path_matching_tab']['similarity_max_slider_tip']) # "请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。"
+        self.similarity_max_slider.setToolTip(self.language['create_path_matching_tab']['similarity_max_slider_tip'])
+        self.similarity_max_slider.valueChanged.connect(lambda value: update_slider_value('similarity_max', value))
 
-        # 连接滑杆的值变化信号到更新函数
-        self.similarity_max_slider.valueChanged.connect(
-            lambda value: update_slider_value('similarity_max', value)
-        )
-
-        # 相似度差异值滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_range_slider_label'])) # 相似度容差范围
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_range_slider_label']))  # 相似度容差范围标签
         similarity_range_layout = QtWidgets.QHBoxLayout()
         self.similarity_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.similarity_range_slider.setMinimum(0)
         self.similarity_range_slider.setMaximum(1000)
-        self.similarity_range_slider.setValue(int(path_detection_config['similarity_range'] * 1000))
+        self.similarity_range_slider.setValue(int(config['similarity_range'] * 1000))
         similarity_range_layout.addWidget(self.similarity_range_slider)
-        self.similarity_range_label = QtWidgets.QLabel("{:.3f}".format(path_detection_config['similarity_range']))
+        self.similarity_range_label = QtWidgets.QLabel("{:.3f}".format(config['similarity_range']))
         similarity_range_layout.addWidget(self.similarity_range_label)
         layout.addLayout(similarity_range_layout)
-        self.similarity_range_slider.setToolTip(
-            self.language['create_path_matching_tab']['similarity_range_slider_tip']) # "设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。"
+        self.similarity_range_slider.setToolTip(self.language['create_path_matching_tab']['similarity_range_slider_tip'])
+        self.similarity_range_slider.valueChanged.connect(lambda value: update_slider_value('similarity_range', value))
 
-        self.similarity_range_slider.valueChanged.connect(
-            lambda value: update_slider_value('similarity_range', value)
-        )
-
-        # 计算创建天数范围容差值
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['day_range_slider_label'])) # 计算创建天数范围容差值:
+        # 创建天数范围容差滑杆和标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['day_range_slider_label']))  # 天数范围容差值标签
         day_range_layout = QtWidgets.QHBoxLayout()
         self.day_range_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.day_range_slider.setMinimum(1)
         self.day_range_slider.setMaximum(1000)
-        self.day_range_slider.setValue(int(path_detection_config['creation_day_range_tolerance']))
+        self.day_range_slider.setValue(int(config['creation_day_range_tolerance']))
         day_range_layout.addWidget(self.day_range_slider)
-        self.day_range_label = QtWidgets.QLabel(str(path_detection_config['creation_day_range_tolerance']))
+        self.day_range_label = QtWidgets.QLabel(str(config['creation_day_range_tolerance']))
         day_range_layout.addWidget(self.day_range_label)
         layout.addLayout(day_range_layout)
         self.day_range_slider.setToolTip('test')
+        self.day_range_slider.valueChanged.connect(lambda value: (self.day_range_label.setText(str(value)), self.modify_config('creation_day_range_tolerance', value)))
 
-        self.day_range_slider.valueChanged.connect(lambda value: (
-            self.day_range_label.setText(str(value)),
-            self.modify_config('creation_day_range_tolerance', value)))  # 更新配置文件
-
-        # 将path_matching_widget设置为scroll_area的子组件
+        # 将 path_matching_widget 设置为 scroll_area 的子组件
         scroll_area.setWidget(path_matching_widget)
 
         # 添加到选项卡
-        self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab']) # 节点路径匹配
+        self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab'])  # 节点路径匹配选项卡
+
 
     # 创建界面与布局设置页面
     def create_configure_ui_layout_tab(self):
