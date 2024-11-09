@@ -2918,7 +2918,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
                     newContent = matName
 
                 except :
-                    self.feedback.CP("你的修改名称有非法字符:" + str(newContent) + a)
+                    self.feedback.CP("你的修改名称有非法字符:" + str(newContent))
 
                     # 如果无法更改名称将会使用原来的名称
                     newContent = matName
