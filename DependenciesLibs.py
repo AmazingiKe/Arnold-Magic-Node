@@ -161,6 +161,46 @@ def upgrade_pip(MayapyPath):
         # 提示用户升级失败及原因
         feedback.cp(f'{language["upgrade_pip"]["03"]}{e}')  # 升级 pip 失败原因:
 
+
+def show_restart_popup():
+    # 检查是否已经存在窗口 "restartPopup"，如果存在则删除它，以确保不会重复创建窗口
+    if cmds.window("restartPopup", exists=True):
+        cmds.deleteUI("restartPopup")
+
+    # 创建窗口，并设置窗口标题和大小
+    window = cmds.window("restartPopup",
+                         title=language["show_restart_popup"]["01"],  # 窗口标题，如 "Arnold_Magic_Node提醒"
+                         width=350,
+                         height=150)
+
+    # 创建主布局，使控件可以根据窗口大小自动调整
+    cmds.columnLayout(adjustableColumn=True)
+
+    # 添加顶部的空白行，增加文本上方的间隙
+    cmds.separator(height=10, style="none")
+
+    # 显示提示文本，通知用户需要重启 Maya 以应用更新
+    cmds.text(label=language["show_restart_popup"]["02"])  # 提示信息，如 "更新了您 Maya 的 pywin32 库\n现在得重启才可以使用插件"
+
+    # 添加文本和按钮之间的空白行，增加间隙，使布局更加美观
+    cmds.separator(height=10, style="none")
+
+    # 创建一个水平布局用于排列按钮，并设置左右的空隙
+    cmds.rowLayout(numberOfColumns=2, adjustableColumn=True, columnAttach=[(1, 'both', 5), (2, 'both', 5)])
+
+    # 创建第一个按钮，点击后会强制关闭 Maya
+    cmds.button(label=language["show_restart_popup"]["03"],  # 按钮标签，如 "退出 Maya"
+                command="cmds.quit(force=True)",  # 退出 Maya 的命令
+                width=140)
+
+    # 创建第二个按钮，点击后只会关闭此弹窗
+    cmds.button(label=language["show_restart_popup"]["04"],  # 按钮标签，如 "稍后再退出 Maya"
+                command=lambda *args: cmds.deleteUI("restartPopup"),  # 关闭弹窗的命令
+                width=140)
+
+    # 显示窗口，将以上设置的控件展示给用户
+    cmds.showWindow(window)
+
 def check_and_install_pywin32(mayapy_path):
 
     try:
@@ -180,6 +220,9 @@ def check_and_install_pywin32(mayapy_path):
         subprocess.run([mayapy_path, pywin32_postinstall_path, '-install'])
 
         feedback.cp(language["check_and_install_pywin32"]["03"]) # pywin32 安装完成，请重启 Maya
+
+        # Show the restart popup
+        show_restart_popup()
 
 def Main_program():
     """

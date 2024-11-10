@@ -35,7 +35,6 @@ from datetime import datetime  # 提供日期和时间的对象和操作方法�
 # 7. 网络操作
 import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
 import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
-from scipy.constants import value
 
 # 8. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
@@ -77,8 +76,12 @@ AMN_UI_WorkSpaceControl = None
 ##############################################################################################
 
 # --------------------初始变量开始
+
+# _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
-SoftwareVersion = "0.8.2"
+# _______________________________________________________________>>> 插件版本号
+SoftwareVersion = "0.9.1"
+
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
 pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69"
@@ -220,40 +223,40 @@ class Arnold_Magic_Node_UI(object):
                           cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
 
         cmds.menuItem(label= self.language['create_widgets']['dkxryswjj_menu'], # 打开渲染预设文件夹
-                      c= lambda *args: os.startfile(os.path.join(Script_Path, 'Datas', 'render_settings')))
+                      c= lambda *args: os.startfile(render_preset_path))
 
         cmds.menuItem(divider=True)
 
         default_rendering_properties_options = cmds.menuItem(label= self.language['create_widgets']['default_rendering_properties_options'], # 输出 默认参数
                                                              cb= True,
-                                                             c= lambda *args: self.modify_rendering_properties_write_options('default_rendering_properties_write_options', cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
+                                                             c= lambda *args: self.modify_nested_config(key_path=['render_preset_params', 'default_rendering_properties_write_options'],
+                                                                                                        cont = cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
 
         rendering_properties_options = cmds.menuItem(label= self.language['create_widgets']['rendering_properties_options'], # 输出 阿诺德参数
                                                      cb= True,
-                                                     c= lambda *args: self.modify_rendering_properties_write_options('rendering_properties_write_options', cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
+                                                     c= lambda *args: self.modify_nested_config(key_path=['render_preset_params',  'rendering_properties_write_options'],
+                                                                                                cont = cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
 
         aov_properties_properties_options = cmds.menuItem(label= self.language['create_widgets']['aov_properties_properties_options'], # 输出 AOV参数
                                                           cb= True,
-                                                          c= lambda *args: self.modify_rendering_properties_write_options('AOV_properties_properties_write_options', cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
+                                                          c= lambda *args: self.modify_nested_config(key_path = ['render_preset_params', 'AOV_properties_properties_write_options'],
+                                                                                                     cont = self.cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
         cmds.menuItem(divider=True)
 
         cmds.menuItem(label= self.language['create_widgets']['sz_menu'] , # 设置
                       c= lambda *args: ArnoldMagicNodeSettingsPanel())
 
-        # 读取settings_path文件夹下的render_preset_config_dict文件
-        render_preset_config_dict =  self.dataM.bin_load_data(
-            os.path.join(settings_path, 'render_preset_config.bin'))
 
         # 修改默认值
         cmds.menuItem(default_rendering_properties_options,
                       edit = True,
-                      checkBox = render_preset_config_dict['default_rendering_properties_write_options'])
+                      checkBox = self.config['render_preset_params']['default_rendering_properties_write_options'])
         cmds.menuItem(rendering_properties_options,
                       edit = True,
-                      checkBox = render_preset_config_dict['rendering_properties_write_options'])
+                      checkBox = self.config['render_preset_params']['rendering_properties_write_options'])
         cmds.menuItem(aov_properties_properties_options,
                       edit = True,
-                      checkBox = render_preset_config_dict['AOV_properties_properties_write_options'])
+                      checkBox = self.config['render_preset_params']['AOV_properties_properties_write_options'])
         # 菜单=========
 
         cmds.text(label=" "*1)
@@ -345,19 +348,45 @@ class Arnold_Magic_Node_UI(object):
         # 加载设置配置
         self.config = self.dataM.bin_load_data(os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
+    # --------------------保存设置内容的函数 开始
+    def modify_nested_config(self, key_path, cont):
+        """
+        修改配置文件的特定键值。
 
-    # 修改渲染属性写入选项
-    def modify_rendering_properties_write_options(self, write_name, val):
-        # 读取渲染文件
-        new_render_preset_config =  self.dataM.bin_load_data(
-            os.path.join(settings_path, 'render_preset_config.bin'))
+        参数:
+        value -- 要设置的新值
+        key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
 
-        # 修改数据
-        new_render_preset_config[write_name] = val
+        功能:
+        1. 加载配置数据。
+        2. 根据提供的键路径找到并修改对应的值。
+        3. 保存修改后的配置数据。
+        """
 
-        # 保存修改完的渲染预设配置
-        self.dataM.bin_save_data(os.path.join(settings_path, 'render_preset_config.bin'),
-                                 new_render_preset_config)
+        # 加载二进制配置数据
+        config = self.dataM.bin_load_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config))
+        )
+
+        # 根据给定的键路径逐层访问数据
+        current_level = config
+        for key in key_path[:-1]:  # 遍历到倒数第二个键
+            current_level = current_level[key]  # 进入下一层级
+
+        # 设置最终键的值为新值
+        current_level[key_path[-1]] = cont
+
+        # 保存修改后的配置数据
+        self.dataM.bin_save_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config)),
+            config
+        )
+
+        ### 初始化配置数据
+        self.config = self.dataM.bin_load_data(
+           os.path.normpath(os.path.join(settings_path, AMS_Config)))
+
+        # --------------------保存设置内容的函数
 
 # 插件设置按钮qt写
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
@@ -388,7 +417,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     def initial_global_config(self):
         ### 实例各种模块
+
         self.dataM = DataManager()  # 数据管理模块
+
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.pathD = PathDetection()  # 数据检测模块
 
@@ -494,21 +525,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # 初始化控件的设置，例如设置默认值，连接信号和槽等
     def initial_widgets_settings(self):
         pass
-        # # 初始化语言
-        # # 语言配置路径
-        # lang_config_path = os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json')
-        #
-        # # 加载语言配置文件
-        # lang_config = self.dataM.ascii_load_data(lang_config_path)
-        #
-        # # 遍历指定文件夹中的所有文件(设置默认的语言多选值)
-        # for file_name in os.listdir(self.languages_folder_path):
-        #     # 检查文件名是否与所需的语言配置匹配
-        #     if lang_config['language_config'] == file_name.replace('.json', ''):
-        #         lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
-        #         self.language_combo_box.setCurrentText(lang['language_type'])
 
-        # self.update_similarity_max_slider_ui()
 
     # 魔法连接的标签页面
     def create_magic_connection_tab(self):
@@ -639,7 +656,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         font.setBold(True)  # 设置加粗
 
         # _______________________________________________________________>>> 初始化变量
-        color_spaces_data = self.config['color_space_params']['config']  # 示例色彩空间列表
+        config = self.config['color_space_params'] # 初始化颜色空间的函数
 
         # _______________________________________________________________>>> 创建用于存放内容的 QWidget
         content_widget = QtWidgets.QWidget()
@@ -652,7 +669,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 设置 color_space_text 的内容
         self.color_space_text.setPlainText(
-            str(color_spaces_data)
+            str(config['config'])
             .replace('[', '')
             .replace(']', '')
             .replace("'", "")
@@ -678,7 +695,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 用来存储图标变量
         AutoSetColorSpaceMenuName = {}
 
-        channels = self.config['color_space_params']['params']  # 示例通道列表
+        channels = config['params']  # 示例通道列表
 
         for channel in channels:
             h_layout = QtWidgets.QHBoxLayout()
@@ -688,10 +705,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
             # 创建并设置下拉框
             AutoSetColorSpaceMenuName[channel] = QtWidgets.QComboBox()
-            AutoSetColorSpaceMenuName[channel].addItems(color_spaces_data)
+            AutoSetColorSpaceMenuName[channel].addItems(config['config'])
 
             # 设置默认值
-            AutoSetColorSpaceMenuName[channel].setCurrentText(self.config['color_space_params']['params'][channel])
+            AutoSetColorSpaceMenuName[channel].setCurrentText(config['params'][channel])
 
             # 设置激活函数，连接信号槽
             AutoSetColorSpaceMenuName[channel].currentIndexChanged.connect(
@@ -834,7 +851,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(node_connection_widget, self.language['create_node_connection_tab']['jdlj_tab'])  # 添加节点连接选项卡
 
-
     # 节点路径匹配页面
     def create_path_matching_tab(self):
         #_______________________________________________________________>>> 创建配置变量
@@ -844,14 +860,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
         font.setBold(True)  # 设置加粗
-
-        #_______________________________________________________________>>> 定义更新滑杆值和配置的通用函数
-        def update_slider_value(slider_name, value):
-            adjusted_value = value * 0.001  # 将滑杆的整数值转换为小数
-            self.modify_config(slider_name, adjusted_value)  # 更新配置文件
-            # 更新对应的标签显示
-            label = getattr(self, f"{slider_name}_label")
-            label.setText("{:.3f}".format(adjusted_value))
 
         #_______________________________________________________________>>> 加载路径检测配置
         path_detection_config = self.dataM.bin_load_data(
@@ -924,7 +932,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.auto_max_val_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['auto_max_val_checkbox'])
         self.auto_max_val_checkbox.setChecked(config['auto_max_val'])
-        self.auto_max_val_checkbox.stateChanged.connect(lambda *args: (self.modify_config('auto_max_val', self.auto_max_val_checkbox.isChecked(), ), self.update_similarity_max_slider_ui()))
+        self.auto_max_val_checkbox.stateChanged.connect(lambda *args: (self.modify_nested_config(key_path = ['path_detection_params','auto_max_val'],
+                                                                                                 cont = self.auto_max_val_checkbox.isChecked()),
+                                                                       self.update_similarity_max_slider_ui()))
         layout.addWidget(self.auto_max_val_checkbox)
         self.auto_max_val_checkbox.setToolTip(self.language['create_path_matching_tab']['auto_max_val_checkbox_tip'])
 
@@ -972,10 +982,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             self.resolution_weight_slider.blockSignals(False)
             self.format_weight_slider.blockSignals(False)
             self.creation_time_weight_slider.blockSignals(False)
-            self.modify_config('name_weight', slider_values['name_weight'], )
-            self.modify_config('resolution_weight', slider_values['resolution_weight'], )
-            self.modify_config('format_weight', slider_values['format_weight'], )
-            self.modify_config('creation_time_weight', slider_values['creation_time_weight'], )
+            self.modify_nested_config(key_path= ['path_detection_params','name_weight'], cont = slider_values['name_weight'], )
+            self.modify_nested_config(key_path= ['path_detection_params','resolution_weight'], cont =slider_values['resolution_weight'], )
+            self.modify_nested_config(key_path= ['path_detection_params','format_weight'], cont =slider_values['format_weight'], )
+            self.modify_nested_config(key_path= ['path_detection_params','creation_time_weight'], cont =slider_values['creation_time_weight'], )
 
         # 创建权重滑杆和标签
         layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['mzqz_label']))  # 名字权重标签
@@ -1040,7 +1050,14 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         similarity_max_layout.addWidget(self.similarity_max_label)
         layout.addLayout(similarity_max_layout)
         self.similarity_max_slider.setToolTip(self.language['create_path_matching_tab']['similarity_max_slider_tip'])
-        self.similarity_max_slider.valueChanged.connect(lambda value: update_slider_value('similarity_max', value))
+
+        # 1，更新显示文本数值
+        # 2，更新配置的里的数据
+        self.similarity_max_slider.valueChanged.connect(lambda value: (self.similarity_max_label.setText(str("{:.3f}".format(value* 0.001))),
+                                                                  self.modify_nested_config(key_path= ['path_detection_params','similarity_max'],
+                                                                                            cont = value* 0.001)))
+        # 去初始化禁用相似度阈值
+        self.update_similarity_max_slider_ui()
 
         layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_range_slider_label']))  # 相似度容差范围标签
         similarity_range_layout = QtWidgets.QHBoxLayout()
@@ -1053,8 +1070,13 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         similarity_range_layout.addWidget(self.similarity_range_label)
         layout.addLayout(similarity_range_layout)
         self.similarity_range_slider.setToolTip(self.language['create_path_matching_tab']['similarity_range_slider_tip'])
-        self.similarity_range_slider.valueChanged.connect(lambda value: update_slider_value('similarity_range', value))
 
+
+        # 1，更新显示文本数值
+        # 2，更新配置的里的数据
+        self.similarity_range_slider.valueChanged.connect(lambda value: (self.similarity_range_label.setText(str("{:.3f}".format(value* 0.001))),
+                                                                  self.modify_nested_config(key_path= ['path_detection_params','similarity_range'],
+                                                                                            cont = value* 0.001)))
         # 创建天数范围容差滑杆和标签
         layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['day_range_slider_label']))  # 天数范围容差值标签
         day_range_layout = QtWidgets.QHBoxLayout()
@@ -1067,7 +1089,12 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         day_range_layout.addWidget(self.day_range_label)
         layout.addLayout(day_range_layout)
         self.day_range_slider.setToolTip('test')
-        self.day_range_slider.valueChanged.connect(lambda value: (self.day_range_label.setText(str(value)), self.modify_config('creation_day_range_tolerance', value)))
+
+        # 1，更新显示文本数值
+        # 2，更新配置的里的数据
+        self.day_range_slider.valueChanged.connect(lambda value: (self.day_range_label.setText(str(value)),
+                                                                  self.modify_nested_config(key_path= ['path_detection_params','creation_day_range_tolerance'],
+                                                                                            cont = value)))
 
         # 将 path_matching_widget 设置为 scroll_area 的子组件
         scroll_area.setWidget(path_matching_widget)
@@ -1075,58 +1102,61 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab'])  # 节点路径匹配选项卡
 
-
-    # 创建界面与布局设置页面
+    # _______________________________>>> 创建界面与布局设置页面
     def create_configure_ui_layout_tab(self):
+        # 加载语言配置
         configure_ui_layout_lang = self.language['create_configure_ui_layout_tab']
 
-
-        # # 设置字体
-        # font = QtGui.QFont()
-        # font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
-        # font.setBold(True)  # 设置加粗
-
-        # 节点连接选项卡
+        # 创建节点连接选项卡
         configure_ui_layout_widget = QtWidgets.QWidget()
         configure_ui_layout_layout = QtWidgets.QVBoxLayout(configure_ui_layout_widget)
 
-        # 使用QScrollArea实现滚动
+        # 设置可滚动区域
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_content_widget = QtWidgets.QWidget()
 
-        # 创建一个新的QVBoxLayout，并设置居中对齐
+        # 设置滚动区域内布局并对齐
         layout = QtWidgets.QVBoxLayout(scroll_content_widget)
-        layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)  # 设置为上方和水平居中对齐
+        layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
 
-        # 添加一行文本
-        self.add_line_with_text(layout, configure_ui_layout_lang['jmybjsz_tab']) # 语言设置等
-        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['jmybjsz_tab']))  # 语言
+        # 添加标题文本
+        self.add_line_with_text(layout, configure_ui_layout_lang['jmybjsz_tab'])
+        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['jmybjsz_tab']))
+
         # 创建语言切换菜单
         self.language_combo_box = QtWidgets.QComboBox()
 
-        # 加载语言文件
+        # 加载语言文件列表
         languages_list = self.load_language_files(self.languages_folder_path)
 
-        # 添加语言子选项菜单
+        # 填充语言选择框
         for lang in languages_list:
             self.language_combo_box.addItem(lang)
 
-        # 语言切换逻辑
-        self.language_combo_box.currentIndexChanged.connect(lambda *args: self.change_language(self.languages_folder_path))
+        # 设置语言切换事件
+        self.language_combo_box.currentIndexChanged.connect(
+            lambda *args: self.change_language(self.languages_folder_path)
+        )
+
+        # 加载语言配置文件并设置默认语言
+        lang_config_path = os.path.join(settings_path, 'language_config.json')
+        lang_config = self.dataM.ascii_load_data(lang_config_path)
+
+        # 检查配置并设置语言菜单默认值
+        for file_name in os.listdir(self.languages_folder_path):
+            if lang_config['language_config'] == file_name.replace('.json', ''):
+                lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
+                self.language_combo_box.setCurrentText(lang['language_type'])
 
         layout.addWidget(self.language_combo_box)
 
-        # 将内容添加到滚动区域
+        # 将滚动内容添加到滚动区域并放入主布局
         scroll_area.setWidget(scroll_content_widget)
         configure_ui_layout_layout.addWidget(scroll_area)
 
-        # 将内容添加到滚动区域
-        scroll_area.setWidget(scroll_content_widget)
-        configure_ui_layout_layout.addWidget(scroll_area)
-
-        # 添加到选项卡
-        self.tab_widget.addTab(configure_ui_layout_widget, configure_ui_layout_lang['jmybjsz_tab'])  # 界面与布局设置
+        # 添加选项卡到界面
+        self.tab_widget.addTab(configure_ui_layout_widget, configure_ui_layout_lang['jmybjsz_tab'])
 
     # 创建标签
     def create_section_label(self, text):
@@ -1179,12 +1209,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.addLayout(h_layout)
         layout.addSpacing(8)
 
+    # 更新相似度最大值滑杆是否需要被禁用
     def update_similarity_max_slider_ui(self):
-        ### 初始化配置数据 这个是为了实时获得最新的
-        path_detection_config = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'path_detection_config.bin'))
-
-        if path_detection_config['auto_max_val']:
+        if self.config['path_detection_params']['auto_max_val']:
             self.similarity_max_slider.setEnabled(False)
         else:
             self.similarity_max_slider.setEnabled(True)
@@ -1200,6 +1227,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.dataM.bin_save_data(
             os.path.join(settings_path, file_name), config)
+
+        ### 初始化配置数据
+        self.config = self.dataM.bin_load_data(
+           os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
     def modify_nested_config(self, key_path, cont):
         """
@@ -1234,6 +1265,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             config
         )
 
+        ### 初始化配置数据
+        self.config = self.dataM.bin_load_data(
+           os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
         # --------------------保存设置内容的函数
     # -----通用
@@ -2220,7 +2254,6 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 每次刷新贴图表格就把贴图表格的数据写到临时文件里
         self.dataM.bin_save_data(self.TextureManager_texture_table_data_temp_path, _texture_data_list)
-
 
 
     # 更改贴图列表中的贴图节点名称还有路径
@@ -4198,7 +4231,7 @@ def color_space_preset_menu(color_space_preset):
         feedback.CPW(lang['01']) # '请选纹理贴图节点'
         return
 
-    for i in sl_data['file']:
+    for i in select_node['file']:
         cmds.setAttr(i + '.colorSpace', color_space_preset, type='string')
         feedback.CP(f"{lang['02']}<{i}>{lang['02']}<{color_space_preset}>") # 已经把 设置成
 
@@ -4207,14 +4240,15 @@ def AutoSet_TexColorSpace():
     ### 实例模块
     dataM = DataManager() # 数据管理模块
     NodePro = NodeProcessor()
+    feedback = FeedbackPrompt()
 
     lang = language_loading()['ArnoldMagicNode']['ASTCS']
 
     # 加载数据
     texture_processing_data = dataM.bin_load_data(
-        os.path.join(settings_path, 'texture_processing_data.bin'))
+        os.path.join(settings_path, AMS_Config))
 
-    FilterData = texture_processing_data["TexFirstFilter"] # 过滤贴图的数据
+    FilterData = texture_processing_data["texture_filter_params"] # 过滤贴图的数据
 
     select_node = process_sl_data()
 
@@ -4225,12 +4259,15 @@ def AutoSet_TexColorSpace():
         feedback.CP(lang['01']) # 请选纹理贴图节点
         return
 
-    NodePro.AutoSetTexColorSpace(texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'] , select_node['file'], FilterData)
+    NodePro.AutoSetTexColorSpace(texture_processing_data['color_space_params']['params'] , select_node['file'], FilterData)
 
+# 自动设置UDIM
 def auto_set_file_node_udim():
     NodePro = NodeProcessor()
-
+    feedback = FeedbackPrompt()
     select_node = process_sl_data()
+
+    lang = language_loading()['ArnoldMagicNode']['ASFNU']
 
     if select_node == None:
         return
@@ -4340,37 +4377,75 @@ def unify_uv_node_button():
 
         node_pro.unify_uv_node(process_sl_data()['file'], uv_list)
 
-
+# ___________________________________________________________>>>预设存储等的功能
 
 # 渲染预设菜单设置
 class rendering_preset_menu(object):
 
-    def __init__(self,menu_sl_val):
+    def __init__(self, menu_sl_val):
+        # _______________________________________________________________________>>> 初始化实例和模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.dataM = DataManager()  # 数据管理模块实例
 
-        self.feedback = FeedbackPrompt() # 错误提示模块
-        self.dataM = DataManager()
-        self.attribute_types = ["bool", "int", "float", "string"]
-        self.rederer_attribute_types = ["bool", "float", "string"]
+        # _______________________________________________________________________>>> 初始化常用变量
+        self.attribute_types = ["bool", "int", "float", "string"]  # 属性类型列表
+        self.rederer_attribute_types = ["bool", "float", "string"]  # 渲染器属性类型列表
 
-
-        self.Render_settings_Data =  self.dataM.bin_load_data(
-            os.path.join(Script_Path, 'Datas', 'render_settings' , menu_sl_val+ '.bin')
+        # _______________________________________________________________________>>> 初始化配置变量并加载数据
+        # 加载渲染设置数据
+        self.Render_settings_Data = self.dataM.bin_load_data(
+            os.path.normpath(
+                os.path.join(datas_path, 'render_presets', menu_sl_val + '.bin')
+            )
         )
+        # 读取渲染配置参数
+        config = self.dataM.bin_load_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config))
+        )['render_preset_params']
 
-        rendering_write_option_dict = self.dataM.bin_load_data(
-            os.path.join(Script_Path, 'Datas', 'settings', 'render_preset_config.bin')) # 读取渲染文件
+        # 语言变量
+        self.lang = language_loading()['ArnoldMagicNode']['RenderPM']
 
-        if rendering_write_option_dict['default_rendering_properties_write_options'] == True:
-            self.set_default_rendering_properties()
+        # _______________________________________________________________________>>> 检查并应用配置参数
 
-        if rendering_write_option_dict['rendering_properties_write_options'] == True:
-            self.set_rendering_properties()
+        # 处理默认渲染属性写入
+        if config['default_rendering_properties_write_options']:
+            try:
+                self.set_default_rendering_properties()  # 设置默认渲染属性
+                self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["01"]}') # | 默认渲染属性成功写入
+            except Exception as e:
+                self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["02"]} {e}') # | 设置默认渲染属性时出错:
 
-        if rendering_write_option_dict['AOV_properties_properties_write_options'] == True:
-            self.del_original_AOV()
+        # 检查MAYA节点是否被默认创建了，如果没有会直接退出函数
+        if not cmds.objExists('defaultArnoldRenderOptions'):
+            self.feedback.CPW({self.lang["__init__"]["03"]}) # 没检测到默认阿诺德渲染器节点，无法写入阿诺德的内容请切换渲染器先
+            return
 
-            if self.Render_settings_Data['AOV_properties'] is not None:
-                self.set_AOV(menu_sl_val)
+        # 处理渲染属性写入
+        if config.get('rendering_properties_write_options'):
+            try:
+                self.set_rendering_properties()  # 设置渲染属性
+                self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["04"]}') # | 阿诺德渲染属性成功写入
+            except Exception as e:
+                self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["05"]} {e}') # | 设置渲染属性时出错:
+
+        # 处理AOV属性写入
+        if config.get('AOV_properties_properties_write_options'):
+            try:
+                self.del_original_AOV()  # 删除原有的AOV属性
+            except Exception as e:
+                self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["06"]} {e}') # | 删除原有AOV属性时出错:
+
+            try:
+                # 检查是否有AOV属性，如果有则写入，否则提示
+                aov_properties = self.Render_settings_Data.get('AOV_properties')
+                if aov_properties:
+                    self.set_AOV()  # 写入AOV属性
+                    self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["07"]}') # | 阿诺德AOV属性成功写入
+                else:
+                    self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["08"]}') # | 配置里没有AOV，将不会写入AOV参数
+            except Exception as e:
+                self.feedback.CP(f'<{menu_sl_val}> {self.lang["__init__"]["09"]} {e}') # | 处理AOV属性时出错:
 
     # 设置阿诺德默认参数
     def set_default_rendering_properties(self):
@@ -4378,13 +4453,12 @@ class rendering_preset_menu(object):
             for key, val in self.Render_settings_Data['default_rendering_properties'][i].items():
                 try:
                     cmds.setAttr(f'{i}.{key}', val)
-                except Exception as e:
+                except:
                     for attribute_type in self.attribute_types:
                         try:
                             cmds.setAttr(f'{i}.{key}', val, type= attribute_type)
-                        except Exception as e:
+                        except:
                             pass
-
 
     # 阿诺德预设参数
     def set_rendering_properties(self):
@@ -4392,15 +4466,15 @@ class rendering_preset_menu(object):
             for key, val in self.Render_settings_Data['rendering_properties'][i].items():
                 try:
                     cmds.setAttr(f'{i}.{key}', val)
-                except Exception as e:
+                except:
                     for attribute_type in self.attribute_types:
                         try:
                             cmds.setAttr(f'{i}.{key}', val, type= attribute_type)
-                        except Exception as e:
+                        except:
                             pass
 
     # 设置AOV
-    def set_AOV(self,menu_sl_val):
+    def set_AOV(self):
         Aov_data_file = self.Render_settings_Data['AOV_properties']
 
         # 如果有cryptomatteAOV就创建cryptomatte节点
@@ -4545,11 +4619,17 @@ new_rendering_preset_name = {}
 class rendering_preset_settings_button():
 
     def __init__(self,menu_name):
+
         self.import_val = None
+
+        self.lang = language_loading()['ArnoldMagicNode']['RenderPSB']
+
         self.import_name_win(menu_name)
 
         self.feedback = FeedbackPrompt() # 错误提示模块
         self.dataM = DataManager() # 数据管理模块
+
+
 
     # 获取默认渲染节点设置
     def get_default_rendering_properties(self):
@@ -4842,79 +4922,114 @@ class rendering_preset_settings_button():
 
         return driver_node_name, filter_node_name
 
-    # 输入窗口
-    def import_name_win(self,menu_name):
-
+    # _______________________________________________________________________>>> 导入名称窗口函数
+    def import_name_win(self, menu_name):
+        """
+        创建一个窗口用于输入预设名称，并将其添加到指定的菜单中。
+        """
         WIN_NAME = "import_name_win"
+        # 检查窗口是否存在，如果存在则删除
         if cmds.window(WIN_NAME, exists=True):
             cmds.deleteUI(WIN_NAME)
 
-        # 创建一个窗口 
-        cmds.window(WIN_NAME,title="输入你的预设名字", sizeable=False, mbr= True, tlb=False,w=300,h=40)
+        # 创建窗口
+        cmds.window(WIN_NAME, title =self.lang['import_name_win']['01'], sizeable=False, mbr=True, tlb=False, w=300, h=40) # 输入你的预设名字
 
         # 创建布局
         layout = cmds.rowLayout(numberOfColumns=50)
 
-        # 创建字符串输入控件
-        cmds.text(label=" "*2)
+        # 创建输入控件
+        cmds.text(label=" " * 2)
         text_field = cmds.textField(w=300)
 
         # 创建按钮布局
-        cmds.text(label=" "*3)
-        cmds.button(label="确定",c=lambda *args: determine())
+        cmds.text(label=" " * 3)
+        cmds.button(label=self.lang['import_name_win']['02'], c=lambda *args: determine()) # 确定
         cmds.text(label=" | ")
-        cmds.button(label="取消",c=lambda *args: cancellation())
-        cmds.text(label=" "*3)
-        # 设置按钮布局的父级为窗口的布局
+        cmds.button(label=self.lang['import_name_win']['03'], c=lambda *args: cancellation()) # 取消
+        cmds.text(label=" " * 3)
+
+        # 设置父级布局
         cmds.setParent(layout)
 
         # 显示窗口
         cmds.showWindow(WIN_NAME)
 
-
+        # _______________________________________________________________________>>> 确认输入的操作函数
         def determine():
+            """
+            确定按钮的回调函数，保存输入的预设名称和渲染设置。
+            """
             global new_rendering_preset_name
 
-            # 01, 获取需要的变量
-            self.import_val = cmds.textField(text_field, query=True, text=True) # 获取输入值
-            default_rendering_properties = self.get_default_rendering_properties() # 获取默认渲染设置
-            rendering_properties = self.get_rendering_properties() # 获取阿诺德渲染设置
-            AOV_properties = self.get_AOV_properties() # 获取AOV设置
-            write_data_path =  Script_Path + r"\Datas\Render_settings" # 路径
+            # 01, 获取用户输入的预设名称
+            self.import_val = cmds.textField(text_field, query=True, text=True)
+            # 获取渲染设置数据
+            default_rendering_properties = self.get_default_rendering_properties()
+            rendering_properties = self.get_rendering_properties()
+            AOV_properties = self.get_AOV_properties()
 
-            # 02 把变量写入数据结构
+            # 定义写入数据的路径
+            write_data_path = os.path.normpath(os.path.join(datas_path, 'render_presets'))
+
+            # 02, 组织渲染器属性数据
             Render_settings = {
-                'default_rendering_properties' : default_rendering_properties,
-                'rendering_properties' : rendering_properties,
-                'AOV_properties' : AOV_properties
+                'default_rendering_properties': default_rendering_properties,
+                'rendering_properties': rendering_properties,
+                'AOV_properties': AOV_properties
             }
 
-            # 03, 创建并写出渲染器属性
-            if not os.path.exists(os.path.join(write_data_path, self.import_val+".bin")):
-                self.dataM.bin_save_data(os.path.join(write_data_path, self.import_val+".bin"), Render_settings)
+            # 03, 将渲染器属性保存到二进制文件中
+            if not os.path.exists(os.path.join(write_data_path, self.import_val + ".bin")):
+                self.dataM.bin_save_data(os.path.join(write_data_path, self.import_val + ".bin"), Render_settings)
 
-            # 04, 给菜单增加新的元素
-            edit_menu = menu_name  # 获取菜单的名字或者 ID
-            existing_items = cmds.menu(edit_menu, query=True, itemArray=True)  # 获取菜单中所有项目的列表
 
-            # 确定新项目应该插入的位置，例如在第一个项目之后
+
+            # 04, 将新项目添加到菜单中
+            edit_menu = menu_name  # 获取菜单的名字或 ID
+            existing_items = cmds.menu(edit_menu, query=True, itemArray=True)  # 获取菜单中已有项目
+
+            # 确定新项目插入的位置
             insert_after_item = existing_items[0] if existing_items else None
 
-            # 添加新的菜单项
-            new_rendering_preset_name[self.import_val] = cmds.menuItem('new_item', parent=edit_menu, insertAfter=insert_after_item, label=self.import_val)
+            # 添加新的菜单项，有效性检查
+            if insert_after_item and cmds.menuItem(insert_after_item, exists=True):
+                # 插入到指定位置
+                new_rendering_preset_name[self.import_val] = cmds.menuItem(
+                    self.import_val,
+                    parent=edit_menu,
+                    insertAfter=insert_after_item,
+                    label=self.import_val,
+                )
+            else:
+                # 直接添加到菜单末尾
+                new_rendering_preset_name[self.import_val] = cmds.menuItem(
+                    self.import_val,
+                    parent=edit_menu,
+                    label=self.import_val,
+                )
 
+            # 如果无法选择就算了，可以选择就选择第二项
+            try:
+                cmds.optionMenu(edit_menu, edit=True, select=2)
+            except:
+                pass
+            # 关闭窗口
             cmds.deleteUI(WIN_NAME)
             return
 
+        # _______________________________________________________________________>>> 取消操作函数
         def cancellation():
+            """
+            取消按钮的回调函数，关闭窗口。
+            """
             cmds.deleteUI(WIN_NAME)
             return
+
 
 # 删除渲染预设设置
 def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name):
     global new_rendering_preset_name
-    # # 1,删除选项
-    # cmds.menuItem(rendering_preset_path, edit=True, deleteAllItems=True)
 
     for i in rendering_preset_name:
         if sl_name == i:
@@ -4925,26 +5040,16 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
             cmds.deleteUI(new_rendering_preset_name[i], menuItem=True)
 
     # 2, 删除本地文件
-    file_path = Script_Path + '\\Datas\\Render_settings\\'
-    os.remove(file_path + sl_name+ '.json')
+    os.remove(os.path.normpath(os.path.join(
+                render_preset_path,  sl_name+ '.bin'
+            )))
 
-
-    # # 3，重新添加控件的选项
-    # renderer_data_path =  Script_Path + "\\Data\\Render_settings\\renderer"
-
-    # # 获取文件名字
-    # file_names = os.listdir(renderer_data_path)
-
-    # # 删除文件名中的 ".json" 部分并存储在列表中
-    # file_names_without_json_list = [file_name.replace(".json", "") for file_name in file_names]
-
-    # for renderer_data_mode_name in file_names_without_json_list:
-    #   cmds.menuItem(rendering_preset_path, label=renderer_data_mode_name)
 
 # 修改渲染预设设置
 def modify_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name, menu_name):
     rendering_preset_settings_button(menu_name)
     delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name)
+
 
 # 开关AOV函数
 def ai_aov_switch_button():
@@ -4955,7 +5060,10 @@ def ai_aov_switch_button():
     if cmds.objExists("defaultArnoldRenderOptions.aovList"):
         connections = cmds.listConnections("defaultArnoldRenderOptions.aovList", source=True)
     else:
-        return feedback.CP("未创建AOV")
+        return feedback.CPW("未创建AOV")
+
+    if connections is None:
+        return feedback.CPW("未创建AOV")
 
     for aov in connections:
         # 获取当前属性状态
@@ -4980,7 +5088,7 @@ class Scene_Name_optimization:
         return renamed_node
 
 
-
+# 路径连接
 class Path_Detection_Connection:
     def __init__(self):
         ### 实例各种模块
@@ -4989,20 +5097,17 @@ class Path_Detection_Connection:
         self.pathD = PathDetection()  # 数据检测模块
         self.nodeP = NodeProcessor()
         ### 初始化配置数据
+        # 加载数据
+        self.config = self.dataM.bin_load_data(
+            os.path.join(settings_path, AMS_Config))
 
-        # 如果路径检测配置文件不存在会再创建一次配置文件 （很保险的方法，保证不会用不了）
-        if os.path.exists(os.path.join(settings_path, 'texture_processing_data.bin')):
-            InitialConfigFile.Main_program()
 
         self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
+            os.path.join(settings_path, AMS_Config))
 
-        self.path_detection_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'path_detection_config.bin'))
+        self.path_detection_data = self.config['path_detection_params']
 
-        self.texture_filter_dict = Script_Path["TexFirstFilter"]  # 过滤贴图的数据
-
-        self.exclude_list = self.path_detection_data['exclude_list'] # 前期需要排除的名称列表
+        self.texture_filter_dict = self.config["texture_filter_params"]  # 过滤贴图的数据
 
         self.select_node_data = process_sl_data()  # 调用函数获取处理后的节点数据
 
@@ -5026,10 +5131,10 @@ class Path_Detection_Connection:
             need_connect_node_lists = self.create_nodes_from_list(matching_completed_dict)
 
             # 判断是否要修改颜色空间
-            if self.path_detection_data['PathDetectionConnectionSetColorSpace']:
+            if self.config['path_detection_params']['set_color_space']:
                 for need_connect_node_list in need_connect_node_lists:
                     self.nodeP.AutoSetTexColorSpace(
-                        auto_set_color_space_config=self.texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                        auto_set_color_space_config=self.config['color_space_params']['params'],
                         node_list=need_connect_node_list,
                         filter_data=self.texture_filter_dict)
 
@@ -5041,12 +5146,12 @@ class Path_Detection_Connection:
                 for need_connect_node_list in need_connect_node_lists:
 
                     # 判断是否要修改材质的名称
-                    if self.path_detection_data['change_material_name']:
+                    if self.config['path_detection_params']['set_material_name']:
 
                         # 材质球名称会用列表的第一个索引的名称
                         file_name = need_connect_node_list[0]
 
-                        processing_mat_name = self.nodeP.clean_material_name(file_name, self.texture_processing_data["TexFirstFilter"])
+                        processing_mat_name = self.nodeP.clean_material_name(file_name, self.texture_filter_dict)
 
                         new_mat_name = cmds.shadingNode('aiStandardSurface', asShader=True, name=processing_mat_name)
                     else:
@@ -5057,15 +5162,15 @@ class Path_Detection_Connection:
 
                     matching_dict = self.nodeP.AutoNodeConnect(need_connect_node_list,
                                                new_mat_name,
-                                               self.texture_processing_data["TexFirstFilter"], # 过滤贴图的数据
-                                               self.texture_processing_data['ProcSet_Options']['ProcessingNodeData'], # 相应贴图节点的参数
-                                               self.texture_processing_data['ProcSet_Options']['Magic_Connection_Options'], # 相应贴图是否要连接的参数
-                                               self.texture_processing_data['ProcSet_Options']['Auto_Node_Connection_Options']) # 相应贴图是否要连接相应的节点
+                                               self.texture_filter_dict, # 过滤贴图的数据
+                                               self.config['proc_node_config']['params'], # 相应贴图节点的参数
+                                               self.config['magic_conn_config']['params'], # 相应贴图是否要连接的参数
+                                               self.config['proc_node_config']['conn_params']) # 相应贴图是否要连接相应的节点
 
                     # 判断是否要修改颜色空间
-                    if self.path_detection_data['PathDetectionConnectionSetColorSpace']:
+                    if self.config['path_detection_params']['set_color_space']:
                         self.nodeP.AutoSetTexColorSpace(
-                            auto_set_color_space_config= self.texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                            auto_set_color_space_config= self.config['color_space_params']['params'],
                             matching_channel= matching_dict)
 
                     # ——————————————————————————————————————————————————————————————————————————> 自动udim 以为这里是创建材质球的，只需有一层列表
@@ -5080,7 +5185,7 @@ class Path_Detection_Connection:
             target_object, target_dirname = self.pathD.get_node_path(node_name)
 
             # 2.寻找子路径下的文件并排除不需要参加匹配的格式
-            dir_name_path = self.pathD.detection_path_content(target_dirname, self.exclude_list)
+            dir_name_path = self.pathD.detection_path_content(target_dirname, self.config['path_detection_params']['exclude'])
 
             # 3.获取文件的元属性
             dir_tex_info = self.pathD.get_file_info(dir_name_path)
@@ -5088,11 +5193,11 @@ class Path_Detection_Connection:
 
             # 4.处理匹配名称
             processed_dir_tex_info = self.pathD.process_dict_key_name(dir_tex_info,
-                                                                 self.path_detection_data['detection_excluded_list'],
+                                                                 self.config['path_detection_params']['detection_excluded'],
                                                                  self.texture_filter_dict)
 
             processed_target_object_info = self.pathD.process_dict_key_name(target_object_info,
-                                                                       self.path_detection_data['detection_excluded_list'],
+                                                                       self.config['path_detection_params']['detection_excluded'],
                                                                        self.texture_filter_dict)
 
             # 删除原本选择的
@@ -5102,16 +5207,16 @@ class Path_Detection_Connection:
             similarity_dict = self.pathD.calculate_similarity(processed_target_object_info,
                                                          processed_dir_tex_info,
                                                          self.path_detection_data,
-                                                         self.path_detection_data['creation_day_range_tolerance'])
+                                                         self.config['path_detection_params']['creation_day_range_tolerance'])
 
 
             # 判断数据匹配数据
-            auto_max_val = self.path_detection_data['auto_max_val']
-            similarity_max = self.path_detection_data['similarity_max']
-            similarity_range = self.path_detection_data['similarity_range']
+            auto_max_val = self.config['path_detection_params']['auto_max_val']
+            similarity_max = self.config['path_detection_params']['similarity_max']
+            similarity_range = self.config['path_detection_params']['similarity_range']
             matching_list = self.pathD.determine_connection(similarity_dict, auto_max_val, similarity_max, similarity_range)
 
-            if not self.path_detection_data['disable_feedback']:
+            if not self.config['path_detection_params']['disable_feedback']:
                 # 发出反馈提醒
                 self.feedback_prompt(similarity_dict, matching_list, original_name)
 
@@ -5166,12 +5271,13 @@ class Path_Detection_Connection:
         return need_connect_node_lists
 
     def auto_set_file_udim(self, node_lists):
-        if self.path_detection_data['change_UDIM']:
+        if self.config['path_detection_params']['set_udim']:
             for node_list in node_lists:
                 self.nodeP.auto_set_udim(node_list)
         else:
             return
 
+# 魔法连接
 class Magic_Node_Connection:
     def __init__(self):
         ### 实例各种模块
@@ -5182,23 +5288,20 @@ class Magic_Node_Connection:
 
         ### 初始化配置数据
         # 加载数据
-        self.texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
+        self.config = self.dataM.bin_load_data(
+            os.path.join(settings_path, AMS_Config))
 
-        self.texture_filter_dict = self.texture_processing_data[
-            "TexFirstFilter"]  # 过滤贴图的数据
-        self.processing_node_data = self.texture_processing_data[
-            'ProcSet_Options'][
-            'ProcessingNodeData']  # 相应贴图节点的参数
-        self.magic_connection_options = self.texture_processing_data[
-            'ProcSet_Options'][
-            'Magic_Connection_Options']  # 相应贴图是否要连接的参数
-        self.auto_node_connection_options = self.texture_processing_data[
-            'ProcSet_Options'][
-            'Auto_Node_Connection_Options']  # 相应贴图是否要连接相应的节点
-
-        self.auto_connect_cache_path = os.path.join(Script_Path, 'Temp', 'auto_connect_cache.bin')
-
+        self.texture_filter_dict = self.config[
+            "texture_filter_params"]  # 过滤贴图的数据
+        self.processing_node_data = self.config[
+            'proc_node_config'][
+            'params']  # 相应贴图节点的参数
+        self.magic_connection_options = self.config[
+            'magic_conn_config'][
+            'params']  # 相应贴图是否要连接的参数
+        self.auto_node_connection_options = self.config[
+            'proc_node_config'][
+            'conn_params']  # 相应贴图是否要连接相应的节点
 
         # 获取选择节点
         self.select_node = process_sl_data()
@@ -5267,10 +5370,10 @@ class Magic_Node_Connection:
     def modify_mat_name(self,original_mat_name,  file_name):
 
         texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
+            os.path.join(settings_path, AMS_Config))
 
         # 修改材质名称
-        if texture_processing_data['ProcSet_Options']['change_material_name']:
+        if self.config['magic_conn_config']['set_material_name']:
             new_mat_name = self.nodeP.clean_material_name(file_name, self.texture_filter_dict)
         else:
             return original_mat_name
@@ -5284,31 +5387,28 @@ class Magic_Node_Connection:
 
     # 修改颜色空间
     def modify_color_space(self):
-        texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
-
-        if texture_processing_data['ProcSet_Options']['MagicConnectionSetColorSpace']:
+        if self.config['magic_conn_config']['set_color_space']:
             self.nodeP.AutoSetTexColorSpace(
-                auto_set_color_space_config = texture_processing_data['ColorSpace']['AutoSetColorSpaceConfig'],
+                auto_set_color_space_config = self.config['color_space_params']['params'],
                 matching_channel = self.matching_dict)
         else:
             return
 
     # 自动udim
     def auto_set_file_udim(self):
-        texture_processing_data = self.dataM.bin_load_data(
-            os.path.join(settings_path, 'texture_processing_data.bin'))
 
-        if texture_processing_data['ProcSet_Options']['change_UDIM']:
+        if self.config['magic_conn_config']['set_udim']:
             node_list = [key for key in self.matching_dict.keys()]
             self.nodeP.auto_set_udim(node_list)
         else:
             return
 
+# 实例使用路径连接
 def path_detection_connection_button():
     PDC = Path_Detection_Connection()
     PDC.main()
 
+# 实例使用魔法连接
 def magic_connection_button():
     MC = Magic_Node_Connection()
     MC.main()
@@ -5321,7 +5421,12 @@ def blend_rgba_node():
     BlendNM = BlendNodeManager() # 混合节点模块
     feedback = FeedbackPrompt()  # 错误提示模块
 
-    for key in process_sl_data():
+    select_node = process_sl_data()
+
+    if select_node is None:
+        return
+
+    for key in select_node:
         if key == 'file':
             BlendNM.blend_file_rgba_node()
             return
@@ -5331,27 +5436,36 @@ def blend_rgba_node():
         elif key == 'aiStandardSurface':
             BlendNM.blend_aiStandardSurface_rgba()
             return
+        else:
+            pass
 
+# 混合灰度通道
 def blend_greg_manager():
 
     BlendNM = BlendNodeManager() # 混合节点模块
     feedback = FeedbackPrompt()  # 错误提示模块
 
-    # 根据选择的节点类型调用对应的处理函数
-    for key in process_sl_data():
-        if  'aiLayerRgba' in process_sl_data() and 'file' in  process_sl_data():
+    select_node = process_sl_data()
+
+    if select_node is None:
+        return
+
+        # 根据选择的节点类型调用对应的处理函数
+    for key in select_node():
+        if  'aiLayerRgba' in select_node and 'file' in  select_node:
             BlendNM.blend_aiLayerRgba_mask()
             return
-        elif 'aiLayerShader' in process_sl_data() and 'file' in  process_sl_data():
+        elif 'aiLayerShader' in select_node and 'file' in  select_node:
             BlendNM.blend_aiStandardSurface_mask()
             return
-
         elif key == 'file':
             BlendNM.blend_aiLayerFloat_mask()
             return
+        else:
+            pass
 
 
-
+# 主要运行程序
 def Main_program(cached_device_fingerprint, public_key, public_password, validating):
     # cached_device_fingerprint, public_key, public_password, remaining_time
     global LicenseV_device_fingerprint, LicenseV_public_key, LicenseV_public_password, LicenseV_type, LicenseV_type_name,  LicenseV_remaining_time
