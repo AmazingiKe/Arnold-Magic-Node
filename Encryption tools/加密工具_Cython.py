@@ -17,7 +17,7 @@ corresponding_version = {
 
 # 自定义 Python 版本的路径字典
 python_paths = {
-    '3.7.7': r'C:\Users\19252\AppData\Local\Programs\Python\Python37\python.exe',
+    '3.7.7': r'C:\Users\19252\AppData\Local\Programs\Python\Python37-32\python.exe',
     '3.9.7': r'C:\Users\19252\AppData\Local\Programs\Python\Python39\python.exe',
     '3.10.8': r'C:\Users\19252\AppData\Local\Programs\Python\Python310\python.exe',
     '3.11.4': r'C:\Users\19252\AppData\Local\Programs\Python\Python311\python.exe'

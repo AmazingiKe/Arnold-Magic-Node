@@ -78,9 +78,9 @@ AMN_UI_WorkSpaceControl = None
 # --------------------初始变量开始
 
 # _______________________________________________________________>>> 插件状态
-SoftwareState = "Beta"
+SoftwareState = "Alpha"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.1"
+SoftwareVersion = "0.9.1.01"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -5111,7 +5111,7 @@ class Path_Detection_Connection:
 
         self.select_node_data = process_sl_data()  # 调用函数获取处理后的节点数据
 
-
+        self.lang = language_loading()[]
 
     def main(self):
 
