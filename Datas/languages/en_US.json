@@ -18,12 +18,12 @@
         "aov_properties_properties_options": "Output AOV Parameters",
         "sz_menu": "Settings",
         "magic_connection": "Magic Connection",
-        "color_mix": "Color Mix",
-        "gray_mix": "Gray Mix",
-        "path_detection_connection": "Path Detection Connection",
+        "color_mix": "Color Mixing",
+        "gray_mix": "Grayscale Mixing",
+        "path_detection_connection": "Path Picking Connection",
         "direct_connection": "Direct Connection",
         "unify_uv_node": "Unify UV",
-        "uv_preset": ["Disable", "Type 0 (ZBrush)", "Type 1 (Mudbox)", "UDIM (Mari)", "Show Tiling"],
+        "uv_preset": ["Disabled", "Type 0 (ZBrush)", "Type 1 (Mudbox)", "UDIM (Mari)", "Show Tiling"],
         "zdsckj_button": "Auto Color Space",
         "zdudim_button": "Auto UDIM",
         "ai_aov_switch": "AOV Switch"
@@ -47,12 +47,12 @@
       },
       "create_magic_connection_tab": {
         "mfljsz_label": "Magic Connection Settings",
-        "auto_color_space_connection": "Automatically Modify Color Space on Connection",
+        "auto_color_space_connection": "Intelligently Modify Color Space on Connection",
         "magic_change_material_name_options": "Modify Material Name on Connection",
         "zdyljdtt_label": "Custom Connected Textures",
         "zdyglmz_label": "Custom Matching Weight Names",
         "mflj_tab": "Magic Connection",
-        "magic_change_udim_options": "Automatically Enable UDIM on Connection"
+        "magic_change_udim_options": "Intelligently Enable UDIM on Connection"
       },
       "create_color_space_tab": {
         "zdysckj_label": "Custom Color Space",
@@ -66,15 +66,15 @@
       },
       "create_path_matching_tab": {
         "ljsxgsz_label": "Related Settings on Connection",
-        "path_matching_checkbox": "Automatically Modify Color Space on Connection",
-        "path_matching_change_udim_checkbox": "Automatically Enable UDIM on Connection",
+        "path_matching_checkbox": "Intelligently Modify Color Space on Connection",
+        "path_matching_change_udim_checkbox": "Intelligently Enable UDIM on Connection",
         "path_matching_change_material_name_options": "Modify Material Name on Connection",
         "path_disable_feedback_options": "Disable Feedback",
         "sxgczpchywzdwj_label": "Exclude Files Containing Text During Filtering",
         "zjxxsdjcsyczfczdtdnc_label": "Remove Specific Content from Strings During Similarity Detection",
         "ppsxgsz_label": "Related Settings on Matching",
         "auto_max_val_checkbox": "Automatically Select Best Match",
-        "auto_max_val_checkbox_tip": "If checked, the program will automatically use the highest similarity value as the matching threshold, no need to set manually.",
+        "auto_max_val_checkbox_tip": "If selected, the program will automatically use the highest similarity value as the matching threshold without manual setting.",
         "ppysqz_label": "Matching Element Weights",
         "mzqz_label": "Name Weight",
         "fblqz_label": "Resolution Weight",
@@ -84,12 +84,12 @@
         "similarity_max_slider_label": "Custom Similarity Threshold:",
         "similarity_max_slider_tip": "Please enter a similarity threshold (0.0 - 1.0). The program will match results with similarity above this threshold.",
         "similarity_range_slider_label": "Similarity Tolerance Range",
-        "similarity_range_slider_tip": "Set the tolerance range for the matching threshold (0.0 - 1.0). The program will match results with similarity within this range above and below the threshold.",
-        "day_range_slider_label": "Tolerance Value for Calculation Creation Days Range:",
+        "similarity_range_slider_tip": "Set the tolerance range for the matching threshold (0.0 - 1.0). The program will match results with similarity within this range around the threshold.",
+        "day_range_slider_label": "Creation Date Range Tolerance Value:",
         "jdljpp_tab": "Node Path Matching"
       },
       "create_configure_ui_layout_tab": {
-        "yyszd_label": "Language Settings etc.",
+        "yyszd_label": "Language Settings, etc.",
         "yy_label": "Language:",
         "jmybjsz_tab": "Interface and Layout Settings"
       }
@@ -99,18 +99,18 @@
       "__init__": {
         "WINDOWS_NAME": "Texture Manager",
         "remaining_time": "License Remaining Time",
-        "day": "days"
+        "day": "Days"
       },
       "create_widgets": {
-        "MaterialListSearch_placeholder": "Enter the name of the material to search...",
-        "TexturelListSearch_placeholder": "Enter the name of the texture to search...",
+        "MaterialListSearch_placeholder": "Enter the name of the material ball to search...",
+        "TexturelListSearch_placeholder": "Enter the name of the texture ball to search...",
         "TexturelList_Unselect_All_Button": "Unselect All",
-        "TexturelList_reverse_selection": "Reverse Selection",
+        "TexturelList_reverse_selection": "Invert Selection",
         "TexturelList_Find_Missing_Textures_Button": "Find Missing",
         "TexturelList_Intelligent_Find_Max_Size_Button": "Find Large Textures",
         "TexturelList_Search_And_Replace_Date_Button": "Find and Replace",
-        "TexturelList_Replace_Data_Button": "Auto Fix Path",
-        "TexturelList_Processed_Image_Button": "Process Image",
+        "TexturelList_Replace_Data_Button": "Auto Fix Paths",
+        "TexturelList_Processed_Image_Button": "Process Images",
         "TexturelList_Refresh_Button_ToolTip": "Refresh based on cache",
         "TexturelList_Headers": ["Texture Node Name", "Material", "Size", "Pixel Size", "Format", "Reference Count", "Status", "Path"]
       },
@@ -122,22 +122,22 @@
 
     "TM_FAR_WIN": {
       "__init__": {
-        "WINDOWS_NAME": "Search and Replace-"
+        "WINDOWS_NAME": "Search and Replace -"
       },
       "create_widgets": {
         "label_data_to_edit_options": "Content to Modify",
-        "label_data_to_edit_options_02": "You need to choose based on the content you want to modify",
+        "label_data_to_edit_options_02": "You need to select based on the content you want to modify",
         "sl_material": "Material",
         "sl_texture": "Texture",
         "sl_texture_path": "Texture Path",
-        "label_modify_options": "Scope of Modification",
+        "label_modify_options": "Scope of Content Modification",
         "radio_all": "All",
         "radio_table": "Within Table",
         "radio_selection": "Selected",
         "label_find": "Find Content",
-        "line_edit_find_placeholder": "Please enter content to find...",
+        "line_edit_find_placeholder": "Please enter the content to find...",
         "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-        "line_edit_replace_placeholder": "Please enter content to replace...",
+        "line_edit_replace_placeholder": "Please enter the replacement content...",
         "checkbox_case_sensitive": "Case Insensitive",
         "checkbox_regex": "Use Regular Expressions",
         "button_replace": "Replace"
@@ -146,12 +146,12 @@
 
     "TM_RF_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "Auto Fix Path-"
+        "WINDOWS_NAME": "Auto Fix Path -"
       },
       "create_widgets": {
         "memory_search_mode_checkbox": "Memory Search Mode",
         "search_subfolders_checkbox": "Search Subfolders",
-        "multiple_subfolder_search_checkbox": "Search Multiple Subfolders",
+        "multiple_subfolder_search_checkbox": "Multiple Subfolder Search",
         "ignore_case_checkbox": "Ignore Case",
         "fix_path_button": "Start Fixing Paths"
       }
@@ -159,39 +159,56 @@
 
     "TM_IP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "Image Processing-"
+        "WINDOWS_NAME": "Image Processing -"
       },
+
       "menu_widgets": {
         "edit_menu": "Edit",
-        "clear_cache": "Clear Cache! Be cautious when deleting!",
+        "clear_cache": "Clear Cache! Delete with Caution!",
         "redo_action": "Restore Image",
         "help_menu": "Help",
         "instructions_action": "Instructions"
       },
+
       "create_widgets": {
         "format_combo_box_label": "Format:",
         "zoom_ratios_combo_box_label": "Scale:",
         "resampling_mode_combo_box_label": "Resampling:",
-        "resampling_mode_list": ["Nearest Neighbor Interpolation", "Mean Interpolation", "Bilinear Interpolation", "Sharpen Interpolation", "Cubic Interpolation", "High Precision Interpolation"],
+        "resampling_mode_list": ["Nearest Neighbor", "Average Interpolation", "Bilinear Interpolation", "Sharpening Interpolation", "Cubic Interpolation", "High-Precision Interpolation"],
         "jpg_label": "JPG Quality: ",
         "png_label": "PNG Quality: ",
         "convert_format_check_box": "Convert Format",
         "scale_texture_check_box": "Scale Texture",
         "conversion_button": "Start Conversion"
+      },
+
+      "get_selected_rows_data": {
+        "01": "No rows selected"
+      },
+
+      "copy_file_with_suffix": {
+        "01": "Error copying backup file"
+      },
+
+      "image_conversion": {
+        "01": "Failed to connect to the image path: ",
+        "02": "Unsupported format:",
+        "03": "Update Node",
+        "04": "Failed"
       }
     },
 
     "UVPM": {
-      "01": "Already set ",
-      "02": " the node's UV tiling mode to:",
-      "03": "Error during setting:",
+      "01": "Has set the",
+      "02": "node's UV tiling mode to:",
+      "03": "Error while setting:",
       "04": "Please select a texture node"
     },
 
     "CSPM": {
       "01": "Please select a texture node!",
-      "02": "Already set ",
-      "03": " to"
+      "02": "Has set the",
+      "03": "to"
     },
 
     "ASTCS": {
@@ -204,25 +221,25 @@
         "02": "Please select an output node first"
       },
       "connection_node": {
-        "01": "Your ",
-        "02": " node cannot connect to ",
-        "03": " node on"
+        "01": "Your",
+        "02": "node cannot be connected to",
+        "03": "node"
       }
     },
 
     "ASFNU": {
-      "01": "Please select a texture"
+      "01": "Please select a texture map"
     },
 
     "RenderPM": {
       "__init__": {
-        "01": "| Default rendering properties written successfully",
+        "01": "| Default rendering properties successfully written",
         "02": "| Error setting default rendering properties:",
-        "03": "No default Arnold renderer node detected, unable to write Arnold content. Please switch the renderer first",
-        "04": "| Arnold rendering properties written successfully",
+        "03": "No default Arnold renderer node detected. Unable to write Arnold content. Please switch the renderer first.",
+        "04": "| Arnold rendering properties successfully written",
         "05": "| Error setting rendering properties:",
         "06": "| Error deleting existing AOV properties:",
-        "07": "| Arnold AOV properties written successfully",
+        "07": "| Arnold AOV properties successfully written",
         "08": "| No AOV in configuration, AOV parameters will not be written",
         "09": "| Error processing AOV properties:"
       }
@@ -233,6 +250,22 @@
         "01": "Enter your preset name",
         "02": "OK",
         "03": "Cancel"
+      }
+    },
+
+    "PDC": {
+      "main": {
+        "01": "Please select a texture node"
+      },
+      "feedback_prompt": {
+        "01": "===================================Similarity Matching=================================",
+        "02": "Source:",
+        "03": "Target:",
+        "04": "Similarity:",
+        "05": "===================================Matching List Completed================================",
+        "06": "Matched Object|",
+        "07": "Matching Completed|",
+        "08": "Similarity:"
       }
     },
 
@@ -256,19 +289,19 @@
         "01": "Cannot access directory",
         "02": "Detailed error",
         "03": "Cannot open or verify as an image file",
-        "04": "No permission to access this file, detailed error"
+        "04": "This file is not accessible, detailed error"
       },
       "CN": {
         "01": "This path cannot be connected:"
       },
       "GFI": {
-        "01": "Error while querying texture meta properties, error reason: "
+        "01": "Error querying texture meta properties, reason: "
       }
     },
 
     "NodeP": {
       "CTFNTPN": {
-        "01": "Material channel at position:"
+        "01": "Position's material channel:"
       },
       "ASTCS": {
         "01": "Node set to",
@@ -289,7 +322,7 @@
 
     "ImageP": {
       "RI": {
-        "01": "Invalid scale ratio",
+        "01": "Invalid scaling ratio",
         "02": "Please set a valid value between 0 and 100",
         "03": "Failed to read image",
         "04": "File write permission error",
@@ -297,11 +330,11 @@
         "06": "Image processing failed"
       },
       "CIF": {
-        "01": "Convert format - Failed to read image",
-        "02": "Convert format - Failed to read image cache",
+        "01": "Convert Format - Failed to read image",
+        "02": "Convert Format - Failed to read image cache",
         "03": "Converted to",
         "04": "Format New Path",
-        "05": "Convert format - Failed to save image, error reason"
+        "05": "Convert Format - Failed to save image, reason:"
       }
     },
 
@@ -312,7 +345,7 @@
     },
 
     "process_sl_data": {
-      "01": "Please select the corresponding node first!"
+      "01": "Please select the appropriate node first!"
     }
 
   },
@@ -325,7 +358,7 @@
       "04": "Linux/Unix system error while getting motherboard serial number:"
     },
     "GWTS": {
-      "01": "Cannot get Taobao timestamp",
+      "01": "Cannot obtain Taobao timestamp",
       "02": "Failed to get link time:"
     },
     "GNTS": {
@@ -333,33 +366,33 @@
     },
     "VL": {
       "01": "Invalid license format",
-      "02": "Device identification code does not match",
+      "02": "Device identifier does not match",
       "03": "License has expired!",
       "04": "Signature verification failed, the license may have been tampered with",
       "05": "License format error",
       "06": "An unknown error occurred during verification, please contact the developer"
     },
     "LW": {
-      "DIL": "Device Identification Code (needs to be provided to the developer)",
+      "DIL": "Device Identifier (to be provided to the developer)",
       "SUL": "Enter Serial Number",
-      "SNT": "Please enter serial number",
-      "VB": "Verify License",
-      "01": "Please enter serial number"
+      "SNT": "Please enter the serial number",
+      "VB": "Validate License",
+      "01": "Please enter the serial number"
     },
     "MP": {
-      "01": "Cannot get online time",
-      "02": "Cannot get time",
-      "03": "Cannot get device code"
+      "01": "Unable to obtain online time",
+      "02": "Unable to obtain time",
+      "03": "Unable to obtain device code"
     }
   },
 
   "DLibs": {
     "FP": "@Arnold Tool Plugin Reminder {} | ",
-    "CVF": "Configuration library folder exists ╭(●｀∀´●)╯ Clap Clap",
+    "CVF": "Configuration library folder exists ╭(●｀∀´●)╯ Applause applause",
     "DL": {
       "01": "Found",
-      "02": "Library does not exist ◔ ‸◔? Downloading now ≖‿‖✧ Please wait patiently",
-      "03": "Great!!!! Environment configuration has no issues ♪（＾∀＾●）ﾉｼ "
+      "02": "Library does not exist ◔ ‸◔？   Downloading ≖‿≖✧ Please wait patiently",
+      "03": "Great!!!! No issues with environment configuration ♪（＾∀＾●）ﾉｼ "
     },
     "MP": {
       "01": "Library retrieval time: ",
@@ -368,19 +401,19 @@
 
     "upgrade_pip": {
       "01": "Upgrading pip library...",
-      "02": "pip library upgraded successfully!",
-      "03": "Upgrade pip failed, reason: "
+      "02": "pip library successfully upgraded!",
+      "03": "Failed to upgrade pip, reason: "
     },
 
     "check_and_install_pywin32": {
-      "01": "Detected pywin32 not found",
+      "01": "Detected that pywin32 cannot be found",
       "02": "Attempting to reinstall pywin32...",
       "03": "pywin32 installation complete, please restart Maya"
     },
 
     "show_restart_popup": {
       "01": "Arnold_Magic_Node Reminder~~",
-      "02": "Updated your Maya's pywin32 library\nNow you need to restart to use the plugin properly",
+      "02": "Updated your Maya's pywin32 library\nYou need to restart to use the plugin properly",
       "03": "Exit Maya",
       "04": "Exit Maya Later"
     }

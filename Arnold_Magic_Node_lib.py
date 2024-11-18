@@ -3,18 +3,14 @@
 
 # 1. Maya 库
 import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命令和操作场景
-import maya.OpenMayaUI as omui  # 导入 Maya 的 OpenMayaUI 模块，用于操作 Maya 的用户界面
 
 # 2. 文件与系统操作
 import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
 import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
-import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
-import stat
 
 # 3. 数据处理
 import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
-import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
 import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
 from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
 import Levenshtein  # 导入 Levenshtein
@@ -28,14 +24,14 @@ import difflib  # 用于比较文本差异，生成差异报告或补丁，适�
 # 5. 图像处理
 from PIL import Image # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
 from PIL import UnidentifiedImageError
-# import cv2
 import pyexr
+
+
 # 6. 时间管理
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
 # 7. 网络操作
-import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
 import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
 
 Script_path = os.path.dirname(os.path.abspath(__file__))
@@ -172,7 +168,6 @@ class PathDetection(object):
             new_file_list.append(new_filename)  # 将处理后的文件名添加到新列表中
             
         return new_file_list  # 返回处理后的新文件名列表
-    
 
     # 从 dict1 中删除与 dict2 中值匹配的元素
     def match_and_remove_dict(self, dict1, dict2):
@@ -2019,35 +2014,84 @@ class FeedbackPrompt():
         # cmds.warning(error_message)
         raise ValueError(error_message)
 
-# 获取选择节点
-def process_sl_data(sl_data = None):
-    """ 函数可以批量归类选择的节点 """
-    language = language_loading()['ArnoldMagicNodeLibs']['process_sl_data']  # 加载相关语言模块
-    feedback = FeedbackPrompt() # 错误提示模块
-    
-    # 创建空的字典
+#______________________________________________________________________________>>> 处理选择的节点
+def process_sl_data(sl_data=None):
+    """函数用于批量归类选择的节点"""
+
+    #__________________________________________________________________________>>> 加载语言模块和错误提示模块
+    language = language_loading()['ArnoldMagicNodeLibs']['process_sl_data']  # 加载语言模块
+    feedback = FeedbackPrompt()  # 错误提示模块
+
+    # 初始化空字典
     sl_dict = {}
     FilterData = {}
 
-    # 获取选择数据数据
-    if sl_data == None:
+    #__________________________________________________________________________>>> 获取选择的节点数据
+    # 如果未传入参数，获取当前选中的节点
+    if sl_data is None:
         sl_data = cmds.ls(sl=True)
 
-    # 判断是否有选择数据
-    if sl_data == []:
-        feedback.CPW(language['01'])
+    # 判断是否有选择的数据
+    if not sl_data:
+        feedback.CPW(language['01'])  # 输出提示信息
         return None
 
-    # 创建一个字典并存储节点的类型
+    #__________________________________________________________________________>>> 创建节点类型字典
+    # 遍历选中的节点并获取其类型
     for i in sl_data:
-        sl_dict[i] = cmds.nodeType((i))
+        sl_dict[i] = cmds.nodeType(i)  # 获取节点类型并存入字典
 
+    #__________________________________________________________________________>>> 初始化分类字典
+    # 按节点类型初始化 FilterData 字典
     FilterData = {v: [] for v in sl_dict.values()}
 
+    #__________________________________________________________________________>>> 分类节点
+    # 根据节点类型将节点归类到 FilterData 中
     for k, v in sl_dict.items():
         FilterData[v].append(k)
 
-    return FilterData
+    return FilterData  # 返回按类型归类的节点数据
+
+#______________________________________________________________________________>>> 获取场景节点数据并分类
+def get_scene_all_data():
+    """获取场景中的所有节点并按类型分类"""
+
+    # 初始化错误提示模块
+    feedback = FeedbackPrompt()  # 错误提示模块
+
+    # 创建空的字典用于存储节点及其类型
+    all_dict = {}
+    FilterData = {}
+
+    #__________________________________________________________________________>>> 获取所有节点
+    # 获取场景中所有节点的完整路径
+    all_nodes = cmds.ls()
+
+    # 判断是否有节点存在
+    if not all_nodes:
+        feedback.CPW('没有找到节点')  # 返回错误提示
+        return None
+
+    #__________________________________________________________________________>>> 创建节点类型字典
+    # 遍历所有节点并获取节点类型
+    for node in all_nodes:
+        try:
+            node_type = cmds.nodeType(node)  # 获取节点类型
+        except:
+            node_type = 'unknown'  # 捕获异常并标记为未知类型
+        all_dict[node] = node_type  # 将节点及其类型存入字典
+
+    #__________________________________________________________________________>>> 初始化分类字典
+    # 初始化 FilterData 字典，以节点类型为键，列表为值
+    FilterData = {v: [] for v in all_dict.values()}
+
+    #__________________________________________________________________________>>> 分类节点
+    # 根据节点类型将节点分类并存储到 FilterData 中
+    for node, node_type in all_dict.items():
+        FilterData[node_type].append(node)
+
+    return FilterData  # 返回按类型分类的节点数据
+
 
 # 数据管理器
 class DataManager:

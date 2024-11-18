@@ -12,6 +12,7 @@ import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径�
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 import shutil
+import threading # 多线程
 
 # 3. 数据处理
 import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
@@ -78,9 +79,9 @@ AMN_UI_WorkSpaceControl = None
 # --------------------初始变量开始
 
 # _______________________________________________________________>>> 插件状态
-SoftwareState = "Alpha"
+SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.1.01"
+SoftwareVersion = "0.9.0.03"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -165,21 +166,23 @@ def language_loading():
 
     return language
 
-# 插件窗口
+#______________________________________________________________________________>>> 插件窗口
+
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
         global AMN_UI_WorkSpaceControl
+        # 初始化窗口标题，显示软件状态和版本等信息
         WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}   {LicenseV_type_name} : {str(LicenseV_remaining_time)}"
 
-        # 判断窗口是否存在，如果存在则删除
+        # 检查窗口是否已存在，如果存在则删除
         if cmds.window(WIN_TITLE, exists=True):
             cmds.deleteUI(WIN_TITLE)
 
         # 创建主窗口
-        self.window = cmds.workspaceControl(WIN_TITLE, retain=False, floating=True,w=300,h=300)
+        self.window = cmds.workspaceControl(WIN_TITLE, retain=False, floating=True, w=300, h=300)
         AMN_UI_WorkSpaceControl = self.window
 
-        # 初始化全局数据
+        # 初始化全局配置
         self.initial_global_config()
 
         # 创建窗口控件
@@ -188,192 +191,270 @@ class Arnold_Magic_Node_UI(object):
         # 显示窗口
         cmds.showWindow(self.window)
 
-
     def create_widgets(self):
-
+        # 创建行布局
         cmds.rowLayout(numberOfColumns=30)
-        # 创建按钮
 
-        # 菜单========= 
+        # 创建右键菜单
         customMenu = cmds.popupMenu(button=3)
+        cmds.menuItem(label=self.language['create_widgets']['ttclgj_menu'], divider=True)  # 贴图处理工具
 
-        cmds.menuItem(label= self.language['create_widgets']['ttclgj_menu'], divider=True) # 贴图处理工具
+        # 贴图管理器选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['ttglq_menu'],
+            c=lambda *args: TextureManagerWinInstance(),
+            i=icon_path + "\\TXManagerShelf_200.png"
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['ttglq_menu'],
-                      c=lambda *args: TextureManagerWinInstance(), # 贴图管理器
-                      i= icon_path + "\\TXManagerShelf_200.png")
+        # 贴图批量导入器选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['ttpldrq_menu'],
+            c=lambda *args: TextureBatchImporterWin(),
+            i=icon_path + "\\RenderToTextureShelf_200.png"
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['ttpldrq_menu'],
-                      c=lambda *args: TextureBatchImporterWin(), # 贴图批量导入器
-                      i = icon_path + "\\RenderToTextureShelf_200.png")
+        cmds.menuItem(label=self.language['create_widgets']['xryssz_menu'], divider=True)  # 渲染预设设置
 
-        cmds.menuItem(label= self.language['create_widgets']['xryssz_menu'], divider=True) # 渲染预设设置
+        # 添加渲染预设选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['tjxrys_menu'],
+            c=lambda *args: rendering_preset_settings_button(self.rendering_preset)
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['tjxrys_menu'], # 添加渲染预设
-                      c=lambda *args: rendering_preset_settings_button(self.rendering_preset))
+        # 修改渲染预设选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['xgxrys_menu'],
+            c=lambda *args: modify_rendering_preset_menuItem(
+                cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
+                cmds.optionMenu(self.rendering_preset, query=True, value=True),
+                self.rendering_preset_name,
+                self.rendering_preset
+            )
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['xgxrys_menu'], # 修改渲染预设
-                      c= lambda *args: modify_rendering_preset_menuItem(
-                          cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
-                          cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name, self.rendering_preset))
+        # 删除渲染预设选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['scxrys_menu'],
+            c=lambda *args: delete_rendering_preset_menuItem(
+                cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
+                cmds.optionMenu(self.rendering_preset, query=True, value=True),
+                self.rendering_preset_name
+            )
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['scxrys_menu'], # 删除渲染预设
-                      c= lambda *args: delete_rendering_preset_menuItem(
-                          cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
-                          cmds.optionMenu(self.rendering_preset, query=True, value=True), self.rendering_preset_name))
+        # 打开渲染预设文件夹选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['dkxryswjj_menu'],
+            c=lambda *args: os.startfile(render_preset_path)
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['dkxryswjj_menu'], # 打开渲染预设文件夹
-                      c= lambda *args: os.startfile(render_preset_path))
+        cmds.menuItem(divider=True, label='渲染预设输出设置')
+
+        # 输出默认参数选项
+        default_rendering_properties_options = cmds.menuItem(
+            label=self.language['create_widgets']['default_rendering_properties_options'],
+            cb=True,
+            c=lambda *args: self.modify_nested_config(
+                key_path=['render_preset_params', 'default_rendering_properties_write_options'],
+                cont=cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)
+            )
+        )
+
+        # 输出阿诺德参数选项
+        rendering_properties_options = cmds.menuItem(
+            label=self.language['create_widgets']['rendering_properties_options'],
+            cb=True,
+            c=lambda *args: self.modify_nested_config(
+                key_path=['render_preset_params', 'rendering_properties_write_options'],
+                cont=cmds.menuItem(rendering_properties_options, query=True, checkBox=True)
+            )
+        )
+
+        # 输出AOV参数选项
+        aov_properties_properties_options = cmds.menuItem(
+            label=self.language['create_widgets']['aov_properties_properties_options'],
+            cb=True,
+            c=lambda *args: self.modify_nested_config(
+                key_path=['render_preset_params', 'AOV_properties_properties_write_options'],
+                cont=cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True)
+            )
+        )
+
+        # 设置初始复选框状态
+        cmds.menuItem(
+            default_rendering_properties_options,
+            edit=True,
+            checkBox=self.config['render_preset_params']['default_rendering_properties_write_options']
+        )
+        cmds.menuItem(
+            rendering_properties_options,
+            edit=True,
+            checkBox=self.config['render_preset_params']['rendering_properties_write_options']
+        )
+        cmds.menuItem(
+            aov_properties_properties_options,
+            edit=True,
+            checkBox=self.config['render_preset_params']['AOV_properties_properties_write_options']
+        )
+
+        cmds.menuItem(divider=True, label='其他工具')
+
+        cmds.menuItem(label='优化场景名称',
+                      c=lambda *args: self.scene_name_optimization_instance())
 
         cmds.menuItem(divider=True)
 
-        default_rendering_properties_options = cmds.menuItem(label= self.language['create_widgets']['default_rendering_properties_options'], # 输出 默认参数
-                                                             cb= True,
-                                                             c= lambda *args: self.modify_nested_config(key_path=['render_preset_params', 'default_rendering_properties_write_options'],
-                                                                                                        cont = cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True)))
+        # 设置面板选项
+        cmds.menuItem(
+            label=self.language['create_widgets']['sz_menu'],
+            c=lambda *args: ArnoldMagicNodeSettingsPanel()
+        )
 
-        rendering_properties_options = cmds.menuItem(label= self.language['create_widgets']['rendering_properties_options'], # 输出 阿诺德参数
-                                                     cb= True,
-                                                     c= lambda *args: self.modify_nested_config(key_path=['render_preset_params',  'rendering_properties_write_options'],
-                                                                                                cont = cmds.menuItem(rendering_properties_options, query=True, checkBox=True) ))
+        # 空白文本
+        cmds.text(label=" " * 1)
 
-        aov_properties_properties_options = cmds.menuItem(label= self.language['create_widgets']['aov_properties_properties_options'], # 输出 AOV参数
-                                                          cb= True,
-                                                          c= lambda *args: self.modify_nested_config(key_path = ['render_preset_params', 'AOV_properties_properties_write_options'],
-                                                                                                     cont = self.cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True) ))
-        cmds.menuItem(divider=True)
+        # 创建各种按钮
+        self.magic_connection = cmds.button(
+            label=self.language['create_widgets']['magic_connection'],
+            c=lambda *args: magic_connection_button()
+        )
 
-        cmds.menuItem(label= self.language['create_widgets']['sz_menu'] , # 设置
-                      c= lambda *args: ArnoldMagicNodeSettingsPanel())
+        self.path_detection_connection = cmds.button(
+            label=self.language['create_widgets']['path_detection_connection'],
+            c=lambda *args: path_detection_connection_button()
+        )
 
+        self.color_mix = cmds.button(
+            label=self.language['create_widgets']['color_mix'],
+            c=lambda *args: blend_rgba_node()
+        )
 
-        # 修改默认值
-        cmds.menuItem(default_rendering_properties_options,
-                      edit = True,
-                      checkBox = self.config['render_preset_params']['default_rendering_properties_write_options'])
-        cmds.menuItem(rendering_properties_options,
-                      edit = True,
-                      checkBox = self.config['render_preset_params']['rendering_properties_write_options'])
-        cmds.menuItem(aov_properties_properties_options,
-                      edit = True,
-                      checkBox = self.config['render_preset_params']['AOV_properties_properties_write_options'])
-        # 菜单=========
+        self.gray_mix = cmds.button(
+            label=self.language['create_widgets']['gray_mix'],
+            c=lambda *args: blend_greg_manager()
+        )
 
-        cmds.text(label=" "*1)
+        # 直连按钮
+        self.direct_connection = cmds.button(
+            label=self.language['create_widgets']['direct_connection'],
+            c=lambda *args: direct_connection_button()
+        )
 
+        # 统一UV按钮
+        self.unify_uv_node = cmds.button(
+            label=self.language['create_widgets']['unify_uv_node'],
+            c=lambda *args: unify_uv_node_button()
+        )
 
+        cmds.text(label=" " * 2)
 
+        # UV预设选项菜单
+        self.uv_preset = cmds.optionMenu(
+            mvi=8,
+            cc=lambda *args: uv_preset_menu(cmds.optionMenu(self.uv_preset, query=True, value=True))
+        )
 
-        # Magic_Connection
-        self.magic_connection = cmds.button(label=self.language['create_widgets']['magic_connection'],
-                                            c=lambda *args: magic_connection_button()) # 魔法连接
-
-        self.path_detection_connection = cmds.button(label=self.language['create_widgets']['path_detection_connection'],
-                                                     c=lambda *args: path_detection_connection_button()) # 路径拾取连接
-
-        self.color_mix = cmds.button(label = self.language['create_widgets']['color_mix'], # 颜色混合
-                                            c=lambda *args: blend_rgba_node())
-        self.gray_mix = cmds.button(label = self.language['create_widgets']['gray_mix'], # 灰度混合
-                                            c=lambda *args: blend_greg_manager())
-        # 直连
-        self.direct_connection = cmds.button(label=self.language['create_widgets']['direct_connection'],c=lambda *args: direct_connection_button()) # 直连
-        # Unify Uv Node
-        self.unify_uv_node = cmds.button(label=self.language['create_widgets']['unify_uv_node'],c=lambda *args: unify_uv_node_button()) # 统一UV
-
-        cmds.text(label=" "*2)
-
-        self.uv_preset = cmds.optionMenu(mvi = 8, cc=lambda* args:uv_preset_menu(cmds.optionMenu(self.uv_preset, query=True, value=True)))
-        # 用循环创建uv_mode_list 的menu
-        uv_mode_list = self.language['create_widgets']['uv_preset'] # ['禁用','0型(ZBrush)','1型(Mudbox)','UDIM(Mari)','显示平铺']
-
-        # 吧uv_mode添加到多选项菜单中
+        # 添加UV模式选项
+        uv_mode_list = self.language['create_widgets']['uv_preset']
         for uv_mode_name in uv_mode_list:
             cmds.menuItem(label=uv_mode_name)
 
-        # 用循环创建color_space_list的menu
-        self.color_space_preset = cmds.optionMenu(mvi = 16, cc=lambda* args:color_space_preset_menu(
-            cmds.optionMenu(self.color_space_preset, query=True, value=True)))
+        # 色彩空间预设菜单
+        self.color_space_preset = cmds.optionMenu(
+            mvi=16,
+            cc=lambda *args: color_space_preset_menu(
+                cmds.optionMenu(self.color_space_preset, query=True, value=True)
+            )
+        )
 
         # 循环创建色彩空间菜单选项
         for color_space_name in self.config['color_space_params']['config']:
-            cmds.menuItem(label = color_space_name)
+            cmds.menuItem(label=color_space_name)
 
-        # 自动色彩空间的按钮
-        cmds.button(label=self.language['create_widgets']['zdsckj_button'],
-                    c=lambda *args: AutoSet_TexColorSpace()) # 自动色彩空间
+        # 自动色彩空间按钮
+        cmds.button(
+            label=self.language['create_widgets']['zdsckj_button'],
+            c=lambda *args: AutoSet_TexColorSpace()
+        )
 
-        # 自动UDIM
-        cmds.button(label=self.language['create_widgets']['zdudim_button'],
-                    c=lambda *args: auto_set_file_node_udim())
+        # 自动UDIM按钮
+        cmds.button(
+            label=self.language['create_widgets']['zdudim_button'],
+            c=lambda *args: auto_set_file_node_udim()
+        )
 
+        cmds.text(label=" " * 2)
 
-        cmds.text(label=" "*2)
+        # AOV开关按钮
+        self.ai_aov_switch = cmds.button(
+            label=self.language['create_widgets']['ai_aov_switch'],
+            c=lambda *args: ai_aov_switch_button()
+        )
 
-        self.ai_aov_switch = cmds.button(label=self.language['create_widgets']['ai_aov_switch'],c=lambda *args: ai_aov_switch_button()) # AOV开关
-
-        # 渲染预设的菜单 —————————————————— 开始
+        # 渲染预设菜单
         self.rendering_preset_name = {}
-        self.rendering_preset =  cmds.optionMenu(mvi = 8, cc=lambda* args:rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True)))
+        self.rendering_preset = cmds.optionMenu(
+            mvi=8,
+            cc=lambda *args: rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True))
+        )
 
-        # 获取文件名字
+        # 获取并添加渲染预设文件名
         file_names = os.listdir(render_preset_path)
-
-        # 删除文件名中的 ".json" 部分并存储在列表中
         file_names_without_json_list = [file_name.replace(".bin", "") for file_name in file_names]
 
         for renderer_data_mode_name in file_names_without_json_list:
             self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
 
-        # 渲染预设的菜单 —————————————————— 结束
+        cmds.text(label=" " * 18)
 
-        cmds.text(label="                     "*1)
+        # 添加图标按钮
+        cmds.iconTextButton(
+            i=os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
+            h=37.5 / 1.8,
+            w=155 / 1.8,
+            c=lambda *args: test_program()
+        )
 
-        cmds.iconTextButton(i = os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
-                            h=37.5/1.8,
-                            w=155/1.8,
-                            c=lambda *args: ArnoldMagicNodeSettingsPanel())
-
-        cmds.text(label=" "*1)
-
-    # 初始化全局数据
+        cmds.text(label=" " * 1)
+    #______________________________________________________________________________>>> 初始化全局数据
     def initial_global_config(self):
+        # 初始化数据管理器和数据处理模块
         self.dataM = DataManager()
         self.dataP = DataProcessor()
         self.feedback = FeedbackPrompt()  # 错误提示模块
-        self.getnodedata = GetNodeData() # 获取节点数据模块
+        self.getnodedata = GetNodeData()  # 获取节点数据模块
 
-        # 加载语言
+        # 加载语言配置
         self.language = language_loading()['ArnoldMagicNode']['AMDUI_WIN']
 
         # 加载设置配置
         self.config = self.dataM.bin_load_data(os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
-    # --------------------保存设置内容的函数 开始
+    #______________________________________________________________________________>>> 保存设置内容的函数
     def modify_nested_config(self, key_path, cont):
         """
         修改配置文件的特定键值。
 
         参数:
-        value -- 要设置的新值
         key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
+        cont -- 要设置的新值
 
         功能:
         1. 加载配置数据。
-        2. 根据提供的键路径找到并修改对应的值。
+        2. 根据提供的键路径逐层访问并修改对应的值。
         3. 保存修改后的配置数据。
         """
-
-        # 加载二进制配置数据
+        # 加载当前配置数据
         config = self.dataM.bin_load_data(
             os.path.normpath(os.path.join(settings_path, AMS_Config))
         )
 
-        # 根据给定的键路径逐层访问数据
+        # 遍历键路径，访问到目标键的上一级
         current_level = config
         for key in key_path[:-1]:  # 遍历到倒数第二个键
             current_level = current_level[key]  # 进入下一层级
 
-        # 设置最终键的值为新值
+        # 设置目标键的值为新值
         current_level[key_path[-1]] = cont
 
         # 保存修改后的配置数据
@@ -382,13 +463,20 @@ class Arnold_Magic_Node_UI(object):
             config
         )
 
-        ### 初始化配置数据
+        # 重新加载配置数据以更新当前实例的配置
         self.config = self.dataM.bin_load_data(
-           os.path.normpath(os.path.join(settings_path, AMS_Config)))
+            os.path.normpath(os.path.join(settings_path, AMS_Config))
+        )
 
-        # --------------------保存设置内容的函数
+    # ______________________________________________________________________________>>> 实例化函数
+    def scene_name_optimization_instance(self):
+        SNO = SceneNameOptimization()
+        SNO.main()
 
-# 插件设置按钮qt写
+
+
+#______________________________________________________________________________>>> 插件设置按钮qt写
+
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(ArnoldMagicNodeSettingsPanel, self).__init__(parent)
@@ -503,7 +591,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.about_menu.addAction(self.plugin_update_download_action)
         self.about_menu.addAction(self.help_document_action)
 
-
     def create_widgets(self):
         # 创建选项卡部件
         self.tab_widget = QtWidgets.QTabWidget()
@@ -513,6 +600,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.create_color_space_tab()
         self.create_node_connection_tab()
         self.create_path_matching_tab()
+        self.create_optimized_scene_node_name_tab()
         self.create_configure_ui_layout_tab()
 
     def create_layouts(self):
@@ -1102,6 +1190,119 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab'])  # 节点路径匹配选项卡
 
+    # 优化场景节点名称页面
+    def create_optimized_scene_node_name_tab(self):
+        # _______________________________________________________________>>> 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
+        font.setBold(True)  # 设置加粗
+
+        # _______________________________________________________________>>> 创建用于存放内容的 QWidget
+        content_widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(content_widget)
+        layout.setAlignment(QtCore.Qt.AlignTop)  # 将布局对齐方式设置为靠上
+
+        # 创建用于添加套件的 '添加' 按钮
+        add_button = QtWidgets.QPushButton('添加')
+        layout.addWidget(add_button)
+
+        # 创建用于存放套件的容器
+        suites_container = QtWidgets.QWidget()
+        suites_layout = QtWidgets.QVBoxLayout(suites_container)
+        suites_layout.setAlignment(QtCore.Qt.AlignTop)  # 将套件容器的布局对齐方式设置为靠上
+        layout.addWidget(suites_container)
+
+        # 用于存储套件的列表
+        self.suites = []
+
+        # 定义更新索引号的函数
+        def update_indices():
+            for index, suite in enumerate(self.suites, start=1):
+                suite['index_label'].setText(str(index))
+
+        # 定义添加套件的函数
+        def add_suite():
+            suite_widget = QtWidgets.QWidget()
+            suite_layout = QtWidgets.QHBoxLayout(suite_widget)
+
+            # 第一个：索引号
+            index_label = QtWidgets.QLabel()
+            index_label.setFixedWidth(30)  # 固定宽度，调整根据需要
+
+            # 第二个：'大小写忽略' 复选框
+            case_insensitive_checkbox = QtWidgets.QCheckBox('大小写忽略')
+
+            # 第三个：'替换目标' 输入框
+            replacement_target_input = QtWidgets.QLineEdit()
+            replacement_target_input.setPlaceholderText('替换目标')
+
+            # 第四个：显示字符串 '->'
+            arrow_label = QtWidgets.QLabel('->')
+
+            # 第五个：'替换内容' 输入框
+            replacement_content_input = QtWidgets.QLineEdit()
+            replacement_content_input.setPlaceholderText('替换内容')
+
+            # 第六个：'删除这条套件' 按钮
+            delete_button = QtWidgets.QPushButton('删除')
+
+            # 将组件添加到套件布局
+            suite_layout.addWidget(index_label)
+            suite_layout.addWidget(case_insensitive_checkbox)
+            suite_layout.addWidget(replacement_target_input)
+            suite_layout.addWidget(arrow_label)
+            suite_layout.addWidget(replacement_content_input)
+            suite_layout.addWidget(delete_button)
+
+            # 将套件添加到套件布局中
+            suites_layout.addWidget(suite_widget)
+
+            # 将套件的信息存储到列表中
+            suite_info = {
+                'widget': suite_widget,
+                'index_label': index_label,
+                'case_insensitive_checkbox': case_insensitive_checkbox,
+                'replacement_target_input': replacement_target_input,
+                'replacement_content_input': replacement_content_input,
+                'delete_button': delete_button
+            }
+            self.suites.append(suite_info)
+
+            # 定义删除套件的函数
+            def delete_suite():
+                # 从布局中移除并删除套件
+                suites_layout.removeWidget(suite_widget)
+                suite_widget.deleteLater()
+                # 从套件列表中移除
+                self.suites.remove(suite_info)
+                # 更新索引号
+                update_indices()
+
+            # 将删除按钮连接到删除函数
+            delete_button.clicked.connect(delete_suite)
+
+            # 更新索引号
+            update_indices()
+
+        # 连接 '添加' 按钮到添加套件的函数
+        add_button.clicked.connect(add_suite)
+
+        # 默认添加一个套件
+        add_suite()
+
+        # 创建一个 QScrollArea，并将内容部件添加进去
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(content_widget)
+
+        # 创建用于选项卡的 QWidget，并设置布局
+        optimized_scene_node_name_tab = QtWidgets.QWidget()
+        tab_layout = QtWidgets.QVBoxLayout(optimized_scene_node_name_tab)
+        tab_layout.addWidget(scroll_area)
+
+        # 将选项卡添加到 tab_widget
+        self.tab_widget.addTab(optimized_scene_node_name_tab, '优化场景节点名称')
+
     # _______________________________>>> 创建界面与布局设置页面
     def create_configure_ui_layout_tab(self):
         # 加载语言配置
@@ -1470,7 +1671,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
 
-# 贴图管理器 使用QT库写的窗口！！！
+#______________________________________________________________________________>>> 贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
 
     def __init__(self,parent = MayaMainWindows()):
@@ -2615,7 +2816,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # # 刷新表格
         self.refresh_texture_table()
 
-# 贴图管理器的搜索与替换界面
+#______________________________________________________________________________>>>贴图管理器的搜索与替换界面
 class TM_FindAndReplace(QtWidgets.QDialog):
     # 定义一个信号，传递多个变量
     base_data_signal = Signal(dict)
@@ -3111,7 +3312,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.config_path, config)
     # --------------------保存设置内容的函数
 
-# 贴图管理器的寻找路径修复界面
+#______________________________________________________________________________>>>贴图管理器的寻找路径修复界面
 class TM_RepathFiles(QtWidgets.QDialog):
     # 定义一个信号，传递多个变量
     new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
@@ -3421,7 +3622,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.TM_repath_files_config_FilePath, config)
     # --------------------保存设置内容的函数
 
-# 贴图管理器的图像处理界面 支持转换格式和压缩图像
+#______________________________________________________________________________>>>贴图管理器的图像处理界面 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
     new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
 
@@ -3451,7 +3652,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
     # 初始化窗口配置
     def initialize_window_config(self, WinName):
         # 命名常量命名
-        WINDOWS_NAME =  self.language['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
+        WINDOWS_NAME =  self.lang['initialize_window_config']['WINDOWS_NAME'] + WinName #Win名称
 
         delete_window_if_existe('TM_ImageProcessing_Win')
 
@@ -3493,11 +3694,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         if not os.path.exists(self.TM_image_processing_cache_FilePath):
             self.dataM.bin_save_data(self.TM_image_processing_cache_FilePath, image_processing_cache_dict)
 
-        self.language = language_loading()['ArnoldMagicNode']['TM_IP_WIN']
+        self.lang = language_loading()['ArnoldMagicNode']['TM_IP_WIN']
 
     def menu_widgets(self):
         # 获取到相应函数的语言
-        menu_lang = self.language['menu_widgets']
+        menu_lang = self.lang['menu_widgets']
 
         # 创建菜单栏
         self.menu_bar = QtWidgets.QMenuBar(self)
@@ -3523,7 +3724,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
     def create_widgets(self):
 
         # 获取到相应函数的语言
-        widgets_lang = self.language['create_widgets']
+        widgets_lang = self.lang['create_widgets']
 
         common_font = QtGui.QFont()
         common_font.setPointSize(SMALL_FONT_SIZE)
@@ -3780,7 +3981,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
         # 如果没有选中任何行，提前返回
         if not selected_indexes:
-            self.feedback.CP("没有选中任何行")
+            self.feedback.CPW(self.lang['get_selected_rows_data']['01']) # 没有选中任何行
             return []
 
         # 使用列表推导式获取所有选中行的数据
@@ -3818,8 +4019,8 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
                 return
             except Exception as e:
-                self.feedback.CP("复制备份文件时出错")
-                print(e)
+                self.feedback.CPW(self.lang['copy_file_with_suffix']['01']) # 复制备份文件时出错
+
                 return
 
     # 修改文件命格式
@@ -3880,7 +4081,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
             # 如果路径不存在会直接跳过这个循环
             if not os.path.exists(old_info_path):
-                self.feedback.CP('你的这张图片路径连接失败： ' + old_info_path)
+                self.feedback.CP(self.lang['image_conversion']['01'] + old_info_path) # 你的这张图片路径连接失败
                 continue
 
 
@@ -3942,7 +4143,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
                     backup_image_file_path = f"{backup_image_file_path.rsplit('.', 1)[0]}.{format_mapping[initial_config['format']]}"
                 else:
                     # 如果格式不被支持，输出反馈信息并返回
-                    self.feedback.CP(f"不支持的格式: {initial_config['format']}")
+                    self.feedback.CP(f"{self.lang['image_conversion']['02']} {initial_config['format']}") # 不支持的格式
                     return
 
 
@@ -3987,7 +4188,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
             try:
                 cmds.setAttr(f"{val[0]}.fileTextureName", backup_image_file_path, type="string")
             except Exception as e:
-                print(f"更新节点 {val[0]} 失败: {e}")
+                self.feedback.CPW(f"{self.lang['image_conversion']['03']} {val[0]} {self.lang['image_conversion']['04']} {e}") # 更新节点 # 失败
 
             # 最后一部 修改主窗口缓存数据
             old_MterialNodeAllInfoDict[val[1]][val[0]]['Path'] = backup_image_file_path
@@ -4031,15 +4232,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
     # 删除存在objectname的窗口
 
-
-
 def delete_window_if_existe(window_name):
     for widget in QtWidgets.QApplication.allWidgets():
         if widget.objectName() == window_name:
             widget.close()
             widget.deleteLater()
-
-
 
 # 设置不可编辑
 class NonEditableColumnsModel(QtGui.QStandardItemModel):
@@ -4107,55 +4304,12 @@ class LeftAlignDelegate(QtWidgets.QStyledItemDelegate):
         # Qt.AlignVCenter 表示文本在垂直方向上居中对齐
         option.displayAlignment = QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
 
-# class QTWinTableModify(QtCore.QAbstractTableModel):
-#   def __init__(self, data, headers):
-#       super(QTWinTableModify, self).__init__()
-#       self._data = data
-#       self._headers = headers
-#
-#   def rowCount(self, parent=None):
-#       return len(self._data)
-#
-#   def columnCount(self, parent=None):
-#       return len(self._data[0]) if self._data else 0
-#
-#   def data(self, index, role=QtCore.Qt.DisplayRole):
-#       if role == QtCore.Qt.DisplayRole:
-#           return self._data[index.row()][index.column()]
-#
-#   def headerData(self, section, orientation, role):
-#       if role == QtCore.Qt.DisplayRole:
-#           if orientation == QtCore.Qt.Horizontal:
-#               return self._headers[section]
-#           else:
-#               return f" {section + 1} "
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 贴图管理器实例窗口
+#______________________________________________________________________________>>> 贴图管理器实例窗口
 def  TextureManagerWinInstance():
     texture_manager = TextureManagerWin()
     texture_manager.show()
 
-
-# 贴图批量导入器
+#______________________________________________________________________________>>> 贴图批量导入器
 class TextureBatchImporterWin:
     def __init__(self):
         WIN_TITLE = "TextureBatchImporterWin  Beta:1.0"
@@ -5095,7 +5249,7 @@ class Path_Detection_Connection:
         self.dataM = DataManager()  # 数据管理模块
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.pathD = PathDetection()  # 数据检测模块
-        self.nodeP = NodeProcessor()
+        self.nodeP = NodeProcessor() # 节点处理模块
         ### 初始化配置数据
         # 加载数据
         self.config = self.dataM.bin_load_data(
@@ -5111,7 +5265,7 @@ class Path_Detection_Connection:
 
         self.select_node_data = process_sl_data()  # 调用函数获取处理后的节点数据
 
-        self.lang = language_loading()[]
+        self.lang = language_loading()['ArnoldMagicNode']['PDC']
 
     def main(self):
 
@@ -5121,7 +5275,7 @@ class Path_Detection_Connection:
 
         # 检查数据中是否包含 'file' 键
         if 'file' not in self.select_node_data:
-            return self.feedback.CPW('请选择贴图节点哦')
+            return self.feedback.CPW(self.lang['main']['01'])# 请选择贴图节点哦
 
         matching_completed_dict = self.detect_and_calculate_similarity()
 
@@ -5226,16 +5380,16 @@ class Path_Detection_Connection:
         return matching_completed_dict
 
     def feedback_prompt(self, similarity_dict, matching_list, original_name):
-        self.feedback.CP("===================================匹配相似度=================================")
+        self.feedback.CP(self.lang['feedback_prompt']['01']) #===================================匹配相似度=================================
         for tex_name, similarity in similarity_dict.items():
             formatted_similarity = "{:.5f}".format(similarity)
-            self.feedback.CP(f"匹配源：{original_name}，匹配目标：{tex_name}，相似度：{formatted_similarity}")
+            self.feedback.CP(f"{self.lang['feedback_prompt']['02']} {original_name},{self.lang['feedback_prompt']['03']}{tex_name},{self.lang['feedback_prompt']['04']}{formatted_similarity}") # 匹配源 匹配目标 # 相似度
 
-        self.feedback.CP("===================================完成匹配列表=================================")
-        self.feedback.CP(f'匹配的对象|{original_name}')
+        self.feedback.CP(self.lang['feedback_prompt']['05']) # ===================================完成匹配列表================================="
+        self.feedback.CP(f"{self.lang['feedback_prompt']['06']}{original_name}") # 匹配的对象
         for target, similarity in matching_list:
             formatted_similarity = "{:.5f}".format(similarity)
-            self.feedback.CP(f"完成匹配| {target}，相似度：{formatted_similarity}")
+            self.feedback.CP(f"{self.lang['feedback_prompt']['07']} {target},{self.lang['feedback_prompt']['08']}{formatted_similarity}") # 完成匹配 # 相似度
 
     def remove_original_uv(self, node_name):
         originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
@@ -5464,6 +5618,19 @@ def blend_greg_manager():
         else:
             pass
 
+class SceneNameOptimization:
+    def __init__(self):
+        self.dataM = DataManager() # 数据管理模块
+        self.feedback = FeedbackPrompt() # 错误提示模块
+        self.pathD = PathDetection() # 数据检测模块
+        self.nodeP = NodeProcessor() # 节点处理模块
+
+    def main(self):
+        for i in get_scene_all_data():
+            print(i,'      ',get_scene_all_data()[i])
+
+
+
 
 # 主要运行程序
 def Main_program(cached_device_fingerprint, public_key, public_password, validating):
@@ -5505,3 +5672,5 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
 
 def test_program():
     pass
+
+
