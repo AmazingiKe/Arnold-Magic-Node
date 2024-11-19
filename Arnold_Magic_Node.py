@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.03"
+SoftwareVersion = "0.9.0.04"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -613,7 +613,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # 初始化控件的设置，例如设置默认值，连接信号和槽等
     def initial_widgets_settings(self):
         pass
-
 
     # 魔法连接的标签页面
     def create_magic_connection_tab(self):
@@ -1192,6 +1191,10 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     # 优化场景节点名称页面
     def create_optimized_scene_node_name_tab(self):
+
+        #_______________________________________________________________>>> 创建配置变量
+        config = self.config['optimized_scene_node_name']
+
         # _______________________________________________________________>>> 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
@@ -1220,28 +1223,48 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             for index, suite in enumerate(self.suites, start=1):
                 suite['index_label'].setText(str(index))
 
-        # 定义添加套件的函数
-        def add_suite():
+        # 定义添加套件的函数，并允许传入预设的数据
+        def add_suite(case_sensitive=False, target_cont="", replace_cont=""):
             suite_widget = QtWidgets.QWidget()
             suite_layout = QtWidgets.QHBoxLayout(suite_widget)
+
+            suite_layout.setContentsMargins(5, 5, 5, 5)  # 设置布局内边距
+            suite_layout.setSpacing(10)  # 设置控件间距
+
+            # 设置样式以添加边框
+            suite_widget.setStyleSheet('''
+                QWidget {
+                    background-color: rgb(60, 60, 60);
+                    border: 1px solid rgb(86, 86, 86);
+                    border-width: 2px;                     /* 边框宽度 */
+                    border-radius: 8px;
+                    padding: 8px;
+                }
+                QLabel {
+                    color: white;  /* 设置 QLabel 的文本颜色为白色 */
+                }
+            ''')
 
             # 第一个：索引号
             index_label = QtWidgets.QLabel()
             index_label.setFixedWidth(30)  # 固定宽度，调整根据需要
 
             # 第二个：'大小写忽略' 复选框
-            case_insensitive_checkbox = QtWidgets.QCheckBox('大小写忽略')
+            case_insensitive_checkbox = QtWidgets.QCheckBox('R')
+            case_insensitive_checkbox.setChecked(case_sensitive)
 
             # 第三个：'替换目标' 输入框
             replacement_target_input = QtWidgets.QLineEdit()
             replacement_target_input.setPlaceholderText('替换目标')
+            replacement_target_input.setText(target_cont)
 
             # 第四个：显示字符串 '->'
-            arrow_label = QtWidgets.QLabel('->')
+            arrow_label = QtWidgets.QLabel('→')
 
             # 第五个：'替换内容' 输入框
             replacement_content_input = QtWidgets.QLineEdit()
             replacement_content_input.setPlaceholderText('替换内容')
+            replacement_content_input.setText(replace_cont)
 
             # 第六个：'删除这条套件' 按钮
             delete_button = QtWidgets.QPushButton('删除')
@@ -1284,11 +1307,17 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             # 更新索引号
             update_indices()
 
+
         # 连接 '添加' 按钮到添加套件的函数
         add_button.clicked.connect(add_suite)
 
-        # 默认添加一个套件
-        add_suite()
+        # 遍历数据并添加套件
+        for param in config['replace_param']:
+            add_suite(
+                case_sensitive=param[0],
+                target_cont=param[1],
+                replace_cont=param[2]
+            )
 
         # 创建一个 QScrollArea，并将内容部件添加进去
         scroll_area = QtWidgets.QScrollArea()
@@ -1301,7 +1330,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         tab_layout.addWidget(scroll_area)
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(optimized_scene_node_name_tab, '优化场景节点名称')
+        self.tab_widget.addTab(optimized_scene_node_name_tab, '优化名称')
 
     # _______________________________>>> 创建界面与布局设置页面
     def create_configure_ui_layout_tab(self):

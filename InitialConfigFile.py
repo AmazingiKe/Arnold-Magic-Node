@@ -88,7 +88,6 @@ Arnold_Magic_Settings = {
         'set_udim': True  # 是否设置 UDIM
     },
 
-
     # 连接处理节点参数
     "proc_node_config": {
         "conn_params": {
@@ -240,6 +239,21 @@ Arnold_Magic_Settings = {
         'default_rendering_properties_write_options': True,  # 是否写入默认渲染属性选项
         'rendering_properties_write_options': True,  # 是否写入渲染属性选项
         'AOV_properties_properties_write_options': True  # 是否写入 AOV 属性选项
+    },
+
+    "optimized_scene_node_name": {
+        "replace_param": [
+            {
+                "case_sensitive": False,
+                "target": "prefix_",
+                "replacement": ""
+            },
+            {
+                "case_sensitive": False,
+                "target": "pasted__",
+                "replacement": ""
+            }
+        ]
     },
 
     # 通用配置
