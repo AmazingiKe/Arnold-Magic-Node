@@ -245,13 +245,13 @@ Arnold_Magic_Settings = {
         "replace_param": [
             {
                 "case_sensitive": False,
-                "target": "prefix_",
-                "replacement": ""
+                "target_cont": "prefix_",
+                "replace_cont": ""
             },
             {
                 "case_sensitive": False,
-                "target": "pasted__",
-                "replacement": ""
+                "target_cont": "pasted__",
+                "replace_cont": ""
             }
         ]
     },

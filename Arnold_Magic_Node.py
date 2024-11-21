@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.04"
+SoftwareVersion = "0.9.0.05"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -1228,48 +1228,40 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             suite_widget = QtWidgets.QWidget()
             suite_layout = QtWidgets.QHBoxLayout(suite_widget)
 
-            suite_layout.setContentsMargins(5, 5, 5, 5)  # 设置布局内边距
-            suite_layout.setSpacing(10)  # 设置控件间距
+            suite_layout.setContentsMargins(5, 5, 5, 5)
+            suite_layout.setSpacing(10)
 
-            # 设置样式以添加边框
             suite_widget.setStyleSheet('''
                 QWidget {
                     background-color: rgb(60, 60, 60);
                     border: 1px solid rgb(86, 86, 86);
-                    border-width: 2px;                     /* 边框宽度 */
+                    border-width: 2px;
                     border-radius: 8px;
                     padding: 8px;
                 }
                 QLabel {
-                    color: white;  /* 设置 QLabel 的文本颜色为白色 */
+                    color: white;
                 }
             ''')
 
-            # 第一个：索引号
             index_label = QtWidgets.QLabel()
-            index_label.setFixedWidth(30)  # 固定宽度，调整根据需要
+            index_label.setFixedWidth(30)
 
-            # 第二个：'大小写忽略' 复选框
             case_insensitive_checkbox = QtWidgets.QCheckBox('R')
             case_insensitive_checkbox.setChecked(case_sensitive)
 
-            # 第三个：'替换目标' 输入框
             replacement_target_input = QtWidgets.QLineEdit()
             replacement_target_input.setPlaceholderText('替换目标')
             replacement_target_input.setText(target_cont)
 
-            # 第四个：显示字符串 '->'
             arrow_label = QtWidgets.QLabel('→')
 
-            # 第五个：'替换内容' 输入框
             replacement_content_input = QtWidgets.QLineEdit()
             replacement_content_input.setPlaceholderText('替换内容')
             replacement_content_input.setText(replace_cont)
 
-            # 第六个：'删除这条套件' 按钮
             delete_button = QtWidgets.QPushButton('删除')
 
-            # 将组件添加到套件布局
             suite_layout.addWidget(index_label)
             suite_layout.addWidget(case_insensitive_checkbox)
             suite_layout.addWidget(replacement_target_input)
@@ -1277,10 +1269,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             suite_layout.addWidget(replacement_content_input)
             suite_layout.addWidget(delete_button)
 
-            # 将套件添加到套件布局中
             suites_layout.addWidget(suite_widget)
 
-            # 将套件的信息存储到列表中
             suite_info = {
                 'widget': suite_widget,
                 'index_label': index_label,
@@ -1291,32 +1281,58 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             }
             self.suites.append(suite_info)
 
-            # 定义删除套件的函数
+            def add_config():
+                self.config['optimized_scene_node_name']['replace_param'].append(
+                    {
+                        'target_content' :'',
+                        'replace_content' : '',
+                        'case_sensitive' : False
+                    }
+                )
+
+                self.modify_nested_config(key_path=['optimized_scene_node_name', 'replace_param'],
+                                          cont=self.config['optimized_scene_node_name']['replace_param'])
+
             def delete_suite():
+                # 获取被删除套件的索引和详细信息
+                suite_index = self.suites.index(suite_info)
+                target_content = suite_info['replacement_target_input'].text()
+                replace_content = suite_info['replacement_content_input'].text()
+                case_sensitive = suite_info['case_insensitive_checkbox'].isChecked()
+
+                print(
+                    f"删除了第 {suite_index} 行的套件 - 目标内容: {target_content}, 替换内容: {replace_content}, 大小写敏感: {case_sensitive}")
+
+                # 删除key
+                self.config['optimized_scene_node_name']['replace_param'].pop(suite_index)
+
+                # 修改配置文件
+                self.modify_nested_config(key_path = ['optimized_scene_node_name', 'replace_param'], cont = self.config['optimized_scene_node_name']['replace_param'])
+
                 # 从布局中移除并删除套件
                 suites_layout.removeWidget(suite_widget)
                 suite_widget.deleteLater()
+
                 # 从套件列表中移除
                 self.suites.remove(suite_info)
+
                 # 更新索引号
                 update_indices()
 
-            # 将删除按钮连接到删除函数
             delete_button.clicked.connect(delete_suite)
 
-            # 更新索引号
             update_indices()
 
-
+            add_config()
         # 连接 '添加' 按钮到添加套件的函数
         add_button.clicked.connect(add_suite)
 
         # 遍历数据并添加套件
-        for param in config['replace_param']:
+        for index, param in enumerate(config['replace_param']):
             add_suite(
-                case_sensitive=param[0],
-                target_cont=param[1],
-                replace_cont=param[2]
+                case_sensitive=param['case_sensitive'],
+                target_cont=param['target_cont'],
+                replace_cont=param['replace_cont']
             )
 
         # 创建一个 QScrollArea，并将内容部件添加进去
