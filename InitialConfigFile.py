@@ -242,14 +242,17 @@ Arnold_Magic_Settings = {
     },
 
     "optimized_scene_node_name": {
+
         "replace_param": [
             {
                 "case_sensitive": False,
+                "switch_checkbox" : True,
                 "target_cont": "prefix_",
                 "replace_cont": ""
             },
             {
                 "case_sensitive": False,
+                "switch_checkbox" : True,
                 "target_cont": "pasted__",
                 "replace_cont": ""
             }

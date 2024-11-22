@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.05"
+SoftwareVersion = "0.9.0.06"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -1189,48 +1189,67 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab'])  # 节点路径匹配选项卡
 
-    # 优化场景节点名称页面
+    # ______________________________________________________________________________>>> 优化场景节点名称页面
     def create_optimized_scene_node_name_tab(self):
 
-        #_______________________________________________________________>>> 创建配置变量
+        # __________________________________________________________________________>>> 创建配置变量
         config = self.config['optimized_scene_node_name']
 
-        # _______________________________________________________________>>> 设置字体
+        # __________________________________________________________________________>>> 设置字体
         font = QtGui.QFont()
         font.setPointSize(SMALL_FONT_SIZE)  # 设置字体大小
-        font.setBold(True)  # 设置加粗
+        font.setBold(True)  # 设置字体加粗
 
-        # _______________________________________________________________>>> 创建用于存放内容的 QWidget
+        # __________________________________________________________________________>>> 创建用于存放内容的 QWidget
         content_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(content_widget)
-        layout.setAlignment(QtCore.Qt.AlignTop)  # 将布局对齐方式设置为靠上
+        layout.setAlignment(QtCore.Qt.AlignTop)  # 设置布局对齐方式为靠上
 
-        # 创建用于添加套件的 '添加' 按钮
+        # 定义添加配置的函数
+        def add_config():
+            # 向配置文件中添加一个新的替换参数
+            self.config['optimized_scene_node_name']['replace_param'].append(
+                {
+                    'target_cont': '',  # 替换目标内容
+                    'replace_cont': '',  # 替换后内容
+                    'case_sensitive': False,  # 是否大小写敏感
+                    "switch_checkbox": True  # 是否启用
+                }
+            )
+            # 更新配置文件
+            self.modify_nested_config(
+                key_path=['optimized_scene_node_name', 'replace_param'],
+                cont=self.config['optimized_scene_node_name']['replace_param']
+            )
+
+        # __________________________________________________________________________>>> 创建 '添加' 按钮
         add_button = QtWidgets.QPushButton('添加')
+        add_button.clicked.connect(lambda *args: add_config())
         layout.addWidget(add_button)
 
-        # 创建用于存放套件的容器
+        # __________________________________________________________________________>>> 创建用于存放套件的容器
         suites_container = QtWidgets.QWidget()
         suites_layout = QtWidgets.QVBoxLayout(suites_container)
-        suites_layout.setAlignment(QtCore.Qt.AlignTop)  # 将套件容器的布局对齐方式设置为靠上
+        suites_layout.setAlignment(QtCore.Qt.AlignTop)  # 将布局对齐方式设置为靠上
         layout.addWidget(suites_container)
 
-        # 用于存储套件的列表
+        # 用于存储所有套件的列表
         self.suites = []
 
-        # 定义更新索引号的函数
+        # __________________________________________________________________________>>> 定义更新索引号的函数
         def update_indices():
             for index, suite in enumerate(self.suites, start=1):
-                suite['index_label'].setText(str(index))
+                suite['index_label'].setText(str(index))  # 更新每个套件的索引标签
 
-        # 定义添加套件的函数，并允许传入预设的数据
-        def add_suite(case_sensitive=False, target_cont="", replace_cont=""):
+        # __________________________________________________________________________>>> 定义添加套件的函数
+        def add_suite(switch=True, case_sensitive=False, target_cont="", replace_cont=""):
+            # 创建一个套件的 QWidget
             suite_widget = QtWidgets.QWidget()
             suite_layout = QtWidgets.QHBoxLayout(suite_widget)
-
             suite_layout.setContentsMargins(5, 5, 5, 5)
             suite_layout.setSpacing(10)
 
+            # 设置套件样式
             suite_widget.setStyleSheet('''
                 QWidget {
                     background-color: rgb(60, 60, 60);
@@ -1244,108 +1263,133 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 }
             ''')
 
-            index_label = QtWidgets.QLabel()
+            # 创建套件的组件
+            index_label = QtWidgets.QLabel()  # 显示索引号
             index_label.setFixedWidth(30)
 
-            case_insensitive_checkbox = QtWidgets.QCheckBox('R')
-            case_insensitive_checkbox.setChecked(case_sensitive)
+            switch_checkbox = QtWidgets.QCheckBox('E')  # 启用开关
+            switch_checkbox.setChecked(switch)
 
-            replacement_target_input = QtWidgets.QLineEdit()
+            # 连接信号到槽函数
+            switch_checkbox.stateChanged.connect(lambda *args:self.modify_nested_config(
+                                                             key_path = ['optimized_scene_node_name',
+                                                                         'replace_param',
+                                                                         self.suites.index(suite_info),
+                                                                         'switch_checkbox'],
+                                                             cont = (switch_checkbox.isChecked())))
+
+
+
+            case_insensitive_checkbox = QtWidgets.QCheckBox('R')  # 大小写敏感选项
+            case_insensitive_checkbox.setChecked(case_sensitive)
+            # 连接信号到槽函数
+            case_insensitive_checkbox.stateChanged.connect(lambda *args:self.modify_nested_config(
+                                                             key_path = ['optimized_scene_node_name',
+                                                                         'replace_param',
+                                                                         self.suites.index(suite_info),
+                                                                         'case_sensitive'],
+                                                             cont = (case_insensitive_checkbox.isChecked())))
+
+            replacement_target_input = QtWidgets.QLineEdit()  # 替换目标输入框
             replacement_target_input.setPlaceholderText('替换目标')
             replacement_target_input.setText(target_cont)
+            replacement_target_input.textChanged.connect(lambda *args:self.modify_nested_config(
+                                                             key_path = ['optimized_scene_node_name',
+                                                                         'replace_param',
+                                                                         self.suites.index(suite_info),
+                                                                         'target_cont'],
+                                                             cont = (str(replacement_target_input.text()))))
+            arrow_label = QtWidgets.QLabel('→')  # 箭头符号
 
-            arrow_label = QtWidgets.QLabel('→')
-
-            replacement_content_input = QtWidgets.QLineEdit()
+            replacement_content_input = QtWidgets.QLineEdit()  # 替换内容输入框
             replacement_content_input.setPlaceholderText('替换内容')
             replacement_content_input.setText(replace_cont)
+            replacement_content_input.textChanged.connect(lambda *args:self.modify_nested_config(
+                                                             key_path = ['optimized_scene_node_name',
+                                                                         'replace_param',
+                                                                         self.suites.index(suite_info),
+                                                                         'replace_cont'],
+                                                             cont = (str(replacement_content_input.text()))))
+            delete_button = QtWidgets.QPushButton('删除')  # 删除按钮
 
-            delete_button = QtWidgets.QPushButton('删除')
-
+            # 将组件添加到布局
             suite_layout.addWidget(index_label)
+            suite_layout.addWidget(switch_checkbox)
             suite_layout.addWidget(case_insensitive_checkbox)
             suite_layout.addWidget(replacement_target_input)
             suite_layout.addWidget(arrow_label)
             suite_layout.addWidget(replacement_content_input)
             suite_layout.addWidget(delete_button)
 
+            # 将套件添加到容器布局
             suites_layout.addWidget(suite_widget)
 
+            # 存储套件信息
             suite_info = {
                 'widget': suite_widget,
                 'index_label': index_label,
+                'switch_checkbox': switch_checkbox,
                 'case_insensitive_checkbox': case_insensitive_checkbox,
                 'replacement_target_input': replacement_target_input,
                 'replacement_content_input': replacement_content_input,
                 'delete_button': delete_button
             }
+
             self.suites.append(suite_info)
 
-            def add_config():
-                self.config['optimized_scene_node_name']['replace_param'].append(
-                    {
-                        'target_content' :'',
-                        'replace_content' : '',
-                        'case_sensitive' : False
-                    }
-                )
-
-                self.modify_nested_config(key_path=['optimized_scene_node_name', 'replace_param'],
-                                          cont=self.config['optimized_scene_node_name']['replace_param'])
-
+            # 定义删除套件的函数
             def delete_suite():
-                # 获取被删除套件的索引和详细信息
+                # 获取被删除套件的索引和信息
                 suite_index = self.suites.index(suite_info)
                 target_content = suite_info['replacement_target_input'].text()
                 replace_content = suite_info['replacement_content_input'].text()
                 case_sensitive = suite_info['case_insensitive_checkbox'].isChecked()
 
-                print(
-                    f"删除了第 {suite_index} 行的套件 - 目标内容: {target_content}, 替换内容: {replace_content}, 大小写敏感: {case_sensitive}")
-
-                # 删除key
+                # 从配置文件中删除对应的数据
                 self.config['optimized_scene_node_name']['replace_param'].pop(suite_index)
 
-                # 修改配置文件
-                self.modify_nested_config(key_path = ['optimized_scene_node_name', 'replace_param'], cont = self.config['optimized_scene_node_name']['replace_param'])
+                self.modify_nested_config(
+                    key_path=['optimized_scene_node_name', 'replace_param'],
+                    cont=self.config['optimized_scene_node_name']['replace_param']
+                )
 
-                # 从布局中移除并删除套件
+                # 从布局中移除套件，并释放资源
                 suites_layout.removeWidget(suite_widget)
                 suite_widget.deleteLater()
 
-                # 从套件列表中移除
+                # 从套件列表中移除，并更新索引
                 self.suites.remove(suite_info)
-
-                # 更新索引号
                 update_indices()
 
+            # 绑定删除按钮到删除函数
             delete_button.clicked.connect(delete_suite)
 
+            # 更新索引号
             update_indices()
 
-            add_config()
-        # 连接 '添加' 按钮到添加套件的函数
+        # 将 '添加' 按钮连接到添加套件的函数
         add_button.clicked.connect(add_suite)
 
-        # 遍历数据并添加套件
-        for index, param in enumerate(config['replace_param']):
+        # 遍历配置文件中的数据，并添加现有套件
+        for param in config['replace_param']:
             add_suite(
+                switch=param['switch_checkbox'],
                 case_sensitive=param['case_sensitive'],
                 target_cont=param['target_cont'],
                 replace_cont=param['replace_cont']
             )
 
-        # 创建一个 QScrollArea，并将内容部件添加进去
+        # __________________________________________________________________________>>> 创建 QScrollArea
         scroll_area = QtWidgets.QScrollArea()
-        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidgetResizable(True)  # 设置为可调整大小
         scroll_area.setWidget(content_widget)
 
-        # 创建用于选项卡的 QWidget，并设置布局
+        # __________________________________________________________________________>>> 创建选项卡并设置布局
         optimized_scene_node_name_tab = QtWidgets.QWidget()
         tab_layout = QtWidgets.QVBoxLayout(optimized_scene_node_name_tab)
         tab_layout.addWidget(scroll_area)
 
-        # 将选项卡添加到 tab_widget
+        # 将选项卡添加到主选项卡部件
         self.tab_widget.addTab(optimized_scene_node_name_tab, '优化名称')
 
     # _______________________________>>> 创建界面与布局设置页面
@@ -5669,12 +5713,46 @@ class SceneNameOptimization:
         self.feedback = FeedbackPrompt() # 错误提示模块
         self.pathD = PathDetection() # 数据检测模块
         self.nodeP = NodeProcessor() # 节点处理模块
+        self.default_node = {'time': ['time1'], 'sequenceManager': ['sequenceManager1'], 'hardwareRenderingGlobals': ['hardwareRenderingGlobals'], 'partition': ['renderPartition', 'characterPartition'], 'renderGlobalsList': ['renderGlobalsList1'], 'defaultLightList': ['defaultLightList1'], 'defaultShaderList': ['defaultShaderList1'], 'postProcessList': ['postProcessList1'], 'defaultRenderUtilityList': ['defaultRenderUtilityList1'], 'defaultRenderingList': ['defaultRenderingList1'], 'lightList': ['lightList1'], 'defaultTextureList': ['defaultTextureList1'], 'lambert': ['lambert1'], 'standardSurface': ['standardSurface1'], 'particleCloud': ['particleCloud1'], 'shadingEngine': ['initialShadingGroup', 'initialParticleSE'], 'materialInfo': ['initialMaterialInfo'], 'shaderGlow': ['shaderGlow1'], 'dof': ['dof1'], 'renderGlobals': ['defaultRenderGlobals'], 'renderQuality': ['defaultRenderQuality'], 'resolution': ['defaultResolution'], 'objectSet': ['defaultLightSet', 'defaultObjectSet'], 'viewColorManager': ['defaultViewColorManager'], 'colorManagementGlobals': ['defaultColorMgtGlobals'], 'hardwareRenderGlobals': ['hardwareRenderGlobals'], 'hwRenderGlobals': ['defaultHardwareRenderGlobals'], 'ikSystem': ['ikSystem'], 'hyperGraphInfo': ['hyperGraphInfo'], 'hyperLayout': ['hyperGraphLayout'], 'globalCacheControl': ['globalCacheControl'], 'strokeGlobals': ['strokeGlobals'], 'dynController': ['dynController1'], 'lightLinker': ['lightLinker1'], 'transform': ['persp', 'top', 'front', 'side'], 'camera': ['perspShape', 'topShape', 'frontShape', 'sideShape'], 'shapeEditorManager': ['shapeEditorManager'], 'poseInterpolatorManager': ['poseInterpolatorManager'], 'displayLayerManager': ['layerManager'], 'displayLayer': ['defaultLayer'], 'renderLayerManager': ['renderLayerManager'], 'renderLayer': ['defaultRenderLayer'], 'ikSCsolver': ['ikSCsolver'], 'ikRPsolver': ['ikRPsolver'], 'ikSplineSolver': ['ikSplineSolver'], 'hikSolver': ['hikSolver']}
+        self.scene_nodes = get_scene_all_data()
+
+        self.config = self.dataM.bin_load_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
     def main(self):
-        for i in get_scene_all_data():
-            print(i,'      ',get_scene_all_data()[i])
+        config = self.config['optimized_scene_node_name']['replace_param']
+        # 删除默认值
+        # self.remove_keys_from_scene_node(self.scene_nodes, self.default_node)
+        print(self.scene_nodes)
+        for node_type in self.scene_nodes:
+            for node_name in self.scene_nodes[node_type]:
+                for replace_param in config:
+                    self.nodeP.replace_node_name(enabled = replace_param['switch_checkbox'],
+                                                           ignore_case = replace_param['case_sensitive'],
+                                                           target=replace_param['target_cont'],
+                                                           replacement=replace_param['replace_cont'],
+                                                           node_name= node_name.replace('|',''))
 
 
+    # 从 scene 字典中删除 default 字典中存在的键。
+    def remove_keys_from_scene_node(self, scene, default):
+        """
+        从 scene 字典中删除 default 字典中存在的键。
+
+        :param scene: 需要修改的字典
+        :param default: 用于删除键的字典
+        """
+        for key in list(default.keys()):
+            if key in scene:
+                if isinstance(default[key], dict) and isinstance(scene[key], dict):
+                    # 递归删除子键
+                    self.remove_keys_from_scene_node(scene[key], default[key])
+                    # 如果子字典为空，删除该键
+                    if not scene[key]:
+                        del scene[key]
+                else:
+                    # 删除键
+                    del scene[key]
 
 
 # 主要运行程序

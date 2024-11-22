@@ -1122,6 +1122,52 @@ class NodeProcessor(object):
         match = re.search(pattern, text)
         return bool(match)
 
+    # 替换Maya场景中节点的短名称。
+    def replace_node_name(self, enabled=True, ignore_case=False, target='', replacement='', node_name=''):
+        """
+        替换提供的Maya节点的短名称。
+
+        参数：
+            enabled (bool): 是否启用替换功能。
+            ignore_case (bool): 是否忽略大小写。
+            target (str): 目标字符串，需要被替换的内容。
+            replacement (str): 替换后的字符串。
+            node_name (str): 要进行替换的节点名称。
+        """
+        if not enabled:
+            print("替换功能未启用。")
+            return
+
+        if not target:
+            print("目标字符串为空，无法进行替换。")
+            return
+
+        if not node_name:
+            print("未提供节点名称，无法进行替换。")
+            return
+
+        # 根据是否忽略大小写，设置匹配模式
+        flags = re.IGNORECASE if ignore_case else 0
+        pattern = re.compile(re.escape(target), flags)
+
+        # 检查节点是否存在
+        if not cmds.objExists(node_name):
+            print(f"节点不存在: {node_name}")
+            return
+
+        # 检查目标字符串是否在节点名称中
+        if pattern.search(node_name):
+            # 替换节点名称
+            new_name = pattern.sub(replacement, node_name)
+
+            try:
+                cmds.rename(node_name, new_name)
+                print(f"已重命名: {node_name} -> {new_name}")
+            except Exception as e:
+                print(f"无法重命名节点 {node_name}: {e}")
+        else:
+            print(f"节点名称不包含目标字符串: {node_name}")
+
 # 获取节点数据的库
 class GetNodeData():
     
@@ -1666,6 +1712,8 @@ class DataProcessor():
 
         return correct_path_dictionary
 
+
+
 # 专门用来处理图像
 class ImageProcessor():
     def __init__(self):
@@ -2061,34 +2109,45 @@ def get_scene_all_data():
 
     # 创建空的字典用于存储节点及其类型
     all_dict = {}
-    FilterData = {}
+    FilterData = defaultdict(list)  # 使用 defaultdict 自动处理列表初始化
 
     #__________________________________________________________________________>>> 获取所有节点
-    # 获取场景中所有节点的完整路径
-    all_nodes = cmds.ls()
-
+    # 获取场景中所有节点（包括 DAG 节点）
+    all_nodes = cmds.ls(assemblies=True,long=True)
     # 判断是否有节点存在
     if not all_nodes:
         feedback.CPW('没有找到节点')  # 返回错误提示
         return None
 
-    #__________________________________________________________________________>>> 创建节点类型字典
-    # 遍历所有节点并获取节点类型
+    # # 调试输出 all_nodes，确认节点获取正确
+    # print("获取到的所有节点:", all_nodes)
+
+    #__________________________________________________________________________>>> 创建节点类型字典并分类节点
+    # 遍历所有节点并获取节点类型，同时进行分类
     for node in all_nodes:
         try:
             node_type = cmds.nodeType(node)  # 获取节点类型
-        except:
+        except Exception as e:
             node_type = 'unknown'  # 捕获异常并标记为未知类型
-        all_dict[node] = node_type  # 将节点及其类型存入字典
+            print(f"获取节点类型失败: {node}, 错误: {e}")
 
-    #__________________________________________________________________________>>> 初始化分类字典
-    # 初始化 FilterData 字典，以节点类型为键，列表为值
-    FilterData = {v: [] for v in all_dict.values()}
+        # 将节点及其类型存入字典
+        all_dict[node] = node_type
 
-    #__________________________________________________________________________>>> 分类节点
-    # 根据节点类型将节点分类并存储到 FilterData 中
-    for node, node_type in all_dict.items():
+        # 将节点分类存储到 FilterData
         FilterData[node_type].append(node)
+
+    # 将 defaultdict 转换为普通字典（可选）
+    FilterData = dict(FilterData)
+
+    # # 调试输出 FilterData，确认分类正确
+    # print("分类后的节点数据:")
+    # for node_type, nodes in FilterData.items():
+    #     print(f"类型: {node_type}, 节点数量: {len(nodes)}")
+    #     for node in nodes:
+    #         print(f"  - {node}")
+
+    return FilterData  # 返回按类型分类的节点数据
 
     return FilterData  # 返回按类型分类的节点数据
 
