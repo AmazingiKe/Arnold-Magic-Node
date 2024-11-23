@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.06"
+SoftwareVersion = "0.9.0.07"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -5719,20 +5719,35 @@ class SceneNameOptimization:
         self.config = self.dataM.bin_load_data(
             os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
+    # ______________________________________________________________________________>>> 主函数入口
     def main(self):
+        # 从配置中获取节点名称替换参数
         config = self.config['optimized_scene_node_name']['replace_param']
-        # 删除默认值
-        # self.remove_keys_from_scene_node(self.scene_nodes, self.default_node)
-        print(self.scene_nodes)
-        for node_type in self.scene_nodes:
-            for node_name in self.scene_nodes[node_type]:
-                for replace_param in config:
-                    self.nodeP.replace_node_name(enabled = replace_param['switch_checkbox'],
-                                                           ignore_case = replace_param['case_sensitive'],
-                                                           target=replace_param['target_cont'],
-                                                           replacement=replace_param['replace_cont'],
-                                                           node_name= node_name.replace('|',''))
 
+        # 删除场景节点中的默认值
+        self.remove_keys_from_scene_node(self.scene_nodes, self.default_node)
+
+        # 遍历场景节点的所有类型
+        for node_type in self.scene_nodes:
+            # 遍历当前类型下的所有节点名称
+            for node_name in self.scene_nodes[node_type]:
+                # 如果节点名称包含'|'，则按'|'拆分为多个部分，否则直接使用节点名称
+                node_names_to_process = node_name.split('|') if '|' in node_name else [node_name]
+                # 移除分割后产生的空字符串
+                node_names_to_process = [part for part in node_names_to_process if part]
+
+                # 逐个处理拆分后的节点名称
+                for part_name in node_names_to_process:
+                    # 遍历替换配置参数
+                    for replace_param in config:
+                        # 使用替换工具根据参数替换节点名称
+                        self.nodeP.replace_node_name(
+                            enabled=replace_param['switch_checkbox'],  # 是否启用替换
+                            ignore_case=replace_param['case_sensitive'],  # 是否忽略大小写
+                            target=replace_param['target_cont'],  # 替换目标内容
+                            replacement=replace_param['replace_cont'],  # 替换为的内容
+                            node_name=part_name  # 当前处理的节点名称
+                        )
 
     # 从 scene 字典中删除 default 字典中存在的键。
     def remove_keys_from_scene_node(self, scene, default):

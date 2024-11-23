@@ -1150,10 +1150,10 @@ class NodeProcessor(object):
         flags = re.IGNORECASE if ignore_case else 0
         pattern = re.compile(re.escape(target), flags)
 
-        # 检查节点是否存在
-        if not cmds.objExists(node_name):
-            print(f"节点不存在: {node_name}")
-            return
+        # # 检查节点是否存在
+        # if not cmds.objExists(node_name):
+        #     print(f"节点不存在: {node_name}")
+        #     return
 
         # 检查目标字符串是否在节点名称中
         if pattern.search(node_name):
@@ -1164,9 +1164,9 @@ class NodeProcessor(object):
                 cmds.rename(node_name, new_name)
                 print(f"已重命名: {node_name} -> {new_name}")
             except Exception as e:
-                print(f"无法重命名节点 {node_name}: {e}")
+                pass
         else:
-            print(f"节点名称不包含目标字符串: {node_name}")
+            pass
 
 # 获取节点数据的库
 class GetNodeData():
@@ -2113,13 +2113,14 @@ def get_scene_all_data():
 
     #__________________________________________________________________________>>> 获取所有节点
     # 获取场景中所有节点（包括 DAG 节点）
-    all_nodes = cmds.ls(assemblies=True,long=True)
+    all_nodes = cmds.ls(geometry=1,lights=1,cameras=1, long=1,materials=1,textures=1,assemblies=1)
+
     # 判断是否有节点存在
     if not all_nodes:
         feedback.CPW('没有找到节点')  # 返回错误提示
         return None
 
-    # # 调试输出 all_nodes，确认节点获取正确
+    # 调试输出 all_nodes，确认节点获取正确
     # print("获取到的所有节点:", all_nodes)
 
     #__________________________________________________________________________>>> 创建节点类型字典并分类节点
