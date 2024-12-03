@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.07"
+SoftwareVersion = "0.9.0.08"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -167,7 +167,6 @@ def language_loading():
     return language
 
 #______________________________________________________________________________>>> 插件窗口
-
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
         global AMN_UI_WorkSpaceControl
@@ -473,10 +472,7 @@ class Arnold_Magic_Node_UI(object):
         SNO = SceneNameOptimization()
         SNO.main()
 
-
-
 #______________________________________________________________________________>>> 插件设置按钮qt写
-
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(ArnoldMagicNodeSettingsPanel, self).__init__(parent)
@@ -1757,10 +1753,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 保存修改过后的语言文件
         self.dataM.ascii_save_data(lang_config_path, lang_config)
 
-
-
-
-#______________________________________________________________________________>>> 贴图管理器 使用QT库写的窗口！！！
+#______________________________________________________________________________>>>贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
 
     def __init__(self,parent = MayaMainWindows()):
@@ -1910,9 +1903,9 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_Refresh_Button.setToolTip(lang['TexturelList_Refresh_Button_ToolTip']) # 根据缓存进行重新刷新
 
         # 全选材质节点
-        self.MaterialList_SelectAll_Button = QtWidgets.QPushButton()
-        self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(icon_path + "\\select_all_icon.png"))
-        self.MaterialList_SelectAll_Button.setFixedWidth(40)
+        self.MaterialList_SelectAll_Button = QtWidgets.QPushButton(lang['MaterialList_SelectAll_Button'])
+        # self.MaterialList_SelectAll_Button.setIcon(QtGui.QIcon(icon_path + "\\select_all_icon.png"))
+        # self.MaterialList_SelectAll_Button.setFixedWidth(40)
         self.MaterialList_SelectAll_Button.setFixedHeight(40)
         self.MaterialList_SelectAll_Button.clicked.connect(lambda *args:  self.all_selected_materials())
         self.MaterialList_SelectAll_Button.setIconSize(QtCore.QSize(38, 38))
@@ -1987,6 +1980,11 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_Processed_Image_Button.setFixedHeight(40)
         self.TexturelList_Processed_Image_Button.clicked.connect(lambda *args:  self.image_processing_Win())
 
+
+        self.TexturelList_Texture_Pack_Button = QtWidgets.QPushButton('贴图打包')
+        self.TexturelList_Texture_Pack_Button.setFixedHeight(40)
+        self.TexturelList_Texture_Pack_Button.clicked.connect(lambda *args: self.texture_pack_Win())
+
         # TexturelList 贴图列表
         self.TexturelList = QtWidgets.QTableView()
         TexturelList_Headers = lang['TexturelList_Headers'] # "贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"
@@ -2054,6 +2052,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         Texture_Search_Layout.addWidget(self.TexturelList_Search_And_Replace_Date_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Replace_Data_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Processed_Image_Button)
+        Texture_Search_Layout.addWidget(self.TexturelList_Texture_Pack_Button)
+
 
         # [0][0][0][1] 材质和贴图搜索区域
         Material_And_Texture_Search_Layout = QtWidgets.QHBoxLayout()
@@ -2726,6 +2726,12 @@ class TextureManagerWin(QtWidgets.QDialog):
         tm_ImageProcessing.new_MterialNodeAllInfoDict_signal.connect(lambda new_MterialNodeAllInfoDict, select_texture_dict:
                                                                      self.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict))
 
+    def texture_pack_Win(self):
+        tm_TexturePack = TM_TexturePack(self.WINDOWS_NAME, parent=self)
+        tm_TexturePack.show()
+
+
+
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
 
@@ -3390,8 +3396,6 @@ class TM_FindAndReplace(QtWidgets.QDialog):
             # 激活一次讯号到主窗口，并把修改好的字典传递回去
             self.base_data_bundle_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
 
-
-
     # --------------------保存设置内容的函数
     def modify_config(self, key, cont):
         config = self.dataM.bin_load_data(self.config_path)
@@ -3425,6 +3429,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
         # 4. 初始化控件
         self.initial_widgets_settings()
+
     # 初始化窗口配置
     def initialize_window_config(self, WinName):
 
@@ -3713,7 +3718,6 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
 #______________________________________________________________________________>>>贴图管理器的图像处理界面 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
-    new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
 
     def __init__(self, WinName = '', parent=None):
         super(TM_ImageProcessing, self).__init__(parent)
@@ -4320,6 +4324,155 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
     # 删除存在objectname的窗口
+
+#______________________________________________________________________________>>>贴图管理器的打包器 支持打包贴图到新的路径中
+class TM_TexturePack(QtWidgets.QDialog):
+
+    def __init__(self, WinName='', parent=None):
+        super(TM_TexturePack, self).__init__(parent)
+
+        self.TextureManagerWin = parent  # 保存主窗口的引用
+
+        # 0. 初始化全局配置
+        self.initial_global_config()
+
+        # 1. 初始化窗口配置
+        self.initialize_window_config(WinName)
+
+        # 2. 创建菜单
+        self.menu_widgets()
+
+        # 3. 创建控件
+        self.create_widgets()
+
+        # 4. 创建布局
+        self.create_layouts()
+
+        # 5. 初始化控件
+        self.initial_widgets_settings()
+
+    def initial_global_config(self):
+        # 实例数据管理器
+        self.dataM = DataManager()  # 数据管理
+        self.dataP = DataProcessor()  # 数据处理
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.getnodedata = GetNodeData()  # 获取节点数据模块
+
+    def initialize_window_config(self, WinName):
+        # 命名常量命名
+        WINDOWS_NAME = '贴图打包器' + WinName
+
+        delete_window_if_existe('TM_TexturePack_Win')
+
+        self.setObjectName('TM_TexturePack_Win')
+        self.setWindowTitle(WINDOWS_NAME)
+
+        # 窗口长宽
+        self.setMinimumHeight(200)
+        self.setMinimumWidth(650)
+
+    def menu_widgets(self):
+        pass
+
+    def create_widgets(self):
+        # 第一行：输出路径选择框
+        self.output_path_label = QtWidgets.QLabel("输出路径:")
+        self.output_path_input = QtWidgets.QLineEdit(self)
+        self.output_path_input.setPlaceholderText("选择输出路径...")
+        self.output_path_button = QtWidgets.QPushButton("选择路径", self)
+        self.output_path_button.clicked.connect(self.select_output_path)
+
+
+        self.radio_all = QtWidgets.QRadioButton('全部')  # 全部
+        self.radio_table = QtWidgets.QRadioButton('表格内')  # 表格内
+        self.radio_selection = QtWidgets.QRadioButton('选择中')  # 选择中
+
+        # 第二行：选择框 - 删除源文件 或 修改路径
+        self.delete_source_checkbox = QtWidgets.QCheckBox("删除源文件")
+        self.change_path_checkbox = QtWidgets.QCheckBox("修改路径")
+        self.delete_source_checkbox.setChecked(True)  # 默认选择删除源文件
+
+        # 第三行：打包按钮
+        self.pack_button = QtWidgets.QPushButton("打包", self)
+        self.pack_button.clicked.connect(self.start_pack)
+
+    def create_layouts(self):
+        # 使用垂直布局
+        main_layout = QtWidgets.QVBoxLayout()
+
+        # 第一行：输出路径选择
+        output_layout = QtWidgets.QHBoxLayout()
+        output_layout.addWidget(self.output_path_label)
+        output_layout.addWidget(self.output_path_input)
+        output_layout.addWidget(self.output_path_button)
+
+        selection_layout = QtWidgets.QHBoxLayout()
+        selection_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_all)
+        selection_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_table)
+        selection_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_selection)
+        selection_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        # 第二行：操作选择
+        option_layout = QtWidgets.QHBoxLayout()
+        option_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        option_layout.addWidget(self.delete_source_checkbox)
+        option_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        option_layout.addWidget(self.change_path_checkbox)
+        option_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        # 第三行：打包按钮
+        pack_button_layout = QtWidgets.QHBoxLayout()
+        pack_button_layout.addWidget(self.pack_button)
+
+        # 添加所有行到主布局
+        main_layout.addLayout(output_layout)
+        main_layout.addLayout(selection_layout)
+        main_layout.addLayout(option_layout)
+        main_layout.addLayout(pack_button_layout)
+
+        self.setLayout(main_layout)
+
+    def initial_widgets_settings(self):
+        # 初始化控件设置
+        pass
+
+    def select_output_path(self):
+        # 打开文件选择框，选择输出路径
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "选择输出路径")
+        if folder:
+            self.output_path_input.setText(folder)
+
+    def start_pack(self):
+        # 获取选择的操作
+        if self.delete_source_checkbox.isChecked():
+            operation = "删除源文件"
+        elif self.change_path_checkbox.isChecked():
+            operation = "修改路径"
+        else:
+            operation = "无操作"
+
+        # 获取输出路径
+        output_path = self.output_path_input.text()
+
+        # 打包逻辑处理
+        if not output_path:
+            self.feedback.show_error("错误", "请选择输出路径")
+            return
+
+        # 这里调用打包逻辑
+        self.feedback.show_info("开始打包", f"执行操作：{operation}, 输出路径：{output_path}")
+        # 你可以在这里实现具体的打包逻辑代码
+
 
 def delete_window_if_existe(window_name):
     for widget in QtWidgets.QApplication.allWidgets():
@@ -5287,12 +5440,10 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
                 render_preset_path,  sl_name+ '.bin'
             )))
 
-
 # 修改渲染预设设置
 def modify_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name, menu_name):
     rendering_preset_settings_button(menu_name)
     delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name)
-
 
 # 开关AOV函数
 def ai_aov_switch_button():
@@ -5329,7 +5480,6 @@ class Scene_Name_optimization:
     def node_rename(old_name, new_name):
         renamed_node = cmds.rename(old_name, new_name)
         return renamed_node
-
 
 # 路径连接
 class Path_Detection_Connection:
@@ -5707,13 +5857,14 @@ def blend_greg_manager():
         else:
             pass
 
+# 场景名称优化
 class SceneNameOptimization:
     def __init__(self):
         self.dataM = DataManager() # 数据管理模块
         self.feedback = FeedbackPrompt() # 错误提示模块
         self.pathD = PathDetection() # 数据检测模块
         self.nodeP = NodeProcessor() # 节点处理模块
-        self.default_node = {'time': ['time1'], 'sequenceManager': ['sequenceManager1'], 'hardwareRenderingGlobals': ['hardwareRenderingGlobals'], 'partition': ['renderPartition', 'characterPartition'], 'renderGlobalsList': ['renderGlobalsList1'], 'defaultLightList': ['defaultLightList1'], 'defaultShaderList': ['defaultShaderList1'], 'postProcessList': ['postProcessList1'], 'defaultRenderUtilityList': ['defaultRenderUtilityList1'], 'defaultRenderingList': ['defaultRenderingList1'], 'lightList': ['lightList1'], 'defaultTextureList': ['defaultTextureList1'], 'lambert': ['lambert1'], 'standardSurface': ['standardSurface1'], 'particleCloud': ['particleCloud1'], 'shadingEngine': ['initialShadingGroup', 'initialParticleSE'], 'materialInfo': ['initialMaterialInfo'], 'shaderGlow': ['shaderGlow1'], 'dof': ['dof1'], 'renderGlobals': ['defaultRenderGlobals'], 'renderQuality': ['defaultRenderQuality'], 'resolution': ['defaultResolution'], 'objectSet': ['defaultLightSet', 'defaultObjectSet'], 'viewColorManager': ['defaultViewColorManager'], 'colorManagementGlobals': ['defaultColorMgtGlobals'], 'hardwareRenderGlobals': ['hardwareRenderGlobals'], 'hwRenderGlobals': ['defaultHardwareRenderGlobals'], 'ikSystem': ['ikSystem'], 'hyperGraphInfo': ['hyperGraphInfo'], 'hyperLayout': ['hyperGraphLayout'], 'globalCacheControl': ['globalCacheControl'], 'strokeGlobals': ['strokeGlobals'], 'dynController': ['dynController1'], 'lightLinker': ['lightLinker1'], 'transform': ['persp', 'top', 'front', 'side'], 'camera': ['perspShape', 'topShape', 'frontShape', 'sideShape'], 'shapeEditorManager': ['shapeEditorManager'], 'poseInterpolatorManager': ['poseInterpolatorManager'], 'displayLayerManager': ['layerManager'], 'displayLayer': ['defaultLayer'], 'renderLayerManager': ['renderLayerManager'], 'renderLayer': ['defaultRenderLayer'], 'ikSCsolver': ['ikSCsolver'], 'ikRPsolver': ['ikRPsolver'], 'ikSplineSolver': ['ikSplineSolver'], 'hikSolver': ['hikSolver']}
+
         self.scene_nodes = get_scene_all_data()
 
         self.config = self.dataM.bin_load_data(
@@ -5723,9 +5874,6 @@ class SceneNameOptimization:
     def main(self):
         # 从配置中获取节点名称替换参数
         config = self.config['optimized_scene_node_name']['replace_param']
-
-        # 删除场景节点中的默认值
-        self.remove_keys_from_scene_node(self.scene_nodes, self.default_node)
 
         # 遍历场景节点的所有类型
         for node_type in self.scene_nodes:
@@ -5748,27 +5896,6 @@ class SceneNameOptimization:
                             replacement=replace_param['replace_cont'],  # 替换为的内容
                             node_name=part_name  # 当前处理的节点名称
                         )
-
-    # 从 scene 字典中删除 default 字典中存在的键。
-    def remove_keys_from_scene_node(self, scene, default):
-        """
-        从 scene 字典中删除 default 字典中存在的键。
-
-        :param scene: 需要修改的字典
-        :param default: 用于删除键的字典
-        """
-        for key in list(default.keys()):
-            if key in scene:
-                if isinstance(default[key], dict) and isinstance(scene[key], dict):
-                    # 递归删除子键
-                    self.remove_keys_from_scene_node(scene[key], default[key])
-                    # 如果子字典为空，删除该键
-                    if not scene[key]:
-                        del scene[key]
-                else:
-                    # 删除键
-                    del scene[key]
-
 
 # 主要运行程序
 def Main_program(cached_device_fingerprint, public_key, public_password, validating):
@@ -5808,7 +5935,6 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
 
+# 测试主程序
 def test_program():
     pass
-
-

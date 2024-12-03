@@ -104,6 +104,7 @@
       "create_widgets": {
         "MaterialListSearch_placeholder": "输入要搜索的材质球名称....",
         "TexturelListSearch_placeholder": "输入要搜索的贴图球名称....",
+        "MaterialList_SelectAll_Button" : "全选",
         "TexturelList_Unselect_All_Button": "取消全选",
         "TexturelList_reverse_selection": "反选",
         "TexturelList_Find_Missing_Textures_Button": "选出缺失",
@@ -272,19 +273,6 @@
       }
     },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     "licenses_name" : {
         "free_license": "免费版",
         "standard_license": "标准版",
@@ -352,9 +340,6 @@
         "03": "已转换为",
         "04": "格式 新路径",
         "05": "转换格式-保存图片失败 错误原因"
-
-
-
       }
     },
 

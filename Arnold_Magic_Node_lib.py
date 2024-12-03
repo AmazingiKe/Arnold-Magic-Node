@@ -1122,7 +1122,7 @@ class NodeProcessor(object):
         match = re.search(pattern, text)
         return bool(match)
 
-    # 替换Maya场景中节点的短名称。
+    # ______________________________________________________________________________>>> Maya节点短名称替换工具
     def replace_node_name(self, enabled=True, ignore_case=False, target='', replacement='', node_name=''):
         """
         替换提供的Maya节点的短名称。
@@ -1134,39 +1134,30 @@ class NodeProcessor(object):
             replacement (str): 替换后的字符串。
             node_name (str): 要进行替换的节点名称。
         """
+        # 如果功能未启用，则直接返回
         if not enabled:
-            print("替换功能未启用。")
             return
 
-        if not target:
-            print("目标字符串为空，无法进行替换。")
-            return
-
-        if not node_name:
-            print("未提供节点名称，无法进行替换。")
-            return
-
-        # 根据是否忽略大小写，设置匹配模式
+        # __________________________________________________________________________>>> 匹配模式设置
+        # 设置正则匹配的标志，支持大小写选项
         flags = re.IGNORECASE if ignore_case else 0
-        pattern = re.compile(re.escape(target), flags)
+        pattern = re.compile(re.escape(target), flags)  # 转义目标字符串以进行精确匹配
 
-        # # 检查节点是否存在
-        # if not cmds.objExists(node_name):
-        #     print(f"节点不存在: {node_name}")
-        #     return
-
-        # 检查目标字符串是否在节点名称中
+        # __________________________________________________________________________>>> 节点名称替换逻辑
+        # 检查目标字符串是否存在于节点名称中
         if pattern.search(node_name):
-            # 替换节点名称
+            # 执行替换操作
             new_name = pattern.sub(replacement, node_name)
-
             try:
+                # 调用Maya命令重命名节点
                 cmds.rename(node_name, new_name)
                 print(f"已重命名: {node_name} -> {new_name}")
             except Exception as e:
-                pass
+                # 捕获异常，但不阻断程序运行
+                print(f"重命名失败: {node_name} -> {new_name}, 错误: {str(e)}")
         else:
-            pass
+            # 如果没有匹配到目标字符串，直接返回
+            print(f"未找到匹配的目标字符串: {target} 于节点: {node_name}")
 
 # 获取节点数据的库
 class GetNodeData():
