@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.08"
+SoftwareVersion = "0.9.0.09 "
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -141,9 +141,18 @@ TM_ImageProcessing_config_dict = {
     "scale_texture" : False,
 }
 
+TM_texture_pack_config_dict = {
+    "path_edit" : "",
+    "modify_scope_options" : 1 ,
+    "delete_source_files" : False,
+    "modify_path" : True
+}
+
 TextureManagerWin_config_dict = {
     'listwidget_data' : 50 ,
 }
+
+
 
 # ----------------------------------------------------初始配置变量 结束
 
@@ -2764,6 +2773,7 @@ class TextureManagerWin(QtWidgets.QDialog):
             item.setData(color, QtCore.Qt.BackgroundRole)
 
             continue
+
     # 刷新获取场景的数据
     def refresh_scene_node_info(self):
 
@@ -4358,6 +4368,15 @@ class TM_TexturePack(QtWidgets.QDialog):
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.getnodedata = GetNodeData()  # 获取节点数据模块
 
+
+        # TM_ImageProcessing配置文件路径
+        self.TM_texture_pack_config_FilePath = os.path.normpath(os.path.join(Script_Path, "Datas", "texture_manager",
+                                                            "TM_texture_pack_config.bin"))
+
+        # 如果TM_image_processing_config配置文件不存在会重新创建一次
+        if not os.path.exists(self.TM_texture_pack_config_FilePath):
+            self.dataM.bin_save_data(self.TM_texture_pack_config_FilePath, TM_texture_pack_config_dict)
+
     def initialize_window_config(self, WinName):
         # 命名常量命名
         WINDOWS_NAME = '贴图打包器' + WinName
@@ -4375,26 +4394,66 @@ class TM_TexturePack(QtWidgets.QDialog):
         pass
 
     def create_widgets(self):
-        # 第一行：输出路径选择框
-        self.output_path_label = QtWidgets.QLabel("输出路径:")
-        self.output_path_input = QtWidgets.QLineEdit(self)
-        self.output_path_input.setPlaceholderText("选择输出路径...")
-        self.output_path_button = QtWidgets.QPushButton("选择路径", self)
+        # ______________________________________________________________________>>> 加载配置文件数据
+        config = self.dataM.bin_load_data(self.TM_texture_pack_config_FilePath)  # 加载配置文件
+
+        # ______________________________________________________________________>>> 第一行：输出路径选择框
+        # 输出路径输入框
+        self.output_path_input = QtWidgets.QLineEdit(self)  # 创建路径输入框
+        self.output_path_input.setFixedHeight(40)  # 设置输入框高度
+        self.output_path_input.setPlaceholderText("请选择输出文件夹路径...")  # 设置占位提示文本
+        self.output_path_input.setText(config["path_edit"])  # 设置默认文本为配置文件中保存的路径
+        # 当文本变化时，更新配置文件中的路径信息
+        self.output_path_input.textChanged.connect(lambda *args:
+                                                   self.modify_config(key="path_edit",
+                                                                      cont=self.output_path_input.text()))
+
+        # 输出路径选择按钮
+        self.output_path_button = QtWidgets.QPushButton(". . .", self)  # 创建按钮
+        self.output_path_button.setFixedHeight(38)  # 设置按钮高度
+        self.output_path_button.setFixedWidth(35)  # 设置按钮宽度
+        # 绑定点击事件：选择输出路径
         self.output_path_button.clicked.connect(self.select_output_path)
 
+        # ______________________________________________________________________>>> 第二行：选项单选按钮
+        # 创建单选按钮组
+        self.modify_group = QtWidgets.QButtonGroup(self)
+        self.radio_all = QtWidgets.QRadioButton('全部')  # '全部'选项
+        self.radio_table = QtWidgets.QRadioButton('表格内')  # '表格内'选项
+        self.radio_selection = QtWidgets.QRadioButton('选择中')  # '选择中'选项
+        self.modify_group.addButton(self.radio_all, 1)  # 将按钮加入组
+        self.modify_group.addButton(self.radio_table, 2)
+        self.modify_group.addButton(self.radio_selection, 3)
+        # 当选择变化时，更新配置文件中的选项
+        self.modify_group.buttonClicked.connect(
+            lambda button: self.modify_config('modify_scope_options', self.modify_group.id(button)))
 
-        self.radio_all = QtWidgets.QRadioButton('全部')  # 全部
-        self.radio_table = QtWidgets.QRadioButton('表格内')  # 表格内
-        self.radio_selection = QtWidgets.QRadioButton('选择中')  # 选择中
+        # 设置默认选中按钮（通过配置文件中的ID）
+        modify_group_button = self.modify_group.button(config['modify_scope_options'])
+        if modify_group_button:
+            modify_group_button.setChecked(True)  # 设置该按钮为选中状态
 
-        # 第二行：选择框 - 删除源文件 或 修改路径
+        # ______________________________________________________________________>>> 第二行：删除源文件和修改路径复选框
+        # 删除源文件复选框
         self.delete_source_checkbox = QtWidgets.QCheckBox("删除源文件")
-        self.change_path_checkbox = QtWidgets.QCheckBox("修改路径")
-        self.delete_source_checkbox.setChecked(True)  # 默认选择删除源文件
+        self.delete_source_checkbox.setChecked(config["delete_source_files"])  # 根据配置设置是否选中
+        # 当选项状态变化时，更新配置文件中的删除源文件选项
+        self.delete_source_checkbox.stateChanged.connect(lambda *args:
+                                                         self.modify_config(key="delete_source_files",
+                                                                            cont=self.delete_source_checkbox.isChecked()))
 
-        # 第三行：打包按钮
-        self.pack_button = QtWidgets.QPushButton("打包", self)
-        self.pack_button.clicked.connect(self.start_pack)
+        # 修改路径复选框
+        self.change_path_checkbox = QtWidgets.QCheckBox("修改路径")
+        self.change_path_checkbox.setChecked(config["modify_path"])  # 根据配置设置是否选中
+        # 当选项状态变化时，更新配置文件中的修改路径选项
+        self.change_path_checkbox.stateChanged.connect(lambda *args:
+                                                       self.modify_config(key="modify_path",
+                                                                          cont=self.change_path_checkbox.isChecked()))
+
+        # ______________________________________________________________________>>> 第三行：打包按钮
+        self.pack_button = QtWidgets.QPushButton("打包", self)  # 创建打包按钮
+        # 点击按钮时，执行打包操作
+        self.pack_button.clicked.connect(lambda *args: self.start_pack())
 
     def create_layouts(self):
         # 使用垂直布局
@@ -4402,7 +4461,6 @@ class TM_TexturePack(QtWidgets.QDialog):
 
         # 第一行：输出路径选择
         output_layout = QtWidgets.QHBoxLayout()
-        output_layout.addWidget(self.output_path_label)
         output_layout.addWidget(self.output_path_input)
         output_layout.addWidget(self.output_path_button)
 
@@ -4447,31 +4505,89 @@ class TM_TexturePack(QtWidgets.QDialog):
         pass
 
     def select_output_path(self):
-        # 打开文件选择框，选择输出路径
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "选择输出路径")
+        # 打开文件选择框，请选择输出文件夹路径
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "请选择输出文件夹路径")
         if folder:
+            folder = os.path.normpath(folder)
             self.output_path_input.setText(folder)
 
+
+
     def start_pack(self):
-        # 获取选择的操作
-        if self.delete_source_checkbox.isChecked():
-            operation = "删除源文件"
-        elif self.change_path_checkbox.isChecked():
-            operation = "修改路径"
-        else:
-            operation = "无操作"
+        config = self.dataM.bin_load_data(self.TM_texture_pack_config_FilePath)
 
-        # 获取输出路径
-        output_path = self.output_path_input.text()
+        # 访问继承TextureManagerWin里面最新的MterialNodeAllInfoDict
+        TM_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
 
-        # 打包逻辑处理
-        if not output_path:
-            self.feedback.show_error("错误", "请选择输出路径")
+        # 获取零时数据
+        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+
+        tex_filter_list = []
+
+        # 1.检测路径是否正常
+        if not os.path.exists(config["path_edit"]):
+            self.feedback.CPW('请选择正常的输出路径')
             return
 
-        # 这里调用打包逻辑
-        self.feedback.show_info("开始打包", f"执行操作：{operation}, 输出路径：{output_path}")
-        # 你可以在这里实现具体的打包逻辑代码
+        # 1，全选
+        if config['modify_scope_options'] == 1:
+            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
+
+            for mat_name in MterialNodeAllInfoDict:
+                for node_name in MterialNodeAllInfoDict[mat_name]:
+                    tex_filter_list.append(node_name)
+
+        # 2，选择表格内的数据
+        elif config['modify_scope_options'] == 2:
+            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
+
+            # 获取出表格中的所有贴图名称
+            for index, value in enumerate(temp_TextureManager_texture_table_data):
+                tex_filter_list.append(temp_TextureManager_texture_table_data[index][0])
+
+        # 3，表格内选择的数据
+        elif config['modify_scope_options'] == 3:
+            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
+
+            # 获取出表格中
+            selected_indexes = self.TextureManagerWin.TexturelList.selectionModel().selectedRows()
+            if selected_indexes:
+                # 用于存储所有选中行的数据
+                all_selected_rows_data = []
+
+                for index in selected_indexes:
+                    selected_row = index.row()
+
+                    # 获取该行的所有列内容
+                    row_data = []
+                    for column in range(self.TextureManagerWin.TEXTURELIST_MODEL.columnCount()):
+                        cell_value = self.TextureManagerWin.TEXTURELIST_MODEL.index(selected_row, column).data()
+                        row_data.append(cell_value)
+
+                    # 将该行数据添加到所有选中行的数据列表中
+                    all_selected_rows_data.append(row_data)
+            else:
+                self.feedback.CP("没有选中任何行")
+
+            for index, value in enumerate(all_selected_rows_data):
+                tex_filter_list.append(value[0])
+
+            MaterialList_selected_items = self.TextureManagerWin.MaterialList.selectedItems()  # 获取所有选中的项
+            mat_filter_list = [item.text() for item in MaterialList_selected_items]  # 获取选中项的文本列表
+
+        print(tex_filter_list)
+
+
+
+
+    # --------------------保存设置内容的函数
+    def modify_config(self, key, cont):
+        config = self.dataM.bin_load_data(self.TM_texture_pack_config_FilePath)
+
+        config[key] = cont
+
+        self.dataM.bin_save_data(self.TM_texture_pack_config_FilePath, config)
+    # --------------------保存设置内容的函数
 
 
 def delete_window_if_existe(window_name):
