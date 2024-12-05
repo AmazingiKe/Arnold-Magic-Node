@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.09 "
+SoftwareVersion = "0.9.0.10 "
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -2739,7 +2739,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         tm_TexturePack = TM_TexturePack(self.WINDOWS_NAME, parent=self)
         tm_TexturePack.show()
 
-
+        tm_TexturePack.new_MterialNodeAllInfoDict_signal.connect(lambda new_MterialNodeAllInfoDict, select_texture_dict:
+                                                                 self.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict))
 
     # 其他窗口-----------------------------------------结束
     def state_set_background_colors(self, model):
@@ -3729,6 +3730,8 @@ class TM_RepathFiles(QtWidgets.QDialog):
 #______________________________________________________________________________>>>贴图管理器的图像处理界面 支持转换格式和压缩图像
 class TM_ImageProcessing(QtWidgets.QDialog):
 
+    new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
+
     def __init__(self, WinName = '', parent=None):
         super(TM_ImageProcessing, self).__init__(parent)
 
@@ -4303,6 +4306,8 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(need_update_dict,
                                                                                  old_MterialNodeAllInfoDict)
 
+
+
         # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
         self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
 
@@ -4337,6 +4342,9 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 #______________________________________________________________________________>>>贴图管理器的打包器 支持打包贴图到新的路径中
 class TM_TexturePack(QtWidgets.QDialog):
+
+    # 定义一个信号，传递多个变量
+    new_MterialNodeAllInfoDict_signal = Signal(dict, dict)
 
     def __init__(self, WinName='', parent=None):
         super(TM_TexturePack, self).__init__(parent)
@@ -4514,6 +4522,7 @@ class TM_TexturePack(QtWidgets.QDialog):
 
 
     def start_pack(self):
+
         config = self.dataM.bin_load_data(self.TM_texture_pack_config_FilePath)
 
         # 访问继承TextureManagerWin里面最新的MterialNodeAllInfoDict
@@ -4522,14 +4531,19 @@ class TM_TexturePack(QtWidgets.QDialog):
         # 获取零时数据
         temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path)
 
+        # 修改的贴图列表
         tex_filter_list = []
+
+        # 需要更新的数据记录字典 节点名称:材质名称
+        need_update_dict = {}
 
         # 1.检测路径是否正常
         if not os.path.exists(config["path_edit"]):
             self.feedback.CPW('请选择正常的输出路径')
             return
 
-        # 1，全选
+        # 2.检测选择范围
+        # 全选
         if config['modify_scope_options'] == 1:
             MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
 
@@ -4537,7 +4551,9 @@ class TM_TexturePack(QtWidgets.QDialog):
                 for node_name in MterialNodeAllInfoDict[mat_name]:
                     tex_filter_list.append(node_name)
 
-        # 2，选择表格内的数据
+                    # 添加到需要更新路径数据的字典中
+                    need_update_dict[node_name] = mat_name
+        # 选择表格内的数据
         elif config['modify_scope_options'] == 2:
             MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
 
@@ -4545,7 +4561,11 @@ class TM_TexturePack(QtWidgets.QDialog):
             for index, value in enumerate(temp_TextureManager_texture_table_data):
                 tex_filter_list.append(temp_TextureManager_texture_table_data[index][0])
 
-        # 3，表格内选择的数据
+                # 添加到需要更新路径数据的字典中
+                need_update_dict[temp_TextureManager_texture_table_data[index][0]] = temp_TextureManager_texture_table_data[index][1]
+
+
+        # 表格内选择的数据
         elif config['modify_scope_options'] == 3:
             MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
 
@@ -4572,10 +4592,55 @@ class TM_TexturePack(QtWidgets.QDialog):
             for index, value in enumerate(all_selected_rows_data):
                 tex_filter_list.append(value[0])
 
+                # 添加到需要更新路径数据的字典中
+                need_update_dict[value[0]] = value[1]
+
             MaterialList_selected_items = self.TextureManagerWin.MaterialList.selectedItems()  # 获取所有选中的项
             mat_filter_list = [item.text() for item in MaterialList_selected_items]  # 获取选中项的文本列表
 
-        print(tex_filter_list)
+        # 3.替换检测主要逻辑单元
+        for mat_name in TM_MterialNodeAllInfoDict:
+            for node_name in TM_MterialNodeAllInfoDict[mat_name]:
+                # 如果节点名称包含在选择范围内即执行以下函数
+                if node_name in tex_filter_list:
+
+                    # 获取节点路径
+                    node_path = TM_MterialNodeAllInfoDict[mat_name][node_name]['Path']
+
+
+                    # 如果输入的是同一个路径下不继续执行下去
+                    if os.path.normpath(config['path_edit']) == os.path.normpath(os.path.dirname(node_path)):
+                        self.feedback.CPW(f" {os.path.basename(node_path)} 文件已经存在目标文件夹中")
+                        continue
+
+                    # 把文件复制到指定目标文件夹
+                    shutil.copy(node_path, config["path_edit"])
+                    self.feedback.CPW(f'成功把 {os.path.basename(node_path)} 文件复制到-> {config["path_edit"]} 路径')
+
+                    # 如果开启修改路径会把节点的路径修改到新路径
+                    if config['modify_path']:
+                        new_path = os.path.normpath(os.path.join(config["path_edit"], os.path.basename(node_path)))
+
+                        # 如果程序化路径出错无法进行下一步函数
+                        if not os.path.exists(new_path):
+                            self.feedback.CPW('程序化路径无法访问，生产错误，无法访问:' + new_path)
+                            return
+
+                        cmds.setAttr(node_name + '.fileTextureName', new_path, type="string")
+
+
+                    # 更新主窗口函数
+
+                    # 修改 TM_MterialNodeAllInfoDict
+                    TM_MterialNodeAllInfoDict[mat_name][node_name]['Path'] = new_path
+
+
+                    # 更新主窗口字典数据
+                    new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(need_update_dict,
+                                                                                             TM_MterialNodeAllInfoDict)
+
+                    # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
+                    self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
 
 
 
