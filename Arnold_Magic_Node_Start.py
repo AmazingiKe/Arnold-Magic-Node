@@ -1,56 +1,69 @@
-# -*- coding: utf-8 -*-
-import os
-import importlib
-import maya.cmds as cmds
-import json
+# ______________________________________________________________________________>>> 导入必要库
+import os  # 操作系统文件路径和操作
+import importlib  # 动态加载模块
+import maya.cmds as cmds  # Maya命令接口
+import json  # JSON 文件操作
 
-Script_path = os.path.join(os.path.dirname(__file__))
+# 获取脚本的根路径
+script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
 
-# 检测maya所用的语言并创建相应的语言配置
+#______________________________________________________________________________>>> 检测 Maya 语言配置并创建语言文件
 def detecting_language():
+    """
+    检测 Maya 所使用的语言，并创建对应的语言配置文件。
+    如果语言配置文件不存在，则默认使用英文（en_US）。
+    """
     language = {}
 
-    # 获取当前脚本的目录路径
-    Script_path = os.path.join(os.path.dirname(__file__)).replace('/', '\\').replace("\\", "\\\\")
-
-    # 获取所有的语言文件
+    # 获取语言文件目录中的所有语言选项
     language_list_dir = os.listdir(
-        os.path.join(Script_path, "Datas", "languages")
-    )
-    # 删除.json
+        os.path.normpath(os.path.join(script_path, "Datas", "languages")))
+
+    # 去掉文件后缀（.json）
     language_list_dir = [val.replace('.json', '') for val in language_list_dir]
 
-
+    # 获取 Maya 当前使用的界面语言
     maya_language = cmds.about(uil=True)
 
-    # 如果存在maya使用的语言有的话就用，没有的话就默认英文
+    # 判断是否存在匹配的语言配置，否则默认英文
     if maya_language in language_list_dir:
         language['language_config'] = maya_language
     else:
         language['language_config'] = 'en_US'
 
-    # 获取语言配置的路径
-    language_config_file_path = os.path.join(Script_path, "Datas", "settings", "language_config.json")
+    # 定义语言配置文件路径
+    language_config_file_path = os.path.normpath(os.path.join(
+        script_path, "Datas", "settings", "language_config.json"))
 
+    # 如果语言配置文件不存在，则创建
     if not os.path.exists(language_config_file_path):
         with open(language_config_file_path, 'w') as file:
             json.dump(language, file, indent=4)
 
+#______________________________________________________________________________>>> 主函数入口
 def main():
+    """
+    主函数，负责调用项目初始化的各个子模块，包括文件夹配置、依赖检查、文件初始化及许可证校验。
+    """
+    # 加载并执行初始配置模块
     import InitialConfigFolder
     importlib.reload(InitialConfigFolder)
     InitialConfigFolder.Main_program()
 
+    # 检测语言配置
     detecting_language()
 
+    # 加载并执行依赖库配置模块
     import DependenciesLibs
     importlib.reload(DependenciesLibs)
     DependenciesLibs.Main_program()
 
+    # 加载并执行文件初始化模块
     import InitialConfigFile
     importlib.reload(InitialConfigFile)
     InitialConfigFile.Main_program()
 
+    # 加载并执行许可证校验模块
     import LicenseValidator
     importlib.reload(LicenseValidator)
     LicenseValidator.Main_program()

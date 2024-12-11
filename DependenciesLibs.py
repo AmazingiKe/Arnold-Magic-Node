@@ -8,9 +8,8 @@ import importlib
 import subprocess
 import time
 import json
-import re
+
 from datetime import datetime
-# noinspection PyUnresolvedReferences
 import maya.cmds as cmds
 
 PythonVersion = sys.version.split()[0]
@@ -55,11 +54,8 @@ def ascii_save_data(file_path, data):
         json.dump(data, file, indent=4)
 
 # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
-# 'language_config' 是从 'language_config.json' 文件中读取的指定语言（例如: 'en', 'zh'等）
 language_config = ascii_load_data(os.path.join(ScriptPath, 'Datas', 'settings', 'language_config.json'))['language_config']
 
-# 根据上一步加载的 'language_config'，动态加载相应语言的JSON文件
-# 这个文件应该位于 'Datas/languages' 目录中，文件名与 'language_config' 的值相同（如 'en.json'）
 # 从该语言文件中读取 'DLibs' 键的内容，通常用于加载与该语言相关的库或资源
 language = ascii_load_data(os.path.join(ScriptPath, 'Datas', 'languages', f'{language_config}.json'))["DLibs"]
 

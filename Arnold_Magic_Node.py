@@ -52,7 +52,7 @@ except ImportError:
 
 # ------------------------------------------
 # 获取脚本路径
-Script_Path = os.path.normpath(os.path.join(os.path.dirname(__file__)))  # 获取当前脚本的目录路径
+script_path = os.path.normpath(os.path.join(os.path.dirname(__file__))) # 获取当前脚本的目录路径
 # ------------------------------------------
 
 # 9. 自定义库导入与依赖管理
@@ -81,7 +81,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.0.10 "
+SoftwareVersion = "0.9.1.10"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -89,11 +89,11 @@ pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a9190
 pluginUpdateDownloadURL = r'https://flowus.cn/amazingike/share/84422156-5158-4b73-9a5f-c5cadbb6625a?code=LZVF69'
 pluginHelpDocumentURL = r'https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69'
 
-datas_path = os.path.normpath(os.path.join(Script_Path, "Datas")) # 定义数据文件夹  ->全局变量
+datas_path = os.path.normpath(os.path.join(script_path, "Datas")) # 定义数据文件夹  ->全局变量
 
 settings_path = os.path.normpath(os.path.join(datas_path, "settings")) # 定义设置配置文件夹  ->全局变量
 
-icon_path = os.path.normpath(os.path.join(Script_Path, "icon")) # 定义图标路径  ->全局变量
+icon_path = os.path.normpath(os.path.join(script_path, "icon")) # 定义图标路径  ->全局变量
 
 render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))
 
@@ -167,11 +167,11 @@ def language_loading():
 
     # 加载语言配置文件并获取 'language_config' 键的值
     language_config = dataM.ascii_load_data(
-        os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json'))['language_config']
+        os.path.join(script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
 
     # 动态加载相应语言的JSON文件
     language = dataM.ascii_load_data(
-        os.path.join(Script_Path, 'Datas', 'languages', f'{language_config}.json'))
+        os.path.join(script_path, 'Datas', 'languages', f'{language_config}.json'))
 
     return language
 
@@ -524,7 +524,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.language = language_loading()['ArnoldMagicNode']['AMNSP_WIN']
 
 
-        self.languages_folder_path = os.path.join(Script_Path, 'Datas', 'languages')  # 语言文件夹路径
+        self.languages_folder_path = os.path.join(script_path, 'Datas', 'languages')  # 语言文件夹路径
 
 
     def initialize_window_config(self):
@@ -1745,7 +1745,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         selected_lang = self.language_combo_box.currentText()
 
         # 语言配置路径
-        lang_config_path = os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json')
+        lang_config_path = os.path.join(script_path, 'Datas', 'settings', 'language_config.json')
 
         # 加载语言配置文件
         lang_config = self.dataM.ascii_load_data(lang_config_path)
@@ -1775,8 +1775,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM = DataManager() # 储存模块
         self.dataP = DataProcessor() # 数据处理模块
 
-        self.TextureManager_texture_table_data_temp_path = os.path.join(Script_Path, 'Temp', 'TM_texture_table.bin')
-        self.TextureManager_config_path = os.path.join(Script_Path, 'Datas', 'texture_manager', 'TM_config.bin')
+        self.TextureManager_texture_table_data_temp_path = os.path.join(script_path, 'Temp', 'TM_texture_table.bin')
+        self.TextureManager_config_path = os.path.join(script_path, 'Datas', 'texture_manager', 'TM_config.bin')
 
         # 加载语言配置
         self.language =  language_loading()['ArnoldMagicNode']['TM_WIN']
@@ -2938,7 +2938,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.dataP = DataProcessor()
         self.getnodedata = GetNodeData()
 
-        self.config_path = os.path.join(Script_Path, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
+        self.config_path = os.path.join(script_path, 'Datas', 'texture_manager', 'TM_find_and_replace_config.bin') # 历史写入路径
 
         # 加载语言配置
         self.language =  language_loading()['ArnoldMagicNode']['TM_FAR_WIN']
@@ -3470,7 +3470,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.language =  language_loading()['ArnoldMagicNode']['TM_RF_WIN']
 
 
-        self.TM_repath_files_config_FilePath = os.path.join(Script_Path, "Datas", "texture_manager", "TM_repath_files_config.bin")
+        self.TM_repath_files_config_FilePath = os.path.join(script_path, "Datas", "texture_manager", "TM_repath_files_config.bin")
 
         # 如果TM_repath_files_config配置文件不存在会重新创建一次
         if not os.path.exists(self.TM_repath_files_config_FilePath):
@@ -3783,7 +3783,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
         # TM_ImageProcessing配置文件路径
-        self.TM_image_processing_config_FilePath = os.path.join(Script_Path, "Datas", "texture_manager",
+        self.TM_image_processing_config_FilePath = os.path.join(script_path, "Datas", "texture_manager",
                                                             "TM_image_processing_config.bin")
 
         # 如果TM_image_processing_config配置文件不存在会重新创建一次
@@ -3793,7 +3793,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
 
         # TM_ImageProcessing的缓存文件路径
-        self.TM_image_processing_cache_FilePath = os.path.join(Script_Path, "Datas", "texture_manager",
+        self.TM_image_processing_cache_FilePath = os.path.join(script_path, "Datas", "texture_manager",
                                                             "TM_image_processing_cache.bin")
 
         # 如果TM_image_processing_cache缓存文件不存在会重新创建一次
@@ -4378,7 +4378,7 @@ class TM_TexturePack(QtWidgets.QDialog):
 
 
         # TM_ImageProcessing配置文件路径
-        self.TM_texture_pack_config_FilePath = os.path.normpath(os.path.join(Script_Path, "Datas", "texture_manager",
+        self.TM_texture_pack_config_FilePath = os.path.normpath(os.path.join(script_path, "Datas", "texture_manager",
                                                             "TM_texture_pack_config.bin"))
 
         # 如果TM_image_processing_config配置文件不存在会重新创建一次
@@ -6086,10 +6086,10 @@ def Main_program(cached_device_fingerprint, public_key, public_password, validat
     dataM = DataManager()  # 数据管理
 
     language_config = dataM.ascii_load_data(
-        os.path.join(Script_Path, 'Datas', 'settings', 'language_config.json'))['language_config']
+        os.path.join(script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
 
     language = dataM.ascii_load_data(
-        os.path.join(Script_Path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['licenses_name']
+        os.path.join(script_path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['licenses_name']
 
 
 

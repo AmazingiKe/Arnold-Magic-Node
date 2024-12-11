@@ -2141,8 +2141,6 @@ def get_scene_all_data():
 
     return FilterData  # 返回按类型分类的节点数据
 
-    return FilterData  # 返回按类型分类的节点数据
-
 
 # 数据管理器
 class DataManager:

@@ -1,10 +1,11 @@
-import os
-import msgpack
+# ______________________________________________________________________________>>> 导入必要库
+import os # 操作系统文件路径相关操作
+import msgpack # 高效二进制序列化工具
 
 
 
 
-
+# ______________________________________________________________________________>>> 配置项定义
 Arnold_Magic_Settings = {
     # 纹理过滤参数配置
     "texture_filter_params": {
@@ -272,26 +273,39 @@ Arnold_Magic_Settings = {
     },
 }
 
-Script_path = os.path.join(os.path.dirname(__file__))
+# 当前脚本路径
+script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
 
-# 保存数据为二进制格式
+# ______________________________________________________________________________>>> 数据保存函数
 def bin_save_data(file_path, data):
-    with open(file_path, 'wb') as file:  # 'wb' 表示写入二进制文件
-        packed_data = msgpack.packb(data)  # 将数据序列化为 MessagePack 格式
+    """
+    保存数据为二进制格式。
+
+    :param file_path: 文件保存路径
+    :param data: 要保存的数据
+    """
+    with open(file_path, 'wb') as file:
+        packed_data = msgpack.packb(data)
         file.write(packed_data)
 
+# ______________________________________________________________________________>>> 配置文件检测函数
 def detecting_initial_config_files(path, filename, data):
+    """
+    检查并初始化配置文件。
 
-    # 使用path和filename创建绝对路径
-    abs_path = os.path.join(path, filename+'.bin')
+    :param path: 配置文件存放路径
+    :param filename: 配置文件名称
+    :param data: 配置文件数据
+    """
+    abs_path = os.path.join(path, filename + '.bin')
 
-    # 检查文件是否存在，或者文件大小是否为0KB
     if not os.path.exists(abs_path) or os.path.getsize(abs_path) == 0:
-        # 如果文件不存在或者文件大小为0KB，重新保存数据
         bin_save_data(abs_path, data)
 
-
+# ______________________________________________________________________________>>> 主程序入口
 def Main_program():
-    settings_data = os.path.join(Script_path, 'Datas', 'settings')
-
+    """
+    主程序，负责初始化配置文件。
+    """
+    settings_data = os.path.join(script_path, 'Datas', 'settings')
     detecting_initial_config_files(settings_data, 'Arnold_Magic_Settings', Arnold_Magic_Settings)

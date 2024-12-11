@@ -53,7 +53,7 @@ except ImportError:
 
 ##############################################################################################
 
-Script_path = os.path.join(os.path.dirname(__file__))
+script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
 
 dataM = Arnold_Magic_Node_lib.DataManager() # 导入储存模块
 feedback = Arnold_Magic_Node_lib.FeedbackPrompt() # 导入报错模块
@@ -74,9 +74,9 @@ public_password = "ea54b522ed180be0691d084cde28c930".encode()
 
 # 获取语言
 # 获取语言设置
-language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json' ))['language_config']
+language_config = dataM.ascii_load_data(os.path.join(script_path, 'Datas', 'settings', 'language_config.json' ))['language_config']
 # 加载语言文件
-language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json' ))["LicenseV"]
+language = dataM.ascii_load_data(os.path.join(script_path, 'Datas', 'languages', f'{language_config}.json' ))["LicenseV"]
 
 ##############################################################################################
 
@@ -197,7 +197,7 @@ def get_local_timestamp():
 
 
 
-#   生成加密密钥
+# 生成加密密钥
 def generate_encryption_key(password, salt = None, iterations=100000, length=32):
     """
     生成加密密钥。
@@ -223,7 +223,7 @@ def generate_encryption_key(password, salt = None, iterations=100000, length=32)
     encryption_key = kdf.derive(password)
     return encryption_key, salt
 
-#   检查给定的字符串是否是有效的 JSON 格式
+# 检查给定的字符串是否是有效的 JSON 格式
 def is_valid_json(data):
     """
     检查给定的字符串是否是有效的 JSON 格式。
@@ -240,7 +240,7 @@ def is_valid_json(data):
     except ValueError:
         return False
 
-#   验证许可证并解密
+# 验证许可证并解密
 def verify_license(public_key_pem, license_b64, current_device_fingerprint, current_timestamp, password=None):
     """
     验证许可证并解密。
@@ -353,7 +353,7 @@ def verify_license(public_key_pem, license_b64, current_device_fingerprint, curr
         feedback.CPE(LT['06'])
         return False
 
-#   获取许可证剩余时间
+# 获取许可证剩余时间
 def get_license_remaining_time(license_package_b64, password=public_password):
     """
     查询许可证的剩余时间。
@@ -398,7 +398,7 @@ def get_license_remaining_time(license_package_b64, password=public_password):
 
 #-------------------------------------------------------验证窗口
 
-#   获取Maya主窗口
+# 获取Maya主窗口
 def MayaMainWindows():
     """获取Maya主窗口"""
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -412,7 +412,7 @@ class LicenseWin(QtWidgets.QDialog):
         # 加载语言文件
         self.LT= language['LW']
 
-        #   判断窗口是否存在，如果存在则删除
+        # 判断窗口是否存在，如果存在则删除
         if cmds.window(LicenseWin.WINDOWS_NAME, exists=True):
             cmds.deleteUI(LicenseWin.WINDOWS_NAME)
 
@@ -493,7 +493,7 @@ class LicenseWin(QtWidgets.QDialog):
         except:
             feedback.CPW(language['MP']['02']) # 无法获取时间
 
-        #   如果没有时间会直接停止验证
+        # 如果没有时间会直接停止验证
         if not current_timestamp:
             feedback.CPW(language['MP']['01']) # 无法获取在线时间
             return
@@ -504,11 +504,11 @@ class LicenseWin(QtWidgets.QDialog):
             return
 
         if validating['validate'] == True:
-            #   写出许可证文件
-            dataM.bin_save_data(os.path.join(Script_path, "Datas", "keys", "license.bin"), license)
-            #   关闭验证窗口
+            # 写出许可证文件
+            dataM.bin_save_data(os.path.join(script_path, "Datas", "keys", "license.bin"), license)
+            # 关闭验证窗口
             cmds.deleteUI(LicenseWin.WINDOWS_NAME)
-            #   打开主程序
+            # 打开主程序
             MainStart(cached_device_fingerprint, public_key, public_password, validating)
 
 #-------------------------------------------------------验证窗口
@@ -534,11 +534,11 @@ def Main_program():
             # 生成设备指纹
             cached_device_fingerprint = generate_device_fingerprint(motherboard_id)
 
-    if not os.path.exists(os.path.join(Script_path, "Datas", "keys", "license.bin")):
+    if not os.path.exists(os.path.join(script_path, "Datas", "keys", "license.bin")):
         LicenseM = LicenseWin()
         LicenseM.show()
     else:
-        license = dataM.bin_load_data(os.path.join(Script_path, "Datas", "keys", "license.bin"))
+        license = dataM.bin_load_data(os.path.join(script_path, "Datas", "keys", "license.bin"))
 
         # 获取当前时间戳
         try:
