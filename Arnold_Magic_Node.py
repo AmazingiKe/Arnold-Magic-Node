@@ -8,36 +8,11 @@ import maya.OpenMayaUI as omui  # 导入 Maya 的 OpenMayaUI 模块，用于操�
 
 # 2. 文件与系统操作
 import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
-import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
-import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 import shutil
 import threading # 多线程
 
-# 3. 数据处理
-import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
-import ast  # 用于解析和操作 Python 代码的抽象语法树，适用于代码分析和转换
-import copy  # 提供对象的浅拷贝和深拷贝功能，确保数据在复制时不会相互影响
-import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
-from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
-
-# 4. 字符串处理
-import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
-import difflib  # 用于比较文本差异，生成差异报告或补丁，适合版本控制和文本分析
-
-# 5. 图像处理
-import imghdr  # 用于识别图像文件的类型，如 JPEG、PNG、GIF 等
-from PIL import Image  # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
-
-# 6. 时间管理
-import time  # 提供时间相关的函数，如时间戳获取、延时操作等
-from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
-
-# 7. 网络操作
-import webbrowser  # 提供在 Web 浏览器中打开 URL 的功能，支持跨平台操作
-import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
-
-# 8. PySide 库
+# 3. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
 try:
     from PySide6 import QtCore, QtWidgets, QtGui
@@ -81,7 +56,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Beta"
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.1.10"
+SoftwareVersion = "0.9.1.2"
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -4545,17 +4520,15 @@ class TM_TexturePack(QtWidgets.QDialog):
         # 2.检测选择范围
         # 全选
         if config['modify_scope_options'] == 1:
-            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
 
-            for mat_name in MterialNodeAllInfoDict:
-                for node_name in MterialNodeAllInfoDict[mat_name]:
+            for mat_name in TM_MterialNodeAllInfoDict:
+                for node_name in TM_MterialNodeAllInfoDict[mat_name]:
                     tex_filter_list.append(node_name)
 
                     # 添加到需要更新路径数据的字典中
                     need_update_dict[node_name] = mat_name
         # 选择表格内的数据
         elif config['modify_scope_options'] == 2:
-            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
 
             # 获取出表格中的所有贴图名称
             for index, value in enumerate(temp_TextureManager_texture_table_data):
@@ -4567,14 +4540,14 @@ class TM_TexturePack(QtWidgets.QDialog):
 
         # 表格内选择的数据
         elif config['modify_scope_options'] == 3:
-            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
+
+            # 初始化变量
+            all_selected_rows_data = []
 
             # 获取出表格中
             selected_indexes = self.TextureManagerWin.TexturelList.selectionModel().selectedRows()
             if selected_indexes:
                 # 用于存储所有选中行的数据
-                all_selected_rows_data = []
-
                 for index in selected_indexes:
                     selected_row = index.row()
 
@@ -4589,14 +4562,13 @@ class TM_TexturePack(QtWidgets.QDialog):
             else:
                 self.feedback.CP("没有选中任何行")
 
-            for index, value in enumerate(all_selected_rows_data):
-                tex_filter_list.append(value[0])
+            # 仅在有选中行时进行处理
+            if all_selected_rows_data:
+                for index, value in enumerate(all_selected_rows_data):
+                    tex_filter_list.append(value[0])
 
-                # 添加到需要更新路径数据的字典中
-                need_update_dict[value[0]] = value[1]
-
-            MaterialList_selected_items = self.TextureManagerWin.MaterialList.selectedItems()  # 获取所有选中的项
-            mat_filter_list = [item.text() for item in MaterialList_selected_items]  # 获取选中项的文本列表
+                    # 添加到需要更新路径数据的字典中
+                    need_update_dict[value[0]] = value[1]
 
         # 3.替换检测主要逻辑单元
         for mat_name in TM_MterialNodeAllInfoDict:
@@ -4607,27 +4579,43 @@ class TM_TexturePack(QtWidgets.QDialog):
                     # 获取节点路径
                     node_path = TM_MterialNodeAllInfoDict[mat_name][node_name]['Path']
 
+                    # 如果选择的路径无法识别将会进入下一个循环
+                    if not os.path.exists(node_path):
+                        self.feedback.CPW(f" <{os.path.basename(node_path)}> 文件路径不存在")
+                        continue
 
                     # 如果输入的是同一个路径下不继续执行下去
                     if os.path.normpath(config['path_edit']) == os.path.normpath(os.path.dirname(node_path)):
-                        self.feedback.CPW(f" {os.path.basename(node_path)} 文件已经存在目标文件夹中")
+                        self.feedback.CPW(f" <{os.path.basename(node_path)}> 文件已经存在目标文件夹中")
                         continue
+                    else:
+                        # 把文件复制到指定目标文件夹
+                        shutil.copy(node_path, config["path_edit"])
+                        self.feedback.CPW(f'成功把 <{os.path.basename(node_path)}> 文件复制到-> <{config["path_edit"]}> 路径')
 
-                    # 把文件复制到指定目标文件夹
-                    shutil.copy(node_path, config["path_edit"])
-                    self.feedback.CPW(f'成功把 {os.path.basename(node_path)} 文件复制到-> {config["path_edit"]} 路径')
+                    # 新的路径
+                    new_path = os.path.normpath(os.path.join(config["path_edit"], os.path.basename(node_path)))
 
                     # 如果开启修改路径会把节点的路径修改到新路径
                     if config['modify_path']:
-                        new_path = os.path.normpath(os.path.join(config["path_edit"], os.path.basename(node_path)))
 
                         # 如果程序化路径出错无法进行下一步函数
                         if not os.path.exists(new_path):
                             self.feedback.CPW('程序化路径无法访问，生产错误，无法访问:' + new_path)
-                            return
+                            continue
 
                         cmds.setAttr(node_name + '.fileTextureName', new_path, type="string")
 
+                    # 如果开启修改路径会把源文件删除
+                    if config['delete_source_files']:
+                        if os.path.exists(node_path):
+                            try:
+                                os.remove(node_path)
+                                self.feedback.CPW(f"源文件 <{node_path}> 已成功删除。")
+                            except OSError  as e:
+                                self.feedback.CPW(f"删除文件时出错: {e}")
+                        else:
+                            self.feedback.CPW(f"文件 <{node_path}> 不存在。")
 
                     # 更新主窗口函数
 
