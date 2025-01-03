@@ -54,9 +54,9 @@ AMN_UI_WorkSpaceControl = None
 # --------------------初始变量开始
 
 # _______________________________________________________________>>> 插件状态
-SoftwareState = "Beta"
+SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "0.9.1.2"
+SoftwareVersion = "1.0.0" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -99,9 +99,10 @@ TM_FindAndReplace_config_dict = {
 
 TM_RepathFiles_config_dict = {
     "path_edit" : "",
-    "search_subfolders_checkbox" : False,
+    "search_subfolders_checkbox" : True,
     "multiple_subfolder_search_checkbox" : False,
-    "ignore_case_checkbox" : False
+    "ignore_case_checkbox" : False,
+    "use_cache_checkbox" : True
 }
 
 TM_ImageProcessing_config_dict = {
@@ -1391,8 +1392,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
 
         # 添加标题文本
-        self.add_line_with_text(layout, configure_ui_layout_lang['jmybjsz_tab'])
-        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['jmybjsz_tab']))
+        self.add_line_with_text(layout, configure_ui_layout_lang['yyszd_label'])
+        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['yy_label']))
 
         # 创建语言切换菜单
         self.language_combo_box = QtWidgets.QComboBox()
@@ -1826,6 +1827,47 @@ class TextureManagerWin(QtWidgets.QDialog):
             }
         """)
 
+    #______________________________________________________________________________>>> 窗口类的函数
+    class DataTableView(QtWidgets.QTableView):
+        def __init__(self, outer_instance, parent=None):
+            super().__init__(parent)
+            self.outer_instance = outer_instance  # 存储对外部类实例的引用
+            self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            self.customContextMenuRequested.connect(self.show_context_menu)
+
+        def show_context_menu(self, position):
+
+            menu = QtWidgets.QMenu(self)
+
+
+            action1 = menu.addAction("空按钮")
+            action1.triggered.connect(self.action1_triggered)
+            menu.addSection("快捷操作")
+            action2 = menu.addAction("打开文件夹")
+
+            action2.triggered.connect(self.action2_triggered)
+
+            # 添加分组2
+            menu.addSection("Group 2")
+            action3 = menu.addAction("Action 3")
+            action4 = menu.addAction("Action 4")
+            action3.triggered.connect(self.action3_triggered)
+            action4.triggered.connect(self.action4_triggered)
+
+            menu.exec_(self.viewport().mapToGlobal(position))
+
+        def action1_triggered(self):
+            self.feedback.CPW(':)')
+
+        def action2_triggered(self):
+            print("Action 2 triggered")
+
+        def action3_triggered(self):
+            print("Action 3 triggered")
+
+        def action4_triggered(self):
+            print("Action 4 triggered")
+
 
     def create_widgets(self):
         lang = self.language['create_widgets']
@@ -1970,7 +2012,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_Texture_Pack_Button.clicked.connect(lambda *args: self.texture_pack_Win())
 
         # TexturelList 贴图列表
-        self.TexturelList = QtWidgets.QTableView()
+        self.TexturelList = self.DataTableView(self)
         TexturelList_Headers = lang['TexturelList_Headers'] # "贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"
 
         # 创建自定义的模型，设置第2到6列不可编辑
@@ -2871,7 +2913,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.TextureManager_config_path, config)
 
     def test(self):
-        print(self.MterialNodeAllInfoDict)
+        print('hello wrld')
 
     @Slot(dict)
     def replace_base_data_and_refresh_ui(self, new_MterialNodeAllInfoDict):
@@ -3410,10 +3452,13 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 2. 创建控件
         self.create_widgets()
 
-        # 3. 创建布局
+        # 3. 创建菜单
+        self.menu_widgets()
+
+        # 4. 创建布局
         self.create_layouts()
 
-        # 4. 初始化控件
+        # 5. 初始化控件
         self.initial_widgets_settings()
 
     # 初始化窗口配置
@@ -3451,6 +3496,16 @@ class TM_RepathFiles(QtWidgets.QDialog):
         if not os.path.exists(self.TM_repath_files_config_FilePath):
             self.dataM.bin_save_data(self.TM_repath_files_config_FilePath, TM_RepathFiles_config_dict)
 
+        self.tm_repath_file_cache_filepath = os.path.join(script_path, "Datas", "texture_manager",
+                                                            "TM_repath_files_cache.bin")
+
+        # 缓存空字典创建
+        tm_repath_file_cache_dict = {}
+
+        # 如果TM_repath_files_cache缓存文件不存在会重新创建一次
+        if not os.path.exists(self.tm_repath_file_cache_filepath):
+            self.dataM.bin_save_data(self.tm_repath_file_cache_filepath, tm_repath_file_cache_dict)
+
     # 创建控件
     def create_widgets(self):
         self.path_edit = QtWidgets.QLineEdit()
@@ -3478,8 +3533,32 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.ignore_case_checkbox.stateChanged.connect(
             lambda *args:  self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
 
+        self.use_cache_checkbox = QtWidgets.QCheckBox('使用缓存') # 使用缓存
+        self.use_cache_checkbox.stateChanged.connect(
+            lambda *args:  self.modify_config('use_cache_checkbox', self.use_cache_checkbox.isChecked()))
+
         self.fix_path_button = QtWidgets.QPushButton(self.language['create_widgets']['fix_path_button'])
         self.fix_path_button.clicked.connect(lambda *args:  self.fix_path())
+
+    # 创建菜单
+    def menu_widgets(self):
+
+        # 创建菜单栏
+        self.menu_bar = QtWidgets.QMenuBar(self)
+
+        # 创建“编辑”菜单，并传递菜单名称
+        self.edit_menu = self.menu_bar.addMenu("编辑")  # 编辑
+
+        # 创建“清除路径缓存”动作
+        self.clear_cache = QtWidgets.QAction('清除路径缓存', self)  # 清除缓存 ！谨慎删除！
+
+        # 将动作添加到“编辑”菜单
+        self.edit_menu.addAction(self.clear_cache)
+
+        self.help_menu = self.menu_bar.addMenu("帮助") # 帮助
+
+        self.instructions_action = QAction("使用说明", self) # 使用说明
+        self.help_menu.addAction(self.instructions_action)
 
     # 创建布局
     def create_layouts(self):
@@ -3513,11 +3592,17 @@ class TM_RepathFiles(QtWidgets.QDialog):
         config_checkbox_01.addItem(
             QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
 
+        config_checkbox_01.addWidget(self.use_cache_checkbox)
+
+        config_checkbox_01.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
         # 按钮
         button_01 = QtWidgets.QHBoxLayout()
         button_01.addWidget(self.fix_path_button)
 
         MainLayout = QtWidgets.QVBoxLayout(self)
+        MainLayout.setMenuBar(self.menu_bar)
         MainLayout.addLayout(path_list_layout)
         MainLayout.addLayout(config_checkbox_01)
         MainLayout.addLayout(button_01)
@@ -3526,10 +3611,14 @@ class TM_RepathFiles(QtWidgets.QDialog):
     def initial_widgets_settings(self):
         self.path_edit.setText(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['path_edit'])
 
-        self.search_subfolders_checkbox.setChecked(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'])
-        self.multiple_subfolder_search_checkbox.setChecked(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
-        self.ignore_case_checkbox.setChecked(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
-
+        self.search_subfolders_checkbox.setChecked(
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'])
+        self.multiple_subfolder_search_checkbox.setChecked(
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
+        self.ignore_case_checkbox.setChecked(
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
+        self.use_cache_checkbox.setChecked(
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['use_cache_checkbox'])
     # 选择文件夹
     def select_folder(self):
 
@@ -3558,14 +3647,16 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 从主窗口获取的材质所有数据
         old_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
 
-        # 初始化两个字典：
-        # loaded_failed_tex_dict 用于存储连接失败的贴图信息，键为贴图的文件名（basename），值为贴图相关信息的列表
-        loaded_failed_tex_dict = {}  # 连接失败的贴图字典
+        # 连接失败的贴图字典
+        loaded_failed_tex_dict = {}
 
         # same_path_dict 用于存储具有相同文件名但不同路径的贴图信息，键为贴图的文件名，值为使用该文件名的纹理名称列表
         same_path_dict = {}  # 相同路径的字典
 
-        # 遍历所有材质及其对应的贴图信息
+        # 加载缓存数据
+        cache_dict = self.dataM.bin_load_data(self.tm_repath_file_cache_filepath)
+
+        # 寻找到缺失贴图的关键数据
         for MatName in old_MterialNodeAllInfoDict:
             for TexName, Contents in old_MterialNodeAllInfoDict[MatName].items():
                 # 检查当前贴图是否未成功加载
@@ -3589,17 +3680,28 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
         # 判断输入路径是否存在
         if not loaded_failed_tex_dict:
-            return self.feedback.CP('没有连接失败的贴图')
+            self.feedback.CP('没有连接失败的贴图')
+            return
 
+        # 格式过滤列表（用来筛选特定文件）
         extensions = [
             '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif',
-            '.raw','.tga', '.exr'
+            '.raw','.tga', '.exr' ,'.hdr'
         ]
 
+        if self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['use_cache_checkbox']:
+            correct_path_dictionary = self.dataP.searchKeysInDictUsingAhoCorapy(loaded_failed_tex_dict,
+                                                                                cache_dict,
+                                                                                self.dataM.bin_load_data(
+                                                                                    self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
+            # 删除 loaded_failed_tex_dict 中
+            for file_name in correct_path_dictionary:
+                del loaded_failed_tex_dict[file_name]
 
 
         start_time = time.time()
-        # 寻找路径下的内容
+
+        # 寻找用户给出的路径下的内容数据
         path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
             path,
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
@@ -3607,25 +3709,41 @@ class TM_RepathFiles(QtWidgets.QDialog):
             extensions
             )
 
-
+        # 计算获取路径内容需要多少时间
         get_path_contenes_time = time.time() - start_time
 
 
 
-
+        # correct_path_dictionary 变量是寻找到的路径
         correct_path_dictionary = self.dataP.searchKeysInDictUsingAhoCorapy(loaded_failed_tex_dict,
                                                                             path_contenes,
                                                                             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
 
 
-        if correct_path_dictionary == {}:
-            return self.feedback.CP("没有寻找到对应的贴图文件")
 
 
+        # 查询对比的时间
         find_time = time.time() - start_time - get_path_contenes_time
 
         self.feedback.CP('查询文件夹过程时间：'+ format(get_path_contenes_time, '.2f'))
         self.feedback.CP('寻找对比过程时间：' + format(find_time, '.2f'))
+
+
+        # -存储查询出来准确的结果用来下次对比使用
+
+        # 写入到变量中
+        for file_name in correct_path_dictionary:
+            cache_dict[file_name] = correct_path_dictionary[file_name]
+
+        # 把变量写出到缓存文件
+        self.dataM.bin_save_data(file_path= self.tm_repath_file_cache_filepath,
+                                 data= cache_dict)
+
+        # 如果没有找到贴图就
+        if correct_path_dictionary == {}:
+            self.feedback.CP("没有寻找到对应的贴图文件")
+            return
+
 
         # update_dict字典是为了储存接下来需要更新主数据
         update_dict = {}

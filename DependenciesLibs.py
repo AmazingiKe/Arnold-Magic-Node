@@ -26,22 +26,21 @@ LibsPath =  os.path.normpath(os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVer
 MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe')) # maya maypy文件位置
 
 LibsFilesDict = {
-    #'cv2': 'opencv-python',
-    'imagesize': 'imagesize',
-    'keyboard': 'keyboard',
-    'msgpack': 'msgpack',
-    'PIL': 'Pillow',  # PIL 实际上是 Pillow 库
-    'pyexr': 'pyexr',
-    'Imath.py': 'Imath',  # Imath 是一个独立的包
-    'OpenEXR.pyd': 'OpenEXR',  # OpenEXR 是一个单独的包
-    'cryptography' : 'cryptography',
-    'requests' : 'requests',
-    'ntplib.py' : 'ntplib',
-    'aiohttp' : 'aiohttp',
-    'ahocorapy' : 'ahocorapy',
-    'Levenshtein' : 'python-Levenshtein',
-    'wmi.py' : 'WMI',
-    # 'pywin32_system32' : 'pywin32'
+    #'cv2': 'opencv-python',  # OpenCV 库
+    'imagesize': 'imagesize',  # 获取图像尺寸的库
+    'keyboard': 'keyboard',  # 键盘事件处理库
+    'msgpack': 'msgpack',  # 消息打包库
+    'PIL': 'Pillow',  # 图像处理库，PIL 实际上是 Pillow 库
+    'pyexr': 'pyexr',  # OpenEXR 图像文件处理库
+    'Imath.py': 'Imath',  # Imath 是一个独立的数学库
+    'OpenEXR.pyd': 'OpenEXR',  # OpenEXR 是一个单独的图像文件处理库
+    'cryptography' : 'cryptography',  # 加密库
+    'requests' : 'requests',  # HTTP 请求库
+    'ntplib.py' : 'ntplib',  # 网络时间协议库
+    'aiohttp' : 'aiohttp',  # 异步 HTTP 客户端/服务器库
+    'ahocorapy' : 'ahocorapy',  # Aho-Corasick 算法库
+    'Levenshtein' : 'python-Levenshtein',  # Levenshtein 距离计算库
+    'wmi.py' : 'WMI',  # Windows 管理规范库
 }
 
 def ascii_load_data(file_path):
