@@ -54,9 +54,9 @@ AMN_UI_WorkSpaceControl = None
 # --------------------初始变量开始
 
 # _______________________________________________________________>>> 插件状态
-SoftwareState = "Release"  # 插件状态
+SoftwareState = "Release 内部版本"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.0.0" # 插件版本号
+SoftwareVersion = "1.0.0.02" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -1827,47 +1827,88 @@ class TextureManagerWin(QtWidgets.QDialog):
             }
         """)
 
-    #______________________________________________________________________________>>> 窗口类的函数
+    #______________________________________________________________________________>>> 表格的函数
     class DataTableView(QtWidgets.QTableView):
         def __init__(self, outer_instance, parent=None):
             super().__init__(parent)
             self.outer_instance = outer_instance  # 存储对外部类实例的引用
+
             self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            self.customContextMenuRequested.connect(self.show_context_menu)
+            self.customContextMenuRequested.connect(lambda position: self.show_context_menu(position))
 
         def show_context_menu(self, position):
 
             menu = QtWidgets.QMenu(self)
 
 
-            action1 = menu.addAction("空按钮")
-            action1.triggered.connect(self.action1_triggered)
-            menu.addSection("快捷操作")
-            action2 = menu.addAction("打开文件夹")
+            action1 = menu.addAction("Test button")
+            action1.triggered.connect(lambda *args: self.test_button())
 
-            action2.triggered.connect(self.action2_triggered)
+            menu.addSection("快捷操作") # 添加分组1
 
-            # 添加分组2
-            menu.addSection("Group 2")
-            action3 = menu.addAction("Action 3")
-            action4 = menu.addAction("Action 4")
-            action3.triggered.connect(self.action3_triggered)
-            action4.triggered.connect(self.action4_triggered)
+            open_file = menu.addAction("打开文件")
+            open_file.triggered.connect(lambda *args: self.open_file())
+
+            open_folder = menu.addAction("打开文件夹")
+            open_folder.triggered.connect(lambda *args: self.open_folder())
 
             menu.exec_(self.viewport().mapToGlobal(position))
 
-        def action1_triggered(self):
-            self.feedback.CPW(':)')
+        # 测试按钮
+        def test_button(self):
+            self.outer_instance.feedback.CPW(':)')
 
-        def action2_triggered(self):
-            print("Action 2 triggered")
+        # 打开文件
+        def open_file(self):
 
-        def action3_triggered(self):
-            print("Action 3 triggered")
+            folder_path = self.get_selected_row_data()[0][7] # 获取选中行的第7列数据（文件路径）
 
-        def action4_triggered(self):
-            print("Action 4 triggered")
+            if not os.path.exists(folder_path):
+                self.outer_instance.feedback.CPW('文件路径不存在') # 文件夹不存在
+                return # 如果文件夹不存在则直接返回
 
+            # 使用系统默认的文件管理器打开文件夹
+            os.startfile(os.path.normpath(folder_path))
+
+        # 打开文件夹
+        def open_folder(self):
+
+            folder_path = self.get_selected_row_data()[0][7] # 获取选中行的第7列数据（文件路径）
+
+            if not os.path.exists(folder_path):
+                self.outer_instance.feedback.CPW('文件夹路径不存在') # 文件夹不存在
+                return # 如果文件夹不存在则直接返回
+
+            # 使用系统默认的文件管理器打开文件夹
+            os.startfile(os.path.dirname(os.path.normpath(folder_path)))
+
+        # 获取选中行的数据
+        def get_selected_row_data(self):
+            # 获取当前选择模型
+            selection_model = self.selectionModel()
+
+            # 获取选中的索引
+            selected_indexes = selection_model.selectedIndexes()
+
+            # 如果没有选中任何单元格
+            if not selected_indexes:
+                return None
+
+            # 用于存储选中的行数据
+            selected_rows_data = []
+
+            # 遍历所有选中的单元格
+            for index in selected_indexes:
+                row = index.row()  # 获取当前单元格所在的行
+                # 获取该行所有列的数据
+                row_data = [self.model().data(self.model().index(row, column)) for column in
+                            range(self.model().columnCount())]
+
+                # 将该行的数据添加到选中的行数据列表中
+                if row_data not in selected_rows_data:
+                    selected_rows_data.append(row_data)
+
+            return selected_rows_data
 
     def create_widgets(self):
         lang = self.language['create_widgets']
@@ -2011,14 +2052,21 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList_Texture_Pack_Button.setFixedHeight(40)
         self.TexturelList_Texture_Pack_Button.clicked.connect(lambda *args: self.texture_pack_Win())
 
-        # TexturelList 贴图列表
+        # ______________________________________________________________________________>>> 表格控件
         self.TexturelList = self.DataTableView(self)
+
+        # 设置表格的样式
         TexturelList_Headers = lang['TexturelList_Headers'] # "贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"
+
+        # 设置表格上下文菜单
+        # self.TexturelList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        # self.TexturelList.customContextMenuRequested.connect(lambda position: self.table_show_context_menu(position))
 
         # 创建自定义的模型，设置第2到6列不可编辑
         self.TEXTURELIST_MODEL = NonEditableColumnsModel(0, 8, non_editable_columns=[2, 3, 4, 5, 6])
         self.TEXTURELIST_MODEL.setHorizontalHeaderLabels(TexturelList_Headers)
 
+        # 设置表格的模型
         self.TexturelList.setModel(self.TEXTURELIST_MODEL)
         self.TexturelList.setColumnWidth(0, 445)
         self.TexturelList.setColumnWidth(1, 200)
@@ -2028,6 +2076,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TexturelList.setColumnWidth(5, 80)
         self.TexturelList.setColumnWidth(6, 80)
         self.TexturelList.setColumnWidth(7, 1000)
+
         # 让第7列根据窗口大小自动伸缩
         self.TexturelList.horizontalHeader().setSectionResizeMode(7, QtWidgets.QHeaderView.Stretch)
 
