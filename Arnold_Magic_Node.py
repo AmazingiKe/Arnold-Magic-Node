@@ -64,15 +64,16 @@ pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a9190
 pluginUpdateDownloadURL = r'https://flowus.cn/amazingike/share/84422156-5158-4b73-9a5f-c5cadbb6625a?code=LZVF69'
 pluginHelpDocumentURL = r'https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69'
 
-datas_path = os.path.normpath(os.path.join(script_path, "Datas")) # 定义数据文件夹  ->全局变量
+datas_path = os.path.normpath(os.path.join(script_path, "Datas"))  # 定义数据文件夹路径 -> 全局变量
 
-settings_path = os.path.normpath(os.path.join(datas_path, "settings")) # 定义设置配置文件夹  ->全局变量
+settings_path = os.path.normpath(os.path.join(datas_path, "settings"))  # 定义设置配置文件夹路径 -> 全局变量
 
-icon_path = os.path.normpath(os.path.join(script_path, "icon")) # 定义图标路径  ->全局变量
+icon_path = os.path.normpath(os.path.join(script_path, "icon"))  # 定义图标路径 -> 全局变量
 
-render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))
+render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))  # 定义渲染预设文件夹路径 -> 全局变量
 
 AMS_Config = "Arnold_Magic_Settings.bin" # Arnold_Magic_Settings
+
 # 定义全局字体大小变量
 SMALL_FONT_SIZE = 10
 NORMAL_FONT_SIZE = 14
@@ -99,10 +100,13 @@ TM_FindAndReplace_config_dict = {
 
 TM_RepathFiles_config_dict = {
     "path_edit" : "",
+    "modify_scope_options" : 1 ,
     "search_subfolders_checkbox" : True,
+    "forced_path_override_checkbox" : False,
     "multiple_subfolder_search_checkbox" : False,
     "ignore_case_checkbox" : False,
-    "use_cache_checkbox" : True
+    "use_cache_checkbox" : True,
+    "intelligent_search_mode" : False,
 }
 
 TM_ImageProcessing_config_dict = {
@@ -3566,9 +3570,24 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.select_folder_button.setFixedWidth(35)
         self.select_folder_button.clicked.connect(lambda *args: self.select_folder())
 
-        self.memory_search_mode_checkbox = QtWidgets.QCheckBox(
+
+        self.modify_group = QtWidgets.QButtonGroup(self)
+        self.radio_all = QtWidgets.QRadioButton('全部')  # '全部'选项
+        self.radio_table = QtWidgets.QRadioButton('表格内')  # '表格内'选项
+        self.radio_selection = QtWidgets.QRadioButton('选择中')  # '选择中'选项
+        self.modify_group.addButton(self.radio_all, 1)  # 将按钮加入组
+        self.modify_group.addButton(self.radio_table, 2)
+        self.modify_group.addButton(self.radio_selection, 3)
+
+        # 当选择变化时，更新配置文件中的选项
+        self.modify_group.buttonClicked.connect(
+            lambda button: self.modify_config('modify_scope_options', self.modify_group.id(button)))
+
+
+        self.intelligent_search_mode_checkbox = QtWidgets.QCheckBox(
             self.language['create_widgets']['memory_search_mode_checkbox'])  # 记忆搜索模式
-        self.memory_search_mode_checkbox.setEnabled(False)
+        self.intelligent_search_mode_checkbox.stateChanged.connect(
+            lambda *args:  self.modify_config('intelligent_search_mode', self.intelligent_search_mode_checkbox.isChecked()))
 
         self.search_subfolders_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['search_subfolders_checkbox']) # 搜索子文件夹
         self.search_subfolders_checkbox.stateChanged.connect(
@@ -3582,9 +3601,14 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.ignore_case_checkbox.stateChanged.connect(
             lambda *args:  self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
 
+        self.forced_path_override_checkbox  = QtWidgets.QCheckBox('路径强行覆写')  # 使用缓存
+        self.forced_path_override_checkbox.stateChanged.connect(
+            lambda *args:  self.modify_config('forced_path_override_checkbox', self.forced_path_override_checkbox.isChecked()))
+
         self.use_cache_checkbox = QtWidgets.QCheckBox('使用缓存') # 使用缓存
         self.use_cache_checkbox.stateChanged.connect(
             lambda *args:  self.modify_config('use_cache_checkbox', self.use_cache_checkbox.isChecked()))
+
 
         self.fix_path_button = QtWidgets.QPushButton(self.language['create_widgets']['fix_path_button'])
         self.fix_path_button.clicked.connect(lambda *args:  self.fix_path())
@@ -3611,63 +3635,74 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
     # 创建布局
     def create_layouts(self):
-
         # 路径输入的窗口文件夹
         path_list_layout = QtWidgets.QHBoxLayout()
         path_list_layout.addWidget(self.path_edit)
         path_list_layout.addWidget(self.select_folder_button)
+
+        # 选择修改范围的选项
+        selection_layout = QtWidgets.QHBoxLayout()
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_all)
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_table)
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_selection)
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
         # 配置选项输入
         config_checkbox_01 = QtWidgets.QHBoxLayout()
-        config_checkbox_01.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-
-        config_checkbox_01.addWidget(self.memory_search_mode_checkbox)
-
-        config_checkbox_01.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addWidget(self.intelligent_search_mode_checkbox)
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.search_subfolders_checkbox)
-
-        config_checkbox_01.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.multiple_subfolder_search_checkbox)
-
-        config_checkbox_01.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.ignore_case_checkbox)
-
-        config_checkbox_01.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addWidget(self.forced_path_override_checkbox)
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.use_cache_checkbox)
-
-        config_checkbox_01.addItem(
-            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
 
         # 按钮
         button_01 = QtWidgets.QHBoxLayout()
         button_01.addWidget(self.fix_path_button)
 
+        # 主布局
         MainLayout = QtWidgets.QVBoxLayout(self)
         MainLayout.setMenuBar(self.menu_bar)
         MainLayout.addLayout(path_list_layout)
+        MainLayout.addItem(QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        MainLayout.addLayout(selection_layout)
+        MainLayout.addItem(QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         MainLayout.addLayout(config_checkbox_01)
+        MainLayout.addItem(QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         MainLayout.addLayout(button_01)
 
     # 初始化控件设置
     def initial_widgets_settings(self):
         self.path_edit.setText(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['path_edit'])
 
+        # 设置 select_group 的默认选中按钮（通过 ID）
+        modify_group_button = self.modify_group.button(self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['modify_scope_options'])
+        if modify_group_button:
+            modify_group_button.setChecked(True)  # 设置该按钮为选中状态
+
+        self.intelligent_search_mode_checkbox.setChecked(
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['intelligent_search_mode'])
         self.search_subfolders_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'])
         self.multiple_subfolder_search_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
         self.ignore_case_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
+        self.forced_path_override_checkbox.setChecked(
+            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['forced_path_override_checkbox'])
         self.use_cache_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['use_cache_checkbox'])
+
     # 选择文件夹
     def select_folder(self):
 
@@ -3683,8 +3718,233 @@ class TM_RepathFiles(QtWidgets.QDialog):
         if not folder_path == '':
             self.path_edit.setText(folder_path)
 
-    # 寻找文件夹并修复确实文件夹
+
+
+
+    class FixPath:
+        def __init__(self, outer_instance, exclude_extensions):
+            super().__init__()
+
+            # 存储对外部类实例的引用
+            self.outer_instance = outer_instance
+
+            self.dataM = DataManager() # 数据管理
+            self.dataP = DataProcessor() # 数据处理
+            self.feedback = FeedbackPrompt()  # 错误提示模块
+            self.getnodedata = GetNodeData() # 获取节点数据模块
+
+            # 获取路径
+            self.enter_path = self.dataM.bin_load_data(outer_instance.TM_repath_files_config_FilePath)['path_edit']
+
+            # 从主窗口获取的材质所有数据
+            self.old_MterialNodeAllInfoDict = outer_instance.TextureManagerWin.MterialNodeAllInfoDict
+
+            # 排除的格式列表
+            self.exclude_extensions = exclude_extensions
+
+
+        # 获取表格中的所有数据
+        def get_all_table_data(self, model):
+            """
+            获取表格中的所有数据
+
+            model: 表格的数据模型 (例如 QAbstractTableModel 或其子类)
+            """
+            all_rows_data = []  # 用于存储所有行的数据
+
+            # 获取表格的总行数
+            row_count = model.rowCount()
+
+            # 获取表格的总列数
+            column_count = model.columnCount()
+
+            # 遍历所有行和列，提取数据
+            for row in range(row_count):
+                row_data = [model.data(model.index(row, column)) for column in range(column_count)]
+                all_rows_data.append(row_data)
+
+            return all_rows_data
+
+        # 获取选中行的数据
+        def get_selected_row_data(self, model, table_variables):
+            """
+            获取选中行的数据
+
+            model: 表格的数据模型 (例如 QAbstractTableModel 或其子类)
+            table_variables: 表格视图的变量 (例如 QTableView)
+            """
+            # 获取当前选择模型
+            selection_model = table_variables.selectionModel()
+
+            # 获取选中的索引
+            selected_indexes = selection_model.selectedIndexes()
+
+            # 如果没有选中任何单元格
+            if not selected_indexes:
+                return None
+
+            # 用于存储选中的行数据
+            selected_rows_data = []
+
+            # 遍历所有选中的单元格
+            for index in selected_indexes:
+                row = index.row()  # 获取当前单元格所在的行
+                # 获取该行所有列的数据
+                row_data = [model.data(model.index(row, column)) for column in range(model.columnCount())]
+
+                # 将该行的数据添加到选中的行数据列表中
+                if row_data not in selected_rows_data:
+                    selected_rows_data.append(row_data)
+
+            return selected_rows_data
+
+        # 将列表转换为字典，使用列表的第0个元素作为键查找字典中的数据
+        def convert_list_to_dict(self, data_dict, target_list):
+            """
+            将列表转换为字典，使用列表的第0个元素作为键查找字典中的数据
+            并重建一个新的字典。
+
+            参数：
+            data_dict: dict, 主要的数据字典，其中键为材质名称，值为一个字典，
+                       该字典包含纹理名称及其对应的纹理数据。
+            target_list: list, 目标列表，列表中的每个元素的第0个值将作为纹理名称来查找。
+
+            返回：
+            new_dict: dict, 新的字典，按材质名称组织，包含匹配的纹理数据。
+            """
+            new_dict = {}  # 用于存储最终结果的字典
+
+            if target_list is None:
+                self.feedback.CPW('没有选中任何行')
+                return {}
+
+            # 将目标列表中的第0个元素提取为集合，用于加速后续的查找操作
+            target_nodes = set(item[0] for item in target_list)
+
+            # 遍历输入的data_dict字典
+            for material_name, value in data_dict.items():
+                # 对每个材质的纹理进行遍历
+                for texture_name, texture_data in value.items():
+                    # 只有当纹理名称texture_name在目标节点集合target_nodes中时才处理
+                    if texture_name in target_nodes:
+                        # 如果材质名称还没有加入new_dict，则初始化一个空字典
+                        if material_name not in new_dict:
+                            new_dict[material_name] = {}
+                        # 将匹配的纹理数据加入到new_dict中
+                        new_dict[material_name][texture_name] = texture_data
+
+            return new_dict
+
+        # 根据修改范围选择对应的数据
+        def get_selected_table_data(self, modify_scope):
+            """根据修改范围选择对应的数据"""
+            if modify_scope == 1:
+                return self.old_MterialNodeAllInfoDict
+            elif modify_scope == 2:
+                selected_table_data = self.get_all_table_data(
+                    model=self.outer_instance.TextureManagerWin.TEXTURELIST_MODEL)
+                return self.convert_list_to_dict(self.old_MterialNodeAllInfoDict, selected_table_data)
+            elif modify_scope == 3:
+                selected_table_data = self.get_selected_row_data(
+                    model=self.outer_instance.TextureManagerWin.TEXTURELIST_MODEL,
+                    table_variables=self.outer_instance.TextureManagerWin.TexturelList
+                )
+                return self.convert_list_to_dict(self.old_MterialNodeAllInfoDict, selected_table_data)
+            return {}  # 默认返回空字典
+
+        # 初始化搜索数据
+        def init_search_data(self):
+            need_search_texture_dict = {}  # 需要搜索的贴图字典
+            same_path_dict = {}  # 相同路径的字典
+
+            # 获取配置文件中的修改范围选项
+            config_data = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)
+            modify_scope = config_data['modify_scope_options']
+            forced_path_override_checkbox = config_data['forced_path_override_checkbox']  # 缓存配置文件数据
+
+            selected_table_dict = self.get_selected_table_data(modify_scope)  # 提取成单独函数
+
+
+            # 判断是否有数据
+            if not selected_table_dict:
+                return False
+
+            # 查找未加载的贴图
+            for MatName, textures in selected_table_dict.items():
+                for TexName, Contents in textures.items():
+                    tex_file_name = os.path.basename(Contents['Path'])
+
+                    if forced_path_override_checkbox or not Contents['isLoaded']:
+                        # 记录重复的贴图文件名
+                        if tex_file_name in need_search_texture_dict:
+                            same_path_dict.setdefault(tex_file_name, []).append([TexName, MatName])
+                        else:
+                            # 添加新的未加载贴图
+                            need_search_texture_dict[tex_file_name] = [TexName, MatName, Contents['Path']]
+
+            return need_search_texture_dict, same_path_dict  # 初始化成功
+
+        # 寻找文件夹内的所有文件
+        def get_directory_contents(self):
+            """
+            寻找文件夹内的所有文件
+            """
+
+            path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
+                self.enter_path,
+                self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
+                self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'],
+                self.exclude_extensions
+            )
+
+
+            return path_contenes
+
+        # 主要逻辑函数
+        def process(self):
+            # 1, 判断路径是否有问题
+            if not os.path.exists(self.enter_path):
+                self.feedback.CPW('输入的路径不存在')
+                return
+
+            # 2, 初始化搜索数据
+            if not self.init_search_data():
+                return
+            else:
+                need_search_texture_dict, same_path_dict = self.init_search_data()
+
+
+            # 3, 判断运行模式
+            if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['use_cache_checkbox']:
+                pass
+                # 使用缓存搜索
+            else:
+                if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['intelligent_search_mode']:
+                    # 智能搜索模式
+                    pass
+                else:
+                    # 普通搜索模式
+                    pass
+
+
+            # 获取路径下内容
+            # print(self.get_directory_contents())
+
+
+    # 寻找文件夹并修复确实文件夹主要逻辑函数
     def fix_path(self):
+
+        # 排除的格式列表（用来筛选特定文件）
+        exclude_extensions = ['.jpg', '.jpeg', '.png', '.bmp',
+                              '.tiff', '.tif','.raw','.tga',
+                              '.exr' ,'.hdr']
+
+
+        fix_path_processor = self.FixPath(self, exclude_extensions)
+        fix_path_processor.process()
+
+        return
+
         # -----------------------------初始化 获取基本数据
         # 获取输入的路径
         path = self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['path_edit']
