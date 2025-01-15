@@ -1512,60 +1512,81 @@ class GetNodeData():
 
         return update_dict
 
-    # 获取指定路径下的内容
-    def GetDirectoryContentsWithOptions(self, Path, SearchSubfolders=True, MultipleSubfolderSearch=True, Extensions=None):
+    def GetDirectoryContentsWithOptions(self, Path, SearchSubfolders=True, MultipleSubfolderSearch=True,
+                                        Extensions=None):
         """
         获取指定路径下的内容，并根据选项决定是否搜索子文件夹。
 
         参数：
-        - Path: 要搜索的目录路径。
-        - SearchSubfolders (bool): 是否搜索子文件夹，默认值为True。
-        - MultipleSubfolderSearch (bool): 是否搜索多层子文件夹，默认值为True。
-            - 注意：只有当SearchSubfolders为True时，此参数才有效。
-        - Extensions (list): 要包含的文件扩展名列表，例如 ['.txt', '.jpg']，默认值为None，表示不进行扩展名过滤。
+        - Path (str): 要搜索的目录路径。传入的路径会被标准化处理（例如去除尾部斜杠）。
+        - SearchSubfolders (bool): 是否搜索子文件夹，默认值为True。设置为True时，会遍历子文件夹的内容；设置为False时，只遍历指定目录下的文件。
+        - MultipleSubfolderSearch (bool): 是否搜索多层子文件夹，默认值为True。只有当SearchSubfolders为True时，此参数才有效。
+            - 如果为True，表示递归搜索所有子目录；如果为False，则只会搜索第一层子目录。
+        - Extensions (list of str, optional): 要包含的文件扩展名列表，例如 ['.txt', '.jpg']。默认值为None，表示不进行扩展名过滤。如果传入该参数，只会返回匹配指定扩展名的文件。
 
         返回：
-        - ContentsDict (dict): 包含目录内容的字典，键为文件的完整路径，值为其名称。
+        - ContentsDict (dict): 包含文件内容的字典。键为文件的名称，值为文件的完整路径。字典中只包含符合条件的文件，不包含目录路径。
+
+        详细说明：
+        - 此函数会递归地扫描指定路径及其子目录中的所有文件。
+        - 如果指定了扩展名（Extensions），则只有扩展名符合条件的文件会被包含在结果中。
+        - 返回的字典中，键是文件的名称，值是文件的完整路径。
+        - 权限不足的目录会被忽略，错误不会抛出。
         """
 
+        # 用于存储文件名称和路径的字典
         ContentsDict = {}
 
+        # 如果提供了扩展名列表，将其转换为小写集合，便于快速查找
         if Extensions:
-            # 将扩展名转换为小写集合，便于快速查找
             Extensions = set(ext.lower() for ext in Extensions)
         else:
-            Extensions = None
+            Extensions = None  # 如果没有提供扩展名过滤，默认为None
 
-        # 如果MultipleSubfolderSearch开启，确保SearchSubfolders也开启
+        # 如果开启了多层子目录搜索，但未开启子目录搜索，禁止多层子目录搜索
         if MultipleSubfolderSearch and not SearchSubfolders:
-            # 如果未开启搜索子文件夹，但开启了多层子文件夹搜索，则关闭多层搜索
             MultipleSubfolderSearch = False
 
+        # 内部递归函数，用于扫描指定路径及其子目录
         def scan_directory(path, level):
+            """
+            扫描指定路径的目录内容，如果是文件则添加到ContentsDict字典中，
+            如果是目录且满足搜索条件，则递归扫描子目录。
+
+            参数：
+            - path (str): 当前扫描的目录路径。
+            - level (int): 当前扫描的目录深度。用来控制是否递归到子目录。
+            """
             try:
+                # 使用os.scandir()迭代目录内容
                 with os.scandir(path) as it:
                     for entry in it:
                         if entry.is_file():
+                            # 如果是文件，检查其扩展名是否符合要求
                             if Extensions:
                                 # 获取文件的扩展名并转换为小写
                                 ext = os.path.splitext(entry.name)[1].lower()
                                 if ext not in Extensions:
                                     continue  # 跳过不符合扩展名的文件
+                            # 将文件名作为键，文件路径作为值，添加到字典中
                             ContentsDict[entry.name] = entry.path
-                        elif entry.is_dir():
-                            ContentsDict[entry.name] = entry.path
-                            if SearchSubfolders:
-                                if MultipleSubfolderSearch or level == 0:
-                                    # 递归扫描子目录
-                                    scan_directory(entry.path, level + 1)
+                        elif entry.is_dir() and SearchSubfolders:
+                            # 如果是目录并且启用了子目录搜索，且需要多层递归
+                            if MultipleSubfolderSearch or level == 0:
+                                # 递归扫描子目录
+                                scan_directory(entry.path, level + 1)
             except PermissionError:
-                pass  # 忽略没有权限的文件夹
+                # 如果没有权限访问该目录，忽略并继续
+                pass
 
-        # 标准化初始路径
+        # 标准化传入的路径，确保路径格式一致（例如去除尾部斜杠）
         Path = os.path.normpath(Path)
+
+        # 调用递归函数，开始从指定路径扫描
         scan_directory(Path, level=0)
 
-        return ContentsDict  # 返回包含内容路径和名称的字典
+        # 返回包含文件名和路径的字典
+        return ContentsDict
 
 # 专门负责各种数据的处理
 class DataProcessor():
@@ -1670,7 +1691,7 @@ class DataProcessor():
         return data
 
     # 使用Aho-Corasick算法在search_content的键中搜索target_dict的键
-    def searchKeysInDictUsingAhoCorapy(self, target_dict, search_content, ignore_case = False):
+    def searchKeysInDictUsingAhoCorapy(self, target_dict, search_content, ignore_case=False):
         """
         使用Aho-Corasick算法在search_content的键中搜索target_dict的键。
         如果找到匹配项，打印出search_content中的匹配键。
@@ -1693,11 +1714,14 @@ class DataProcessor():
 
         # 在search_content的键中进行搜索
         for content_key in search_content.keys():
+            print(f"正在搜索键: {content_key}")
             matches = kwtree.search_all(content_key)
             for match in matches:
+                # 只关注匹配的键，避免路径信息
                 self.feedback.CP(f'{content_key}成功匹配 -> {search_content[content_key]}')
 
-                correct_path_dictionary[content_key] = search_content[content_key] # 路径
+                # 保存匹配的键和内容到结果字典
+                correct_path_dictionary[content_key] = search_content[content_key]
 
                 break  # 找到第一个匹配项后停止对该键的搜索
 

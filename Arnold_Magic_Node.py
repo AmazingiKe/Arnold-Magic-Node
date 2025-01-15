@@ -3900,6 +3900,18 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
             return path_contenes
 
+        # 普通搜索模式
+        def normal_search_mode(self, path, exclude_extensions):
+
+            # 获取路径下内容
+            path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
+                path,
+                self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['search_subfolders_checkbox'],
+                self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'],
+                exclude_extensions
+            )
+
+
         # 主要逻辑函数
         def process(self):
             # 1, 判断路径是否有问题
@@ -3916,15 +3928,17 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
             # 3, 判断运行模式
             if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['use_cache_checkbox']:
+                print('使用缓存')
+
+            if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['intelligent_search_mode']:
+                # 智能搜索模式
+                print('智能搜索模式')
                 pass
-                # 使用缓存搜索
             else:
-                if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['intelligent_search_mode']:
-                    # 智能搜索模式
-                    pass
-                else:
-                    # 普通搜索模式
-                    pass
+                # 普通搜索模式
+                print('普通搜索模式')
+                self.normal_search_mode(self.enter_path, self.exclude_extensions)
+
 
 
             # 获取路径下内容
