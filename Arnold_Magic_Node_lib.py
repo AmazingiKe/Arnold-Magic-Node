@@ -1690,43 +1690,54 @@ class DataProcessor():
         # 返回处理后的字典，重复键已被移除
         return data
 
-    # 使用Aho-Corasick算法在search_content的键中搜索target_dict的键
-    def searchKeysInDictUsingAhoCorapy(self, target_dict, search_content, ignore_case=False):
+    def build_ahocorapy_tree(self, target_dict):
         """
-        使用Aho-Corasick算法在search_content的键中搜索target_dict的键。
-        如果找到匹配项，打印出search_content中的匹配键。
+        根据 target_dict 构建 Aho-Corasick 自动机树。
 
-        参数：
-        - target_dict: dict，包含要搜索的键
-        - search_content: dict，其键将被用于搜索匹配
-        - ignore_case: bool，默认为False，是否忽略大小写
+        :param target_dict: 目标字典，包含待匹配的键值对
+        :return: 已构建的 Aho-Corasick 树
         """
-        # 根据ignore_case参数设置是否区分大小写
-        kwtree = KeywordTree(case_insensitive=ignore_case)
+        # 创建 Aho-Corasick 自动机树
+        tree = KeywordTree()
 
-        # 匹配完后正确的路径 字典
-        correct_path_dictionary = {}
-
-        # 将target_dict的键添加到关键字树中
+        # 将目标字典的键添加到树中
         for key in target_dict.keys():
-            kwtree.add(key)
-        kwtree.finalize()
+            tree.add(key)
 
-        # 在search_content的键中进行搜索
-        for content_key in search_content.keys():
-            print(f"正在搜索键: {content_key}")
-            matches = kwtree.search_all(content_key)
-            for match in matches:
-                # 只关注匹配的键，避免路径信息
-                self.feedback.CP(f'{content_key}成功匹配 -> {search_content[content_key]}')
+        # 完成树的构建
+        tree.finalize()
 
-                # 保存匹配的键和内容到结果字典
-                correct_path_dictionary[content_key] = search_content[content_key]
+        # 返回构建好的树
+        return tree
 
-                break  # 找到第一个匹配项后停止对该键的搜索
+    def search_keys_in_dict_using_ahocorapy(self, target_dict, search_content, tree):
+        """
+        在给定的 target_dict 中查找并替换匹配的项。
 
-        return correct_path_dictionary
+        :param target_dict: 目标字典，包含键值对进行匹配
+        :param search_content: 包含查找键和新路径的字典
+        :param tree: 已构建的 Aho-Corasick 自动机树
+        :return: 包含匹配键和替换路径的字典
+        """
+        # 创建一个空字典来存储匹配结果
+        matched_dict = {}
 
+        # 遍历 search_content 字典进行匹配
+        for search_key, search_path in search_content.items():
+            # 使用 Aho-Corasick 树进行搜索，查找是否有匹配的 target_dict 键
+            matches = tree.search(search_key)
+
+            # 如果找到了匹配项
+            if matches:
+                # 遍历所有匹配的项
+                for match in matches:
+                    # 检查匹配的项是否存在于 target_dict 中
+                    if match in target_dict:
+                        # 如果存在，则替换目标字典中的路径（只更新路径部分）
+                        matched_dict[match] = target_dict[match][:2] + [os.path.normpath(search_path)]
+
+        # 返回匹配后的字典
+        return matched_dict
 
 
 # 专门用来处理图像

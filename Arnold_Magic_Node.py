@@ -104,7 +104,6 @@ TM_RepathFiles_config_dict = {
     "search_subfolders_checkbox" : True,
     "forced_path_override_checkbox" : False,
     "multiple_subfolder_search_checkbox" : False,
-    "ignore_case_checkbox" : False,
     "use_cache_checkbox" : True,
     "intelligent_search_mode" : False,
 }
@@ -312,15 +311,15 @@ class Arnold_Magic_Node_UI(object):
             c=lambda *args: path_detection_connection_button()
         )
 
-        self.color_mix = cmds.button(
-            label=self.language['create_widgets']['color_mix'],
-            c=lambda *args: blend_rgba_node()
-        )
-
-        self.gray_mix = cmds.button(
-            label=self.language['create_widgets']['gray_mix'],
-            c=lambda *args: blend_greg_manager()
-        )
+        # self.color_mix = cmds.button(
+        #     label=self.language['create_widgets']['color_mix'],
+        #     c=lambda *args: blend_rgba_node()
+        # )
+        #
+        # self.gray_mix = cmds.button(
+        #     label=self.language['create_widgets']['gray_mix'],
+        #     c=lambda *args: blend_greg_manager()
+        # )
 
         # 直连按钮
         self.direct_connection = cmds.button(
@@ -3597,9 +3596,6 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.multiple_subfolder_search_checkbox.stateChanged.connect(
             lambda *args:  self.modify_config('multiple_subfolder_search_checkbox', self.multiple_subfolder_search_checkbox.isChecked()))
 
-        self.ignore_case_checkbox = QtWidgets.QCheckBox(self.language['create_widgets']['ignore_case_checkbox']) # 忽略大小写
-        self.ignore_case_checkbox.stateChanged.connect(
-            lambda *args:  self.modify_config('ignore_case_checkbox', self.ignore_case_checkbox.isChecked()))
 
         self.forced_path_override_checkbox  = QtWidgets.QCheckBox('路径强行覆写')  # 使用缓存
         self.forced_path_override_checkbox.stateChanged.connect(
@@ -3659,8 +3655,6 @@ class TM_RepathFiles(QtWidgets.QDialog):
         config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.multiple_subfolder_search_checkbox)
         config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-        config_checkbox_01.addWidget(self.ignore_case_checkbox)
-        config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.forced_path_override_checkbox)
         config_checkbox_01.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         config_checkbox_01.addWidget(self.use_cache_checkbox)
@@ -3696,12 +3690,8 @@ class TM_RepathFiles(QtWidgets.QDialog):
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['search_subfolders_checkbox'])
         self.multiple_subfolder_search_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['multiple_subfolder_search_checkbox'])
-        self.ignore_case_checkbox.setChecked(
-            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['ignore_case_checkbox'])
         self.forced_path_override_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['forced_path_override_checkbox'])
-        self.use_cache_checkbox.setChecked(
-            self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['use_cache_checkbox'])
 
     # 选择文件夹
     def select_folder(self):
@@ -3717,16 +3707,16 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 判断是防止没有选择并执行了写入到控件的命令。如果空内容写入会导致使用不适
         if not folder_path == '':
             self.path_edit.setText(folder_path)
-
-
-
-
+ 
     class FixPath:
         def __init__(self, outer_instance, exclude_extensions):
             super().__init__()
 
-            # 存储对外部类实例的引用
-            self.outer_instance = outer_instance
+
+            self.same_path_dict = {} # 需要搜索的贴图字典
+            self.need_search_texture_dict = {} # 相同路径的字典
+
+            self.outer_instance = outer_instance # 存储对外部类实例的引用
 
             self.dataM = DataManager() # 数据管理
             self.dataP = DataProcessor() # 数据处理
@@ -3854,9 +3844,6 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
         # 初始化搜索数据
         def init_search_data(self):
-            need_search_texture_dict = {}  # 需要搜索的贴图字典
-            same_path_dict = {}  # 相同路径的字典
-
             # 获取配置文件中的修改范围选项
             config_data = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)
             modify_scope = config_data['modify_scope_options']
@@ -3876,13 +3863,13 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
                     if forced_path_override_checkbox or not Contents['isLoaded']:
                         # 记录重复的贴图文件名
-                        if tex_file_name in need_search_texture_dict:
-                            same_path_dict.setdefault(tex_file_name, []).append([TexName, MatName])
+                        if tex_file_name in self.need_search_texture_dict:
+                            self.same_path_dict.setdefault(tex_file_name, []).append([TexName, MatName])
                         else:
                             # 添加新的未加载贴图
-                            need_search_texture_dict[tex_file_name] = [TexName, MatName, Contents['Path']]
+                            self.need_search_texture_dict[tex_file_name] = [TexName, MatName, Contents['Path']]
 
-            return need_search_texture_dict, same_path_dict  # 初始化成功
+            return True # 返回 True 表示初始化成功
 
         # 寻找文件夹内的所有文件
         def get_directory_contents(self):
@@ -3903,6 +3890,9 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 普通搜索模式
         def normal_search_mode(self, path, exclude_extensions):
 
+            # 计算获取时间
+            start_time = time.time()
+
             # 获取路径下内容
             path_contenes = self.getnodedata.GetDirectoryContentsWithOptions(
                 path,
@@ -3911,9 +3901,111 @@ class TM_RepathFiles(QtWidgets.QDialog):
                 exclude_extensions
             )
 
+            # 计算获取路径内容需要多少时间
+            get_path_contenes_time = time.time() - start_time
+            self.feedback.CPW(f'获取路径内容时间: {get_path_contenes_time:.4f} 秒')
+
+
+            # 构建 Aho-Corasick 树
+            corasick_tree = self.dataP.build_ahocorapy_tree(self.need_search_texture_dict)
+
+            # 使用 Aho-Corasick 算法搜索匹配的贴图
+            matched_dict = self.dataP.search_keys_in_dict_using_ahocorapy(self.need_search_texture_dict,
+                                                                          path_contenes,
+                                                                          corasick_tree)
+
+            # 查询对比的时间
+            find_time = time.time() - start_time - get_path_contenes_time
+            self.feedback.CPW(f'查找对比时间: {find_time:.4f} 秒')
+
+            return matched_dict
+
+        # 刷新需要剩下需要搜索的贴图
+        def refresh_need_search_texture_dict(self, matched_dict):
+            """
+            刷新需要剩下需要搜索的贴图
+
+            matched_dict: dict, 匹配的贴图字典
+            """
+            # 用于存储剩下需要搜索的贴图
+            new_need_search_texture_dict = {}
+
+            # 遍历原始的需要搜索的贴图字典
+            for tex_file_name, tex_info in self.need_search_texture_dict.items():
+                # 如果当前贴图文件名不在匹配的字典中，说明没有找到匹配的贴图
+                if tex_file_name not in matched_dict:
+                    new_need_search_texture_dict[tex_file_name] = tex_info
+
+            # 更新需要搜索的贴图字典
+            self.need_search_texture_dict = new_need_search_texture_dict
+
+        # 刷新正确路径的缓存
+        def refresh_correct_path_cache(self, successful_matched_dict):
+            """
+            刷新正确路径的缓存
+
+            correct_path_dict: dict, 匹配的正确路径字典
+            """
+            # 加载缓存数据
+            cache_dict = self.dataM.bin_load_data(self.outer_instance.tm_repath_file_cache_filepath)
+
+            # 更新缓存数据
+            for textrue_name , cont in successful_matched_dict.items():
+                cache_dict[textrue_name] = cont
+
+            # 保存更新后的缓存数据
+            self.dataM.bin_save_data(self.outer_instance.tm_repath_file_cache_filepath, cache_dict)
+
+
+        # 修改匹配正确的节点路径
+        def modify_correct_path(self, successful_matched_dict):
+            """
+            修改匹配正确的节点路径
+
+            matched_dict: dict, 匹配的正确路径字典
+            """
+            # 遍历匹配的正确路径字典
+            for textrue_name, cont in successful_matched_dict.items():
+                # 获取材质名称
+                matName = cont[1]
+
+                # 获取贴图名称
+                texName = cont[0]
+
+                # 获取正确的路径
+                correct_path = cont[2]
+
+                # 修改贴图路径
+                try:
+                    cmds.setAttr(f"{texName}.fileTextureName", correct_path, type="string")
+                except:
+                    self.feedback.CPW('无法重命名只读节点:' + str(texName))
+
+        # 刷新主窗口的贴图数据
+        def refresh_main_window_texture_data(self, successful_matched_dict):
+            """
+            刷新主窗口的贴图数据
+
+            new_MterialNodeAllInfoDict: dict, 新的材质节点数据字典
+            """
+            # 获取主窗口的表格数据
+            old_table_data = self.outer_instance.TextureManagerWin.MterialNodeAllInfoDict
+
+            # 修改旧表格数据
+            for tex_name , tex_cont in successful_matched_dict.items():
+                old_table_data[tex_cont[1]][tex_cont[0]]['Path'] = tex_cont[2]
+
+            print(old_table_data)
+            # # 遍历匹配的正确路径字典
+            # for material_name in old_table_data:
+            #     for texture_name in old_table_data[material_name]:
 
         # 主要逻辑函数
         def process(self):
+
+
+
+
             # 1, 判断路径是否有问题
             if not os.path.exists(self.enter_path):
                 self.feedback.CPW('输入的路径不存在')
@@ -3922,9 +4014,6 @@ class TM_RepathFiles(QtWidgets.QDialog):
             # 2, 初始化搜索数据
             if not self.init_search_data():
                 return
-            else:
-                need_search_texture_dict, same_path_dict = self.init_search_data()
-
 
             # 3, 判断运行模式
             if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['use_cache_checkbox']:
@@ -3937,13 +4026,21 @@ class TM_RepathFiles(QtWidgets.QDialog):
             else:
                 # 普通搜索模式
                 print('普通搜索模式')
-                self.normal_search_mode(self.enter_path, self.exclude_extensions)
 
+                # 寻找文件夹内的所有文件
+                successful_matched_dict = self.normal_search_mode(self.enter_path, self.exclude_extensions)
 
+                # 刷新需要剩下需要搜索的贴图
+                self.refresh_need_search_texture_dict(successful_matched_dict)
 
-            # 获取路径下内容
-            # print(self.get_directory_contents())
+                # 刷新正确路径的缓存
+                self.refresh_correct_path_cache(successful_matched_dict)
 
+                # 修改匹配正确的节点路径
+                self.modify_correct_path(successful_matched_dict)
+
+                # 刷新主窗口的贴图数据
+                self.refresh_main_window_texture_data(successful_matched_dict)
 
     # 寻找文件夹并修复确实文件夹主要逻辑函数
     def fix_path(self):

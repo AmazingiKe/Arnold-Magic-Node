@@ -10,8 +10,8 @@ import base64  # 提供用于Base64编码和解码的模块
 import importlib  # 提供动态加载和重新加载模块的功能
 import time  # 提供时间相关函数，如时间戳、睡眠等
 import subprocess  # 提供执行系统命令和启动新进程的功能
-import wmi
-from time import ctime  # 提供将时间戳转换为字符串格式的函数
+import wmi # 提供Windows管理规范接口的功能
+import warnings  # 提供警告处理功能
 from datetime import datetime, timedelta  # 提供日期和时间的操作功能
 
 # 外部库
@@ -25,6 +25,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC  # 提供密码
 from cryptography.hazmat.backends import default_backend  # 提供默认加密后端支持
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes  # 提供对称加密的算法和模式
 from cryptography.exceptions import InvalidSignature  # 异常处理，处理无效签名
+from cryptography.utils import CryptographyDeprecationWarning
 
 import ntplib  # 提供与NTP（网络时间协议）服务器交互的功能
 import requests  # 提供HTTP请求功能，用于与网络API交互
@@ -51,6 +52,8 @@ except ImportError:
     from PySide2.QtWidgets import QAction  # 创建菜单和工具栏的动作
     from shiboken2 import wrapInstance  # Maya中将C++对象封装为Python对象
 
+
+warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
 ##############################################################################################
 
 script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
