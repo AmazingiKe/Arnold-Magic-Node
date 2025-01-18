@@ -3991,15 +3991,36 @@ class TM_RepathFiles(QtWidgets.QDialog):
             # 获取主窗口的表格数据
             old_table_data = self.outer_instance.TextureManagerWin.MterialNodeAllInfoDict
 
+            # update_dict字典是为了储存接下来需要更新主数据
+            update_dict = {}
+
+
             # 修改旧表格数据
-            for tex_name , tex_cont in successful_matched_dict.items():
-                old_table_data[tex_cont[1]][tex_cont[0]]['Path'] = tex_cont[2]
+            for tex_name, tex_cont in successful_matched_dict.items():
+                old_table_data[tex_cont[1]][tex_cont[0]]['Path'] = tex_cont[2]  # 更新主窗口的表格数据路径
+                update_dict[tex_cont[0]] = tex_cont[1]  # 记录需要更新的节点
 
-            print(old_table_data)
-            # # 遍历匹配的正确路径字典
-            # for material_name in old_table_data:
-            #     for texture_name in old_table_data[material_name]:
+            # 更新主窗口的表格数据
+            new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(update_dict,
+                                                                                     old_table_data)
 
+            # 获取零时的表格列表数据
+            temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.outer_instance.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+
+            # 获取当前表格中都有那些贴图
+            table_tex_list = []
+            for index, key in enumerate(temp_TextureManager_texture_table_data):
+                table_tex_list.append(temp_TextureManager_texture_table_data[index][0])
+
+            # 把表格中有的贴图做成的列表在总信息中筛选出来
+            select_texture_dict = {}
+            for index, table_list in enumerate(temp_TextureManager_texture_table_data):
+                select_texture_dict[temp_TextureManager_texture_table_data[index][0]] = \
+                temp_TextureManager_texture_table_data[index][1]
+
+
+            # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
+            self.outer_instance.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
         # 主要逻辑函数
         def process(self):
 
