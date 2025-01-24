@@ -150,7 +150,7 @@
         "WINDOWS_NAME": "自动修复路径-"
       },
       "create_widgets": {
-        "memory_search_mode_checkbox" : "记忆搜索模式",
+        "memory_search_mode_checkbox" : "智能搜索模式",
         "search_subfolders_checkbox": "搜索子文件夹",
         "multiple_subfolder_search_checkbox": "多个子文件夹搜索",
         "ignore_case_checkbox": "忽略大小写",
