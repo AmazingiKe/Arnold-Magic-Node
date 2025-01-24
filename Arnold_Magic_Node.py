@@ -3709,6 +3709,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['use_cache_checkbox'])
         self.normal_search_mode_checkbox.setChecked(
             self.dataM.bin_load_data(self.TM_repath_files_config_FilePath)['normal_search_mode'])
+
     # 选择文件夹
     def select_folder(self):
 
@@ -3723,7 +3724,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
         # 判断是防止没有选择并执行了写入到控件的命令。如果空内容写入会导致使用不适
         if not folder_path == '':
             self.path_edit.setText(folder_path)
- 
+
     class FixPath:
         def __init__(self, outer_instance, exclude_extensions):
             super().__init__()
@@ -3963,32 +3964,102 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
             return matched_dict
 
+        # -----------------------------------------------智能搜索模式开始
+
+        # 获取电脑有效盘符
+        def get_drives(self):
+            # 存储有效的盘符
+            valid_drives = []
+
+            # 检查从 'C:' 到 'Z:' 的所有盘符
+            for letter in range(65, 91):  # 'A' 的ASCII值是65, 'Z'是90
+                drive = f"{chr(letter)}:"
+                # 检查该盘符是否存在
+                if os.path.exists(drive):
+                    valid_drives.append(drive)
+
+            return valid_drives
+
+        # 贪心搜索算法
+        def greedy_search(self, old_path, drive_letters):
+            """
+            使用贪心算法生成所有可能的路径
+            old_path: 原始路径
+            drive_letters: 有效盘符列表
+            """
+            all_possibility_path = []
+
+            # 提取文件夹路径，不包括文件名
+            base_path = os.path.dirname(old_path)
+
+            # 遍历所有可能的盘符，生成相应的基础路径
+            for drive in drive_letters:
+                new_base_path = drive + base_path[2:]  # 拼接新的盘符和目录路径
+                new_base_path = os.path.normpath(new_base_path)  # 规范化路径
+                all_possibility_path.append(new_base_path)  # 将生成的路径加入所有可能路径列表
+
+            # 使用模糊匹配来搜索目标文件
+            target_file_name = os.path.basename(old_path)  # 获取目标文件名
+
+            possible_paths_with_scores = []
+
+            # 遍历所有可能路径，递归地搜索目标文件
+            for path in all_possibility_path:
+                if os.path.exists(path):  # 如果目录存在
+                    for root, dirs, files in os.walk(path):  # 使用os.walk递归遍历目录
+                        # 使用difflib进行模糊匹配，找到与目标文件名最相似的文件
+                        matches = difflib.get_close_matches(target_file_name, files, n=3, cutoff=0.7)
+                        if matches:
+                            for match in matches:
+                                matched_file_path = os.path.join(root, match)  # 计算每个匹配文件的完整路径
+                                score = 1  # 模拟评分，可以根据需要进行调整
+                                possible_paths_with_scores.append((matched_file_path, score))
+
+            # 根据得分排序，从高到低筛选最有可能的路径
+            possible_paths_with_scores.sort(key=lambda x: x[1], reverse=True)
+
+            # 返回得分最高的路径（最有可能的路径）
+            return [path for path, score in possible_paths_with_scores]
+
         # 智能搜索模式
-        def intelligent_search_mode(self, path, exclude_extensions):
+        def intelligent_search_mode(self):
             """
             智能搜索模式
             """
-            pass
 
+            path_contenes = {}
 
-        # 刷新需要剩下需要搜索的贴图
-        def refresh_need_search_texture_dict(self, matched_dict):
-            """
-            刷新需要剩下需要搜索的贴图
+            # 获取所有盘符
+            drive_letters = self.get_drives()
 
-            matched_dict: dict, 匹配的贴图字典
-            """
-            # 用于存储剩下需要搜索的贴图
-            new_need_search_texture_dict = {}
+            # 遍历需要搜索的贴图字典（文件名和其对应的信息）
+            for file_name, cont in self.need_search_texture_dict.items():
+                # 使用贪心算法获取所有可能的路径
+                all_possibility_path = self.greedy_search(cont[2], drive_letters)
 
-            # 遍历原始的需要搜索的贴图字典
-            for tex_file_name, tex_info in self.need_search_texture_dict.items():
-                # 如果当前贴图文件名不在匹配的字典中，说明没有找到匹配的贴图
-                if tex_file_name not in matched_dict:
-                    new_need_search_texture_dict[tex_file_name] = tex_info
+                # 遍历所有可能的路径
+                for path in all_possibility_path:
+                    # 如果路径存在
+                    if os.path.exists(path):
+                        # 检查当前路径是否是目标文件的路径
+                        if file_name == os.path.basename(path):
+                            # 将找到的文件路径保存到路径内容字典中
+                            path_contenes[file_name] = path
+                            # 找到目标文件后退出当前循环，避免继续搜索
+                            break
 
-            # 更新需要搜索的贴图字典
-            self.need_search_texture_dict = new_need_search_texture_dict
+             # 构建 Aho-Corasick 树
+            corasick_tree = self.dataP.build_ahocorapy_tree(self.need_search_texture_dict)
+
+            # 使用 Aho-Corasick 算法搜索匹配的贴图
+            matched_dict = self.dataP.search_keys_in_dict_using_ahocorapy(self.need_search_texture_dict,
+                                                                          path_contenes,
+                                                                          corasick_tree)
+
+            return matched_dict
+
+        # -----------------------------------------------智能搜索模式结束
+
 
         # 刷新正确路径的缓存
         def refresh_correct_path_cache(self, successful_matched_dict):
@@ -4072,8 +4143,30 @@ class TM_RepathFiles(QtWidgets.QDialog):
             # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
             self.outer_instance.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
 
+        # 从待搜索字典中移除已搜索正确的项
+        def remove_searched_correct_path(self, successful_matched_dict):
+            """
+            从待搜索字典中删除已成功匹配的项
+
+            successful_matched_dict: dict，成功匹配的字典，键为已匹配的项
+            """
+            # 初始化新的待搜索字典
+            new_need_search_texture_dict = {}
+
+            # 遍历原待搜索字典
+            for tex_file_name, tex_info in self.need_search_texture_dict.items():
+                # 若当前项未匹配成功
+                if tex_file_name not in successful_matched_dict:
+                    # 加入新的待搜索字典
+                    new_need_search_texture_dict[tex_file_name] = tex_info
+
+            # 更新待搜索字典
+            self.need_search_texture_dict = new_need_search_texture_dict
+
         # 主要逻辑函数
         def process(self):
+            # 用于存储匹配成功的贴图
+            successful_matched_dict = {}
 
             # 1, 判断路径是否有问题
             if not os.path.exists(self.enter_path):
@@ -4084,34 +4177,54 @@ class TM_RepathFiles(QtWidgets.QDialog):
             if not self.init_search_data():
                 return
 
-            # 3, 判断运行模式
-            if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['use_cache_checkbox']:
+            # 3, 判断有没有搜索模式
+            # 获取几种模式
+            use_cache_checkbox = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['use_cache_checkbox']
+            intelligent_search_mode = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['intelligent_search_mode']
+            normal_search_mode = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['normal_search_mode']
 
+            if not use_cache_checkbox and not intelligent_search_mode and not normal_search_mode:
+                self.feedback.CPW('没有选择搜索模式')
+                return
+
+            # 4, 判断运行模式
+            if use_cache_checkbox:
+                print('缓存搜索模式')
                 # 缓存搜索模式
-                self.cache_search_mode()
-            return
-            if self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['intelligent_search_mode']:
+                cache_successful_matched_dict = self.cache_search_mode()
+
+                self.remove_searched_correct_path(cache_successful_matched_dict)
+
+                # 把搜索正确的内容添加进正确内容更新字典
+                successful_matched_dict.update(cache_successful_matched_dict)
+
+            if intelligent_search_mode:
                 # 智能搜索模式
                 print('智能搜索模式')
-                pass
-            else:
+
+                intelligent_successful_matched_dict =  self.intelligent_search_mode()
+
+                # 把搜索正确的内容添加进正确内容更新字典
+                successful_matched_dict.update(intelligent_successful_matched_dict)
+
+            if normal_search_mode:
                 # 普通搜索模式
                 print('普通搜索模式')
 
                 # 寻找文件夹内的所有文件
-                successful_matched_dict = self.normal_search_mode(self.enter_path, self.exclude_extensions)
+                normal_successful_matched_dict = self.normal_search_mode(self.enter_path, self.exclude_extensions)
 
-                # 刷新需要剩下需要搜索的贴图
-                self.refresh_need_search_texture_dict(successful_matched_dict)
+                # 把搜索正确的内容添加进正确内容更新字典
+                successful_matched_dict.update(normal_successful_matched_dict)
 
-                # 刷新正确路径的缓存
-                self.refresh_correct_path_cache(successful_matched_dict)
+            # 刷新正确路径的缓存
+            self.refresh_correct_path_cache(successful_matched_dict)
 
-                # 修改匹配正确的节点路径
-                self.modify_correct_path(successful_matched_dict)
+            # 修改匹配正确的节点路径
+            self.modify_correct_path(successful_matched_dict)
 
-                # 刷新主窗口的贴图数据
-                self.refresh_main_window_texture_data(successful_matched_dict)
+            # 刷新主窗口的贴图数据
+            self.refresh_main_window_texture_data(successful_matched_dict)
 
     # 寻找文件夹并修复确实文件夹主要逻辑函数
     def fix_path(self):
