@@ -11,7 +11,7 @@ import os  # 提供与操作系统交互的功能，如文件路径操作、目�
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import shutil
 import threading # 多线程
-
+import concurrent.futures # 并发执行
 # 3. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
 try:
@@ -1814,6 +1814,9 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowMaximizeButtonHint | QtCore.Qt.WindowCloseButtonHint)
 
         self.create_widgets()
+
+        self.create_menu()
+
         self.create_layouts()
         # 设置全局的 QToolTip 样式
         self.setStyleSheet("""
@@ -2107,6 +2110,39 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.initial_settings()
         # ----------------------------列表 结束
 
+    def create_menu(self):
+        # 创建主菜单栏
+        self.main_menu_bar = QtWidgets.QMenuBar(self)
+
+        # 关于菜单及其动作
+        self.about_menu = self.main_menu_bar.addMenu('关于') # 关于
+
+        # 创建 插件主页菜单
+        self.plugin_home = QAction('插件主页') # 插件主页
+        self.plugin_home.triggered.connect(
+            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomeURL)))
+
+        # 创建 帮助/反馈菜单
+        self.contact_feedback_action = QAction('联系/反馈', self) # 联系/反馈
+        self.contact_feedback_action.triggered.connect(
+            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
+
+        # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
+        self.help_document_action = QAction('帮助文档', self) # 帮助文档
+        self.help_document_action.triggered.connect(
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHelpDocumentURL)))
+
+        self.plugin_update_download_action = QAction('插件更新下载', self) # 插件更新下载
+        self.plugin_update_download_action.triggered.connect(
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginUpdateDownloadURL)))
+
+        # 将动作添加到关于菜单
+        self.about_menu.addAction(self.plugin_home)
+        self.about_menu.addAction(self.contact_feedback_action)
+        self.about_menu.addAction(self.plugin_update_download_action)
+        self.about_menu.addAction(self.help_document_action)
+
+
     def create_layouts(self):
 
         # [0][0][0][1][0]材质搜索区域Layout
@@ -2124,8 +2160,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         Texture_Search_Layout.addWidget(self.MaterialList_SelectAll_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Unselect_All_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Find_Missing_Textures_Button)
-        Texture_Search_Layout.addWidget(self.TexturelList_Intelligent_Find_Max_Size_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_reverse_selection)
+        Texture_Search_Layout.addWidget(self.TexturelList_Intelligent_Find_Max_Size_Button)
         Texture_Search_Layout.addWidget(self.tolerance_doubleSpinBox)
         Texture_Search_Layout.addWidget(self.TexturelListSearch)
         Texture_Search_Layout.addWidget(self.TexturelList_Search_And_Replace_Date_Button)
@@ -2173,6 +2209,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 主窗口
         Main_Layout = QtWidgets.QVBoxLayout(self)
+        Main_Layout.setMenuBar(self.main_menu_bar)
         Main_Layout.addLayout(Target_And_Edit_Area_Layout)
 
     def initial_settings(self):
@@ -4021,6 +4058,15 @@ class TM_RepathFiles(QtWidgets.QDialog):
             # 返回得分最高的路径（最有可能的路径）
             return [path for path, score in possible_paths_with_scores]
 
+        # 并行优化的贪心搜索方法
+        def greedy_search_parallel(self, old_path, drive_letters, file_name):
+            """并行优化的贪心搜索方法"""
+            possible_paths = self.greedy_search(old_path, drive_letters)
+            for path in possible_paths:
+                if os.path.exists(path) and os.path.basename(path) == file_name:
+                    return path
+            return None
+
         # 智能搜索模式
         def intelligent_search_mode(self):
             """
@@ -4028,33 +4074,36 @@ class TM_RepathFiles(QtWidgets.QDialog):
             """
 
             path_contenes = {}
-
-            # 获取所有盘符
             drive_letters = self.get_drives()
 
-            # 遍历需要搜索的贴图字典（文件名和其对应的信息）
-            for file_name, cont in self.need_search_texture_dict.items():
-                # 使用贪心算法获取所有可能的路径
-                all_possibility_path = self.greedy_search(cont[2], drive_letters)
+            # 使用线程池并行处理每个文件的搜索任务
+            with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+                futures = []
+                for file_name, cont in self.need_search_texture_dict.items():
+                    # 提交任务到线程池
+                    futures.append(
+                        executor.submit(
+                            self.greedy_search_parallel,  # 修改后的并行化贪心搜索方法
+                            cont[2],
+                            drive_letters,
+                            file_name
+                        )
+                    )
 
-                # 遍历所有可能的路径
-                for path in all_possibility_path:
-                    # 如果路径存在
-                    if os.path.exists(path):
-                        # 检查当前路径是否是目标文件的路径
-                        if file_name == os.path.basename(path):
-                            # 将找到的文件路径保存到路径内容字典中
-                            path_contenes[file_name] = path
-                            # 找到目标文件后退出当前循环，避免继续搜索
-                            break
+                # 收集结果
+                for future in concurrent.futures.as_completed(futures):
+                    matched_path = future.result()
+                    if matched_path:
+                        file_name = os.path.basename(matched_path)
+                        path_contenes[file_name] = matched_path
 
-             # 构建 Aho-Corasick 树
+            # 构建Aho-Corasick树并搜索
             corasick_tree = self.dataP.build_ahocorapy_tree(self.need_search_texture_dict)
-
-            # 使用 Aho-Corasick 算法搜索匹配的贴图
-            matched_dict = self.dataP.search_keys_in_dict_using_ahocorapy(self.need_search_texture_dict,
-                                                                          path_contenes,
-                                                                          corasick_tree)
+            matched_dict = self.dataP.search_keys_in_dict_using_ahocorapy(
+                self.need_search_texture_dict,
+                path_contenes,
+                corasick_tree
+            )
 
             return matched_dict
 
@@ -4168,16 +4217,13 @@ class TM_RepathFiles(QtWidgets.QDialog):
             # 用于存储匹配成功的贴图
             successful_matched_dict = {}
 
-            # 1, 判断路径是否有问题
-            if not os.path.exists(self.enter_path):
-                self.feedback.CPW('输入的路径不存在')
-                return
 
-            # 2, 初始化搜索数据
+
+            # 1, 初始化搜索数据
             if not self.init_search_data():
                 return
 
-            # 3, 判断有没有搜索模式
+            # 2, 判断有没有搜索模式
             # 获取几种模式
             use_cache_checkbox = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['use_cache_checkbox']
             intelligent_search_mode = self.dataM.bin_load_data(self.outer_instance.TM_repath_files_config_FilePath)['intelligent_search_mode']
@@ -4187,7 +4233,7 @@ class TM_RepathFiles(QtWidgets.QDialog):
                 self.feedback.CPW('没有选择搜索模式')
                 return
 
-            # 4, 判断运行模式
+            # 3, 判断运行模式
             if use_cache_checkbox:
                 print('缓存搜索模式')
                 # 缓存搜索模式
@@ -4207,7 +4253,14 @@ class TM_RepathFiles(QtWidgets.QDialog):
                 # 把搜索正确的内容添加进正确内容更新字典
                 successful_matched_dict.update(intelligent_successful_matched_dict)
 
+
+
             if normal_search_mode:
+                # 判断路径是否有问题
+                if not os.path.exists(self.enter_path):
+                    self.feedback.CPW('输入的路径不存在')
+                    return
+
                 # 普通搜索模式
                 print('普通搜索模式')
 
