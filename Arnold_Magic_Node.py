@@ -125,7 +125,9 @@ TM_texture_pack_config_dict = {
     "path_edit" : "",
     "modify_scope_options" : 1 ,
     "delete_source_files" : False,
-    "modify_path" : True
+    "modify_path" : True,
+    "delete_source_tx_files" : False,
+    "copy_tx_files" : True,
 }
 
 TextureManagerWin_config_dict = {
@@ -1848,8 +1850,8 @@ class TextureManagerWin(QtWidgets.QDialog):
             menu = QtWidgets.QMenu(self)
 
 
-            action1 = menu.addAction("Test button")
-            action1.triggered.connect(lambda *args: self.test_button())
+            action1 = menu.addAction("测试按钮")
+            action1.triggered.connect(lambda *args: self.outer_instance.test())
 
             menu.addSection("快捷操作") # 添加分组1
 
@@ -2141,7 +2143,6 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.about_menu.addAction(self.contact_feedback_action)
         self.about_menu.addAction(self.plugin_update_download_action)
         self.about_menu.addAction(self.help_document_action)
-
 
     def create_layouts(self):
 
@@ -2850,6 +2851,122 @@ class TextureManagerWin(QtWidgets.QDialog):
                                                                  self.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict))
 
     # 其他窗口-----------------------------------------结束
+
+
+    # 选择表格内容返回数据函数 -----------------------------------------开始
+
+    # 获取表格中的所有数据
+    def get_all_table_data(self):
+        """
+        获取表格中的所有数据
+
+        model: 表格的数据模型 (例如 QAbstractTableModel 或其子类)
+        """
+
+        model = self.TEXTURELIST_MODEL
+
+        all_rows_data = []  # 用于存储所有行的数据
+
+        # 获取表格的总行数
+        row_count = model.rowCount()
+
+        # 获取表格的总列数
+        column_count = model.columnCount()
+
+        # 遍历所有行和列，提取数据
+        for row in range(row_count):
+            row_data = [model.data(model.index(row, column)) for column in range(column_count)]
+            all_rows_data.append(row_data)
+
+        return all_rows_data
+
+    # 获取选中行的数据
+    def get_selected_row_data(self):
+        """
+        获取选中行的数据
+
+        model: 表格的数据模型 (例如 QAbstractTableModel 或其子类)
+        table_variables: 表格视图的变量 (例如 QTableView)
+        """
+        model = self.TEXTURELIST_MODEL
+        table_variables = self.TexturelList
+        # 获取当前选择模型
+        selection_model = table_variables.selectionModel()
+
+        # 获取选中的索引
+        selected_indexes = selection_model.selectedIndexes()
+
+        # 如果没有选中任何单元格
+        if not selected_indexes:
+            return None
+
+        # 用于存储选中的行数据
+        selected_rows_data = []
+
+        # 遍历所有选中的单元格
+        for index in selected_indexes:
+            row = index.row()  # 获取当前单元格所在的行
+            # 获取该行所有列的数据
+            row_data = [model.data(model.index(row, column)) for column in range(model.columnCount())]
+
+            # 将该行的数据添加到选中的行数据列表中
+            if row_data not in selected_rows_data:
+                selected_rows_data.append(row_data)
+
+        return selected_rows_data
+
+    # 将列表转换为字典，使用列表的第0个元素作为键查找字典中的数据
+    def convert_list_to_dict(self, data_dict, target_list):
+        """
+        将列表转换为字典，使用列表的第0个元素作为键查找字典中的数据
+        并重建一个新的字典。
+
+        参数：
+        data_dict: dict, 主要的数据字典，其中键为材质名称，值为一个字典，
+                   该字典包含纹理名称及其对应的纹理数据。
+        target_list: list, 目标列表，列表中的每个元素的第0个值将作为纹理名称来查找。
+
+        返回：
+        new_dict: dict, 新的字典，按材质名称组织，包含匹配的纹理数据。
+        """
+        new_dict = {}  # 用于存储最终结果的字典
+
+        if target_list is None:
+            self.feedback.CPW('没有选中任何行')
+            return {}
+
+        # 将目标列表中的第0个元素提取为集合，用于加速后续的查找操作
+        target_nodes = set(item[0] for item in target_list)
+
+        # 遍历输入的data_dict字典
+        for material_name, value in data_dict.items():
+            # 对每个材质的纹理进行遍历
+            for texture_name, texture_data in value.items():
+                # 只有当纹理名称texture_name在目标节点集合target_nodes中时才处理
+                if texture_name in target_nodes:
+                    # 如果材质名称还没有加入new_dict，则初始化一个空字典
+                    if material_name not in new_dict:
+                        new_dict[material_name] = {}
+                    # 将匹配的纹理数据加入到new_dict中
+                    new_dict[material_name][texture_name] = texture_data
+
+        return new_dict
+
+    # 根据修改范围选择对应的数据
+    def get_selected_table_data(self, modify_scope):
+        """根据修改范围选择对应的数据"""
+        if modify_scope == 1:
+            return self.MterialNodeAllInfoDict
+        elif modify_scope == 2:
+            selected_table_data = self.get_all_table_data()
+            return self.convert_list_to_dict(self.MterialNodeAllInfoDict, selected_table_data)
+        elif modify_scope == 3:
+            selected_table_data = self.get_selected_row_data()
+            return self.convert_list_to_dict(self.MterialNodeAllInfoDict, selected_table_data)
+        return {}  # 默认返回空字典
+
+    # 选择表格内容返回数据函数 -----------------------------------------结束
+
     def state_set_background_colors(self, model):
 
         # 遍历模型中的每一行
@@ -3003,7 +3120,8 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.TextureManager_config_path, config)
 
     def test(self):
-        print('hello wrld')
+        print('hello world')
+
 
     @Slot(dict)
     def replace_base_data_and_refresh_ui(self, new_MterialNodeAllInfoDict):
