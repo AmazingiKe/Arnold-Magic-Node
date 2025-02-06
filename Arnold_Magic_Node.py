@@ -5156,6 +5156,16 @@ class TM_TexturePack(QtWidgets.QDialog):
                                                        self.modify_config(key="modify_path",
                                                                           cont=self.change_path_checkbox.isChecked()))
 
+        self.copy_tx_files_checkbox = QtWidgets.QCheckBox("打包tx文件")
+        self.copy_tx_files_checkbox.setChecked(config["copy_tx_files"])  # 根据配置设置是否选中
+        self.copy_tx_files_checkbox.stateChanged.connect(lambda *args:
+                                                         self.modify_config(key="copy_tx_files",
+                                                                            cont=self.copy_tx_files_checkbox.isChecked()))
+        self.delete_source_tx_files_checkbox = QtWidgets.QCheckBox("删除源tx文件")
+        self.delete_source_tx_files_checkbox.setChecked(config["delete_source_tx_files"])  # 根据配置设置是否选中
+        self.delete_source_tx_files_checkbox.stateChanged.connect(lambda *args:
+                                                         self.modify_config(key="delete_source_tx_files",
+                                                                            cont=self.delete_source_tx_files_checkbox.isChecked()))
         # ______________________________________________________________________>>> 第三行：打包按钮
         self.pack_button = QtWidgets.QPushButton("打包", self)  # 创建打包按钮
         # 点击按钮时，执行打包操作
@@ -5185,12 +5195,19 @@ class TM_TexturePack(QtWidgets.QDialog):
 
         # 第二行：操作选择
         option_layout = QtWidgets.QHBoxLayout()
+
+        option_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        option_layout.addWidget(self.change_path_checkbox)
+        option_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        option_layout.addWidget(self.copy_tx_files_checkbox)
         option_layout.addItem(
             QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         option_layout.addWidget(self.delete_source_checkbox)
         option_layout.addItem(
             QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-        option_layout.addWidget(self.change_path_checkbox)
+        option_layout.addWidget(self.delete_source_tx_files_checkbox)
         option_layout.addItem(
             QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
 
@@ -5217,141 +5234,176 @@ class TM_TexturePack(QtWidgets.QDialog):
             folder = os.path.normpath(folder)
             self.output_path_input.setText(folder)
 
+    class TexturePack:
+        def __init__(self, outer_instance):
+            self.outer_instance = outer_instance  # 外部类实例引用
+
+            # 初始化功能模块
+            self.dataM = DataManager()
+            self.feedback = FeedbackPrompt()
+            self.getnodedata = GetNodeData()
+
+            # 加载配置文件
+            self.config = self.dataM.bin_load_data(self.outer_instance.TM_texture_pack_config_FilePath)
+
+            self.old_table_data = self.outer_instance.TextureManagerWin.MterialNodeAllInfoDict
+        # 寻找指定的 .tx 文件
+        def _find_tx_files(self, image_path):
+            # 获取原始文件名（不含扩展名）
+            base_name = os.path.splitext(os.path.basename(image_path))[0]
+
+            # 获取文件所在目录
+            dir_name = os.path.dirname(image_path)
+
+            # 获取目录下所有文件
+            all_files = os.listdir(dir_name)
+
+            # 定义正则表达式，匹配以原始文件名开头，后跟任意字符，最后以 '.tx' 结尾的文件
+            pattern = re.compile(rf"^{re.escape(base_name)}.*\.tx$")
+
+            # 筛选出所有匹配的 .tx 文件
+            tx_files = [f for f in all_files if pattern.match(f)]
+
+            # 返回完整路径的 .tx 文件列表
+            return [os.path.join(dir_name, f) for f in tx_files]
+
+        # 更新节点的路径
+        def _update_node_path(self, node_name, new_path):
+            try:
+                cmds.setAttr(f"{node_name}.fileTextureName", new_path, type="string")
+            except Exception as e:
+                self.feedback.CPW(f"更新节点 {node_name} 路径失败: {e}")
+
+        # 执行贴图复制操作
+        def _copy_to_output(self, old_info_path, new_file_path):
+            try:
+                shutil.copy(old_info_path, new_file_path)
+                self.feedback.CP(f"复制文件: {old_info_path} -> {new_file_path}")
+            except Exception as e:
+                self.feedback.CPW(f"复制备份文件时出错: {e}")
+
+        # 删除路径下文件函数
+        def _delete_files(self, file_path):
+            try:
+                os.remove(file_path)
+                self.feedback.CP(f"删除文件: {file_path}")
+            except Exception as e:
+                self.feedback.CP(f"删除文件时出错: {e}")
+
+        # 更新主窗口的贴图路径
+        def _refresh_main_window_texture_path_data(self, mat_name, node_name ,new_path):
+
+            # update_dict字典是为了储存接下来需要更新主数据
+            update_dict = {}
+
+            # 修改旧表格数据
+            self.old_table_data[mat_name][node_name]['Path'] = new_path
+
+        # 刷新主窗口的贴图数据
+        def _refresh_main_window_texture_data(self, update_dict):
+            # 更新主窗口的表格数据
+            new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(update_dict,
+                                                                                     self.old_table_data)
+
+            # 获取零时的表格列表数据
+            temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.outer_instance.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+
+            # 获取当前表格中都有那些贴图
+            table_tex_list = []
+            for index, key in enumerate(temp_TextureManager_texture_table_data):
+                table_tex_list.append(temp_TextureManager_texture_table_data[index][0])
+
+            # 把表格中有的贴图做成的列表在总信息中筛选出来
+            select_texture_dict = {}
+            for index, table_list in enumerate(temp_TextureManager_texture_table_data):
+                select_texture_dict[temp_TextureManager_texture_table_data[index][0]] = \
+                temp_TextureManager_texture_table_data[index][1]
+
+
+            # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
+            self.outer_instance.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
+
+
+
+        def process(self):
+            # 0, 定义变量
+            # update_dict字典是为了储存接下来需要更新主数据
+            update_dict = {}
+
+            # 1, 初始检查
+            if not os.path.exists(self.config["path_edit"]):
+                self.feedback.CPW('打包输出路径无效')
+                return
+
+
+            # 2, 获取新路径并标准化路径
+            new_output_path = os.path.normpath(self.config["path_edit"])
+
+            # 3, 获取处理范围
+            need_pack_texture_dict = self.outer_instance.TextureManagerWin.get_selected_table_data(self.config['modify_scope_options'])
+
+            # 4, 检查是否有需要处理的数据 如果没有直接返回
+            if not need_pack_texture_dict:
+                return
+
+            # 5, 遍历每个纹理并处理每个纹理
+            for mat_name in need_pack_texture_dict:
+                for node_name, node_cont in need_pack_texture_dict[mat_name].items():
+
+                    ## 1, 获取旧路径并标准化路径和新路径
+                    old_info_path = os.path.normpath(node_cont['Path'])
+                    new_path = os.path.join(new_output_path, os.path.basename(old_info_path))
+
+                    ## 2, 检查路径是否有效
+                    if not os.path.exists(old_info_path):
+                        self.feedback.CPW(f"文件路径不存在: {os.path.basename(old_info_path)}")
+                        continue
+
+                    ## 3, 复制文件到输出路径
+                    if new_output_path == os.path.normpath(os.path.dirname(old_info_path)):
+                        self.feedback.CP(f"文件已经存在目标文件夹中: {os.path.basename(old_info_path)}")
+                        continue
+                    else:
+                        self._copy_to_output(old_info_path, new_output_path)
+
+                    ## 4，检测是否要修改路径
+                    if self.config['modify_path']:
+                        if os.path.exists(new_path):
+                            self._update_node_path(node_name, new_path)
+
+                    ## 5, 检查是否需要打包tx文件
+                    if self.config['copy_tx_files']:
+                        tx_files = self._find_tx_files(old_info_path)
+                        for tx_file in tx_files:
+                            new_tx_file_path = os.path.join(new_output_path, os.path.basename(tx_file))
+                            self._copy_to_output(tx_file, new_tx_file_path)
+
+                    ## 6, 检查是否需要删除源文件
+                    if self.config['delete_source_files']:
+                        self._delete_files(old_info_path)
+
+                    ## 7, 检查是否需要删除源tx文件
+                    if self.config['delete_source_tx_files']:
+                        for tx_file in tx_files:
+                            self._delete_files(tx_file)
+
+                    ## 8, 修改主窗口数据的贴图路径
+                    self._refresh_main_window_texture_path_data(mat_name, node_name, new_path)
+
+                    ## 9, 存入需要修改的数据
+                    update_dict[node_name] = mat_name
+
+            # 6, 更新主窗口的贴图数据
+            self._refresh_main_window_texture_data(update_dict)
 
 
     def start_pack(self):
 
-        config = self.dataM.bin_load_data(self.TM_texture_pack_config_FilePath)
+        TexturePack_processor = self.TexturePack(self)
+        TexturePack_processor.process()
 
-        # 访问继承TextureManagerWin里面最新的MterialNodeAllInfoDict
-        TM_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
+        return
 
-        # 获取零时数据
-        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path)
-
-        # 修改的贴图列表
-        tex_filter_list = []
-
-        # 需要更新的数据记录字典 节点名称:材质名称
-        need_update_dict = {}
-
-        # 1.检测路径是否正常
-        if not os.path.exists(config["path_edit"]):
-            self.feedback.CPW('请选择正常的输出路径')
-            return
-
-        # 2.检测选择范围
-        # 全选
-        if config['modify_scope_options'] == 1:
-
-            for mat_name in TM_MterialNodeAllInfoDict:
-                for node_name in TM_MterialNodeAllInfoDict[mat_name]:
-                    tex_filter_list.append(node_name)
-
-                    # 添加到需要更新路径数据的字典中
-                    need_update_dict[node_name] = mat_name
-        # 选择表格内的数据
-        elif config['modify_scope_options'] == 2:
-
-            # 获取出表格中的所有贴图名称
-            for index, value in enumerate(temp_TextureManager_texture_table_data):
-                tex_filter_list.append(temp_TextureManager_texture_table_data[index][0])
-
-                # 添加到需要更新路径数据的字典中
-                need_update_dict[temp_TextureManager_texture_table_data[index][0]] = temp_TextureManager_texture_table_data[index][1]
-
-
-        # 表格内选择的数据
-        elif config['modify_scope_options'] == 3:
-
-            # 初始化变量
-            all_selected_rows_data = []
-
-            # 获取出表格中
-            selected_indexes = self.TextureManagerWin.TexturelList.selectionModel().selectedRows()
-            if selected_indexes:
-                # 用于存储所有选中行的数据
-                for index in selected_indexes:
-                    selected_row = index.row()
-
-                    # 获取该行的所有列内容
-                    row_data = []
-                    for column in range(self.TextureManagerWin.TEXTURELIST_MODEL.columnCount()):
-                        cell_value = self.TextureManagerWin.TEXTURELIST_MODEL.index(selected_row, column).data()
-                        row_data.append(cell_value)
-
-                    # 将该行数据添加到所有选中行的数据列表中
-                    all_selected_rows_data.append(row_data)
-            else:
-                self.feedback.CP("没有选中任何行")
-
-            # 仅在有选中行时进行处理
-            if all_selected_rows_data:
-                for index, value in enumerate(all_selected_rows_data):
-                    tex_filter_list.append(value[0])
-
-                    # 添加到需要更新路径数据的字典中
-                    need_update_dict[value[0]] = value[1]
-
-        # 3.替换检测主要逻辑单元
-        for mat_name in TM_MterialNodeAllInfoDict:
-            for node_name in TM_MterialNodeAllInfoDict[mat_name]:
-                # 如果节点名称包含在选择范围内即执行以下函数
-                if node_name in tex_filter_list:
-
-                    # 获取节点路径
-                    node_path = TM_MterialNodeAllInfoDict[mat_name][node_name]['Path']
-
-                    # 如果选择的路径无法识别将会进入下一个循环
-                    if not os.path.exists(node_path):
-                        self.feedback.CPW(f" <{os.path.basename(node_path)}> 文件路径不存在")
-                        continue
-
-                    # 如果输入的是同一个路径下不继续执行下去
-                    if os.path.normpath(config['path_edit']) == os.path.normpath(os.path.dirname(node_path)):
-                        self.feedback.CPW(f" <{os.path.basename(node_path)}> 文件已经存在目标文件夹中")
-                        continue
-                    else:
-                        # 把文件复制到指定目标文件夹
-                        shutil.copy(node_path, config["path_edit"])
-                        self.feedback.CPW(f'成功把 <{os.path.basename(node_path)}> 文件复制到-> <{config["path_edit"]}> 路径')
-
-                    # 新的路径
-                    new_path = os.path.normpath(os.path.join(config["path_edit"], os.path.basename(node_path)))
-
-                    # 如果开启修改路径会把节点的路径修改到新路径
-                    if config['modify_path']:
-
-                        # 如果程序化路径出错无法进行下一步函数
-                        if not os.path.exists(new_path):
-                            self.feedback.CPW('程序化路径无法访问，生产错误，无法访问:' + new_path)
-                            continue
-
-                        cmds.setAttr(node_name + '.fileTextureName', new_path, type="string")
-
-                    # 如果开启修改路径会把源文件删除
-                    if config['delete_source_files']:
-                        if os.path.exists(node_path):
-                            try:
-                                os.remove(node_path)
-                                self.feedback.CPW(f"源文件 <{node_path}> 已成功删除。")
-                            except OSError  as e:
-                                self.feedback.CPW(f"删除文件时出错: {e}")
-                        else:
-                            self.feedback.CPW(f"文件 <{node_path}> 不存在。")
-
-                    # 更新主窗口函数
-
-                    # 修改 TM_MterialNodeAllInfoDict
-                    TM_MterialNodeAllInfoDict[mat_name][node_name]['Path'] = new_path
-
-
-                    # 更新主窗口字典数据
-                    new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(need_update_dict,
-                                                                                             TM_MterialNodeAllInfoDict)
-
-                    # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
-                    self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
 
 
 
