@@ -508,7 +508,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.languages_folder_path = os.path.join(script_path, 'Datas', 'languages')  # 语言文件夹路径
 
-
     def initialize_window_config(self):
 
         WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}  {LicenseV_type_name} : {str(LicenseV_remaining_time)} "  # Win名称
@@ -523,7 +522,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.setMinimumHeight(800)
         self.setMinimumWidth(700)
 
-
     def create_menu(self):
         # 创建主菜单栏
         self.main_menu_bar = QtWidgets.QMenuBar(self)
@@ -536,6 +534,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 连接“重置数据”动作的触发信号到对应的槽函数
         self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, AMS_Config)),
                                                           InitialConfigFile.Main_program()))
+
 
         self.settings_menu.addAction(self.reset_data_action)
 
@@ -673,7 +672,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.tex_first_filter_options_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)  # 设置选择模式
 
         # 循环创建每一个选项
-        for name, value in self.config['magic_conn_config']['params'].items():
+        for name, value in self.config['magic_conn_config']['conn_params'].items():
             item = QtWidgets.QListWidgetItem(name.capitalize())  # 让名称的第一个字母大写
             item.setFont(font)
             self.tex_first_filter_options_list.addItem(item)
@@ -1565,15 +1564,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             selected_values_uppercase = [s.upper() for s in selected_values]
 
             # 遍历处理数据中的每个通道
-            for channel in self.config['magic_conn_config']['params']:
+            for channel in self.config['magic_conn_config']['conn_params']:
                 # 检查当前通道（大写）是否在选中的大写值中
                 if channel.upper() in selected_values_uppercase:
                     # 如果匹配，更新配置文件为真
-                    self.modify_nested_config(key_path = ['magic_conn_config', 'params', channel],
+                    self.modify_nested_config(key_path = ['magic_conn_config', 'conn_params', channel],
                                               cont = True)
                 else:
                     # 如果不匹配，更新配置文件为假
-                    self.modify_nested_config(key_path = ['magic_conn_config', 'params', channel],
+                    self.modify_nested_config(key_path = ['magic_conn_config', 'conn_params', channel],
                                               cont = False)
 
 
@@ -5402,7 +5401,6 @@ class TM_TexturePack(QtWidgets.QDialog):
         TexturePack_processor = self.TexturePack(self)
         TexturePack_processor.process()
 
-        return
 
 
 
@@ -6635,7 +6633,7 @@ class Magic_Node_Connection:
             'params']  # 相应贴图节点的参数
         self.magic_connection_options = self.config[
             'magic_conn_config'][
-            'params']  # 相应贴图是否要连接的参数
+            'conn_params']  # 相应贴图是否要连接的参数
         self.auto_node_connection_options = self.config[
             'proc_node_config'][
             'conn_params']  # 相应贴图是否要连接相应的节点
@@ -6692,14 +6690,17 @@ class Magic_Node_Connection:
 
     # 检测并创建材质
     def detect_and_create_materials(self):
+        mat_types = ['aiStandardSurface', 'standardSurface', 'aiOpenPBRSurface']
         mat_name = None
+
         # 检测有没有选择材质球
-        if 'aiStandardSurface' in self.select_node:
-            mat_name = self.select_node['aiStandardSurface'][0]
+        for mat_type in mat_types:
+            if mat_type in self.select_node:
+                mat_name = self.select_node[mat_type][0]
+                break  # 找到匹配的材质类型后就退出循环
         else:
             if keyboard.is_pressed('shift'):
                 mat_name = cmds.shadingNode('aiStandardSurface', asShader=True)
-
 
         return mat_name
 

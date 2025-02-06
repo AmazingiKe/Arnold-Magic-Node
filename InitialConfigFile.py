@@ -15,16 +15,16 @@ Arnold_Magic_Settings = {
         'metalness': ["METALNESS", "METALLIC", "METALIC", "METAL", "DIFFUSE"],  # 金属度纹理的别名
         'specular': ["SPECULAR", "SPEC"],  # 镜面反射纹理的别名
         'specularColor': ["SPECULARCOLOR"],  # 镜面反射颜色纹理的别名
-        'specularRoughness': ["ROUGHNESS", "ROUGH"],  # 镜面反射粗糙度纹理的别名
+        'specularRoughness': ["ROUGHNESS", "ROUGH", "REFL"],  # 镜面反射粗糙度纹理的别名
         'specularAnisotropy': ["SPECULARANISOTROPY"],  # 镜面反射各向异性纹理的别名
         'specularRotation': ["SPECULARROTATION"],  # 镜面反射旋转纹理的别名
         'subsurface': ['SUBSURFACE', 'SSS'],  # 次表面散射纹理的别名
         'subsurfaceColor': ["TRANSLUCENCY", "SUBSURFACECOLOR"],  # 次表面散射颜色纹理的别名
         'subsurfaceRadius': ["SUBSURFACERADIUS", "SUBSURFACE-RADIUS", "SUBSURFACE-RAD"],  # 次表面散射半径纹理的别名
-        'emission': ["EMISSION", "ILLUMINATION"],  # 发射纹理的别名
-        'emissionColor': ["EMISSIONCOLOR"],  # 发射颜色纹理的别名
-        'opacity': ["ALPHA", "ALPHAMASKED", "MASK", "OPACITY", "TRANSPARENCY"],  # 不透明度纹理的别名
-        'normalCamera': ["NORMAL", "NORMALMAP", "NRM"],  # 法线纹理的别名
+        'emission': ["EMISSION", "ILLUMINATION", "GLOW", "SELF_ILLUMINATION"],  # 发射纹理的别名
+        'emissionColor': ["EMISSIONCOLOR", "GLOW_COLOR"],  # 发射颜色纹理的别名
+        'opacity': ["ALPHA", "ALPHAMASKED", "MASK", "OPACITY", "TRANSPARENCY", "ALPHA_MASK"],  # 不透明度纹理的别名
+        'normalCamera': ["NORMAL", "NORMALMAP", "NRM",  "NORMALMAP_BUMP"],  # 法线纹理的别名
         "ao": ["AO", "AMBIENT_OCCLUSION", "OCC", "AMBIENT", "OCCLUSION"],  # 环境遮蔽纹理的别名
         "bump": ["BUMP", "BMP"],  # 凹凸纹理的别名
         "displacement": ["HEIGHT", "DISPLACEMENT", "DISP", "DEPTH", "HEIGHTMAP"]  # 位移纹理的别名
@@ -63,7 +63,7 @@ Arnold_Magic_Settings = {
 
     # 魔法连接配置
     "magic_conn_config": {
-        "params": {
+        "conn_params": {
             'base': False,  # 不自动连接基础纹理
             'baseColor': True,  # 自动连接基础颜色纹理
             'diffuseRoughness': False,
@@ -106,8 +106,8 @@ Arnold_Magic_Settings = {
             'subsurfaceRadius': False,
             'emission': False,
             'emissionColor': False,
-            'opacity': True,
-            'normalCamera': True,
+            'opacity': False,
+            'normalCamera': False,
             "ao": False,
             "bump": False,
             "displacement": True

@@ -780,7 +780,7 @@ class NodeProcessor(object):
         return previous_node
     
     #   连接到材质球。此函数根据匹配字典和最后节点字典，将节点与材质球连接。
-    def ConnectToMaterial(self, MatchingDict, LastNodeDict, ProcessingNodeData, MaterialName=None, OutputPortList=None, DisplacementShader=None):
+    def ConnectToMaterial(self, MatchingDict, LastNodeDict, ProcessingNodeData, magic_connection_options,  MaterialName=None, OutputPortList=None, DisplacementShader=None):
         """
         连接到材质球。此函数根据匹配字典和最后节点字典，将节点与材质球连接。
         
@@ -826,6 +826,10 @@ class NodeProcessor(object):
         # 遍历 MatchingDict 中的节点名称和材质通道
         for NodeName, MatChannel in MatchingDict.items():
 
+            # 如果节点没有打开连接将跳过这次连接
+            if not magic_connection_options[MatChannel]:
+                continue
+
             # 处理 normalCamera 通道
             if MatChannel == "normalCamera":
                 # 创建 aiNormalMap 节点
@@ -861,22 +865,23 @@ class NodeProcessor(object):
                     
             # 处理 Bump 通道
             elif MatChannel == "bump":
+
                 # 创建 aiBump2d 节点
                 aiBump2d = cmds.createNode("aiBump2d", name=NodeName + "_aiBump2d")
                 
                 # 根据是否存在 aiNormalMap，连接相应的通道
                 if aiNormalMap == None:
                     try: 
-                        ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'Bump')], aiBump2d, 'bumpMap')
+                        ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'bump')], aiBump2d, 'bumpMap')
                     except Exception as e:
-                        ContToNode(self.FindKeyByChannel(MatchingDict, 'Bump'), aiBump2d, 'bumpMap')
+                        ContToNode(self.FindKeyByChannel(MatchingDict, 'bump'), aiBump2d, 'bumpMap')
                     ContToNode(aiBump2d, MaterialName, 'normalCamera')
+
                 else:
                     try:
-                        ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'Bump')], aiBump2d, 'bumpMap')
+                        ContToNode(LastNodeDict[self.FindKeyByChannel(MatchingDict, 'bump')], aiBump2d, 'bumpMap')
                     except Exception as e:
-                        ContToNode(self.FindKeyByChannel(MatchingDict, 'Bump'), aiBump2d, 'bumpMap')
-                        
+                        ContToNode(self.FindKeyByChannel(MatchingDict, 'bump'), aiBump2d, 'bumpMap')
                     ContToNode(aiBump2d, aiNormalMap, 'normal')
                 
             # 处理 Displacement 通道
@@ -980,7 +985,7 @@ class NodeProcessor(object):
             self.node_connect(new_uv_node, 'outUvFilterSize', file_tex_node, 'uvFilterSize', True)
 
     #   自动连接节点函数
-    def AutoNodeConnect(self, node_list, mat_name, FilterData, ProcessingNodeData, ContOptions, Auto_Node_Connection_Options, shading_engine_node = None):
+    def AutoNodeConnect(self, node_list, mat_name, FilterData, ProcessingNodeData, magic_connection_options, Auto_Node_Connection_Options, shading_engine_node = None):
         """
         自动连接贴图至材质球。（包括处理节点的连接）
         
@@ -1014,7 +1019,7 @@ class NodeProcessor(object):
                                                                         MatChannel)
 
 
-        self.ConnectToMaterial(MatchingDict, LastNodeDict, ProcessingNodeData, mat_name, DisplacementShader= shading_engine_node)
+        self.ConnectToMaterial(MatchingDict, LastNodeDict, ProcessingNodeData, magic_connection_options, mat_name, DisplacementShader= shading_engine_node)
 
         return MatchingDict
 
