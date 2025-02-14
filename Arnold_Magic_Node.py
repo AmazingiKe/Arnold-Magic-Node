@@ -56,7 +56,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release 内部版本"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.0.0.02" # 插件版本号
+SoftwareVersion = "1.0.0.03" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -105,7 +105,7 @@ TM_RepathFiles_config_dict = {
     "forced_path_override_checkbox" : False,
     "multiple_subfolder_search_checkbox" : False,
     "use_cache_checkbox" : True,
-    "intelligent_search_mode" : False,
+    "intelligent_search_mode" : True,
     "normal_search_mode" : True,
 }
 
@@ -1801,7 +1801,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.setWindowIcon(QtGui.QIcon(icon_path + "\\TXManagerShelf_200.png"))
         #...窗口长宽
         self.setMinimumHeight(700)
-        self.setMinimumWidth(1000)
+        self.setMinimumWidth(1500)
 
 
 
@@ -2115,6 +2115,39 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 创建主菜单栏
         self.main_menu_bar = QtWidgets.QMenuBar(self)
 
+        # 创建选择菜单
+        self.select_menu = self.main_menu_bar.addMenu('选择')
+
+        # 创建全选动作
+        self.select_all_action = QAction('全选', self)
+        self.select_all_action.triggered.connect(lambda *args:  self.all_selected_materials())
+
+        # 创建选择缺失动作
+        self.select_missing_action = QAction('选择缺失', self)
+        self.select_missing_action.triggered.connect(lambda *args:  self.texture_list_find_missing_textures())
+
+        # 创建取消全选动作
+        self.deselect_all_action = QAction('取消全选', self)
+        self.deselect_all_action.triggered.connect(lambda *args:  (
+            self.MaterialList.clearSelection(),
+            self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())))
+
+        # 创建反选动作
+        self.invert_selection_action = QAction('反选', self)
+        self.invert_selection_action.triggered.connect(lambda *args:  self.texture_list_reverse_selection())
+
+        # 创建选出大贴图动作
+        self.select_large_textures_action = QAction('选出大贴图', self)
+        self.select_large_textures_action.triggered.connect(lambda *args:  self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
+
+        # 将动作添加到选择菜单
+        self.select_menu.addAction(self.select_all_action)
+        self.select_menu.addAction(self.deselect_all_action)
+        self.select_menu.addAction(self.select_missing_action)
+        self.select_menu.addAction(self.invert_selection_action)
+        self.select_menu.addAction(self.select_large_textures_action)
+
+
         # 关于菜单及其动作
         self.about_menu = self.main_menu_bar.addMenu('关于') # 关于
 
@@ -2157,13 +2190,13 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 贴图搜索区域的按钮和搜索框
         Texture_Search_Layout.addWidget(self.TexturelList_Refresh_Button)
-        Texture_Search_Layout.addWidget(self.MaterialList_SelectAll_Button)
-        Texture_Search_Layout.addWidget(self.TexturelList_Unselect_All_Button)
-        Texture_Search_Layout.addWidget(self.TexturelList_Find_Missing_Textures_Button)
-        Texture_Search_Layout.addWidget(self.TexturelList_reverse_selection)
-        Texture_Search_Layout.addWidget(self.TexturelList_Intelligent_Find_Max_Size_Button)
-        Texture_Search_Layout.addWidget(self.tolerance_doubleSpinBox)
+        # Texture_Search_Layout.addWidget(self.MaterialList_SelectAll_Button)
+        # Texture_Search_Layout.addWidget(self.TexturelList_Unselect_All_Button)
+        # Texture_Search_Layout.addWidget(self.TexturelList_Find_Missing_Textures_Button)
+        # Texture_Search_Layout.addWidget(self.TexturelList_reverse_selection)
+        # Texture_Search_Layout.addWidget(self.TexturelList_Intelligent_Find_Max_Size_Button)
         Texture_Search_Layout.addWidget(self.TexturelListSearch)
+        Texture_Search_Layout.addWidget(self.tolerance_doubleSpinBox)
         Texture_Search_Layout.addWidget(self.TexturelList_Search_And_Replace_Date_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Replace_Data_Button)
         Texture_Search_Layout.addWidget(self.TexturelList_Processed_Image_Button)
@@ -5341,6 +5374,7 @@ class TM_TexturePack(QtWidgets.QDialog):
             # 3, 获取处理范围
             need_pack_texture_dict = self.outer_instance.TextureManagerWin.get_selected_table_data(self.config['modify_scope_options'])
 
+
             # 4, 检查是否有需要处理的数据 如果没有直接返回
             if not need_pack_texture_dict:
                 return
@@ -5365,35 +5399,38 @@ class TM_TexturePack(QtWidgets.QDialog):
                     else:
                         self._copy_to_output(old_info_path, new_output_path)
 
-                    ## 4，检测是否要修改路径
-                    if self.config['modify_path']:
-                        if os.path.exists(new_path):
-                            self._update_node_path(node_name, new_path)
-
-                    ## 5, 检查是否需要打包tx文件
+                    ## 4, 检查是否需要打包tx文件
                     if self.config['copy_tx_files']:
                         tx_files = self._find_tx_files(old_info_path)
                         for tx_file in tx_files:
                             new_tx_file_path = os.path.join(new_output_path, os.path.basename(tx_file))
                             self._copy_to_output(tx_file, new_tx_file_path)
 
-                    ## 6, 检查是否需要删除源文件
+                    ## 5, 检查是否需要删除源文件
                     if self.config['delete_source_files']:
                         self._delete_files(old_info_path)
 
-                    ## 7, 检查是否需要删除源tx文件
+                    ## 6, 检查是否需要删除源tx文件
                     if self.config['delete_source_tx_files']:
                         for tx_file in tx_files:
                             self._delete_files(tx_file)
 
-                    ## 8, 修改主窗口数据的贴图路径
-                    self._refresh_main_window_texture_path_data(mat_name, node_name, new_path)
+                    ## 7，检测是否要修改路径
+                    if self.config['modify_path']:
+                        # 如果需要修改路径，更新节点的路径
+                        if os.path.exists(new_path):
+                            self._update_node_path(node_name, new_path)
 
-                    ## 9, 存入需要修改的数据
-                    update_dict[node_name] = mat_name
+                        ## 8, 修改主窗口数据的贴图路径
+                        self._refresh_main_window_texture_path_data(mat_name, node_name, new_path)
+
+                        ## 9, 存入需要修改的数据
+                        update_dict[node_name] = mat_name
 
             # 6, 更新主窗口的贴图数据
-            self._refresh_main_window_texture_data(update_dict)
+            if self.config['modify_path']:
+                # 如果需要修改路径，更新主窗口的贴图数据
+                self._refresh_main_window_texture_data(update_dict)
 
 
     def start_pack(self):

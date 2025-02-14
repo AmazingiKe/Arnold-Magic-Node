@@ -1202,48 +1202,44 @@ class GetNodeData():
             NodeTypes: 要查找的节点类型列表（字符串列表），例如["file"]。
 
         返回:
-            finder_list: 一个包含所有找到的特定类型节点的列表。
+            finder_list: 包含所有找到的特定类型节点的列表（无重复）。
         """
         finder_list = []
+        visited = set()  # 用于记录已访问节点，避免循环和重复处理
 
-        def find_nodes_same_type(Node, NodeTypes):
-            """递归查找给定节点的所有指定类型节点。
+        def find_nodes(node, node_types, visited_nodes):
+            """递归查找节点及其上游的所有特定类型节点。
 
             参数:
-                Node: 当前正在检查的节点的名称（字符串）。
-                NodeTypes: 要查找的节点类型列表（字符串列表）。
+                node: 当前检查的节点。
+                node_types: 目标节点类型列表。
+                visited_nodes: 已访问节点的集合。
 
             返回:
-                found_nodes: 一个包含当前节点及其上游连接中所有找到的特定类型节点的列表。
+                包含所有找到的目标节点的列表。
             """
-            found_nodes = []
-            # 获取当前节点的所有上游连接节点
-            connections = cmds.listConnections(Node, s=True, d=False) or []
+            if node in visited_nodes:
+                return []
+            visited_nodes.add(node)
+            found = []
+            # 检查当前节点是否为目标类型
+            if cmds.nodeType(node) in node_types:
+                found.append(node)
+            # 递归处理所有上游节点
+            upstream = cmds.listConnections(node, s=True, d=False) or []
+            for up_node in upstream:
+                found.extend(find_nodes(up_node, node_types, visited_nodes))
+            return found
 
-            for conn in connections:
-                # 检查连接节点的类型
-                if cmds.nodeType(conn) in NodeTypes:  # 支持多个节点类型
-                    found_nodes.append(conn)
-                else:
-                    # 如果连接节点不是目标类型，继续递归查找其上游连接
-                    found_nodes.extend(find_nodes_same_type(conn, NodeTypes))
+        # 获取起始节点的所有上游节点
+        upstream_connections = cmds.listConnections(Node, s=True, d=False) or []
 
-            return found_nodes
+        # 遍历每个上游节点并收集结果
+        for conn in upstream_connections:
+            finder_list.extend(find_nodes(conn, NodeTypes, visited))
 
-        # 获取传入节点的所有上游连接节点
-        connections = cmds.listConnections(Node, s=True, d=False) or []
-
-        for conn in connections:
-            # 对每个上游连接节点进行递归查找
-            
-            #   如果第上游的第一个节点是相同类型的节点就不用递归去检查
-            if cmds.nodeType(conn) in NodeTypes:
-                finder_list.append(conn)
-            else:
-                file_nodes = find_nodes_same_type(conn, NodeTypes)
-                finder_list.extend(file_nodes)
-                
-        return finder_list
+        # 去重后返回
+        return list(set(finder_list))
 
     #   批量获取file节点的路径
     def GetFileNodePath(self, NodeList):
