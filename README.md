@@ -12,10 +12,9 @@ Arnold_Magic_Node_Tools这个工具可以让你快速的去处理你的材质，
 ## 目录
 1. [插件主页](https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69&embed=true)
 2. [反馈主页](https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69)
-3. [安装](#安装)
-3. [使用方法](#使用方法)
-4. [贡献](#贡献)
-5. [许可证](#许可证)
+3. [安装](https://flowus.cn/amazingike/share/9f52d05f-b9af-40dd-b167-bd21e6bf9ec3?code=LZVF69)
+3. [使用方法](https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69)
+5. [购买](https://flowus.cn/amazingike/share/dc7217e0-b244-48ab-b2fe-9fda45052fbf?code=LZVF69)
 
 ## 特性
 - 功能 1
@@ -23,7 +22,6 @@ Arnold_Magic_Node_Tools这个工具可以让你快速的去处理你的材质，
 - 功能 3
 
 ## 安装
-[插件安装](https://flowus.cn/amazingike/share/9f52d05f-b9af-40dd-b167-bd21e6bf9ec3?code=LZVF69)
 **一些小问题**
 1，在第一次安装**对应Maya版本的时候会安装对应Maya相应版本的库**，所以会**需要一点时间下载**（需要联网下载）。
 2，安装完成在**工具架上会有对应的图标**。
@@ -32,30 +30,58 @@ Arnold_Magic_Node_Tools这个工具可以让你快速的去处理你的材质，
 
 
 
-### 支持版本
+## 支持版本
 
-    - 目前主要维护的两个版本式Maya 2024和Maya 2025
+    注意：
 
-    MAYA 2022 （3.7.7）
+        - 目前主要维护的两个版本是 Maya 2022 & Maya 2025
 
-    MAYA 2023 （3.9.7）
+        - 不支持2022.3以下的子版本，如果是2022.0，需要更新到2022.5.1
 
-    MAYA 2024 （3.10.8）
+        - 不支持py2的版本Maya
 
-    MAYA 2025 （3.11.4）
+    MAYA 2022 （3.7.7）[已测试]
+
+    MAYA 2023 （3.9.7）[已测试]
+
+    MAYA 2024 （3.10.8）[已测试]
+
+    MAYA 2025 （3.11.4）[已测试]
 
 
 
-### 自动安装：
+## 自动安装插件：
+
+    **注意：**
+
+        1，插件在第一次打开的时候是需要下载必要运行库的，当然可以手动安装，可以参考下面的**库的下载并安装**的内容
+
+        2，插件不要放在中文路径，不然会无法下载运行库
+
+
+
+
+
+
 
 
 
 
 把"Arnold_Magic_Node_Install.py"文件拖入到Maya中即可安装
 
-### 手动安装：
 
-- 注意！输入的路径是你放这个脚本文件夹外的路径。不是脚本文件夹里面的路径
+
+
+
+## 手动安装插件：
+
+    **注意：**
+
+        1，输入的路径是你放这个脚本文件夹外的路径。不是脚本文件夹里面的路径
+
+        2，非必要手动安装
+
+
 
 ```Python
 import sys
@@ -70,4 +96,16 @@ else:
     import Arnold_Magic_Node_Start
 
 Arnold_Magic_Node_Start.main()
+```
+
+
+
+## 手动必要运行库的下载并安装：
+
+只需要下载解压在插件目录下即可，注意需要在这里下载对应**插件版本**的库进行安装
+
+[库下载连接](https://flowus.cn/amazingike/share/f3d10a03-3c65-4413-831c-e5796cb5889a?code=LZVF69)
+
+
+
 

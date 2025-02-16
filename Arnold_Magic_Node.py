@@ -54,9 +54,9 @@ AMN_UI_WorkSpaceControl = None
 # --------------------初始变量开始
 
 # _______________________________________________________________>>> 插件状态
-SoftwareState = "Release 内部版本"  # 插件状态
+SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.0.0.03" # 插件版本号
+SoftwareVersion = "1.0.0" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -1860,6 +1860,13 @@ class TextureManagerWin(QtWidgets.QDialog):
             open_folder = menu.addAction("打开文件夹")
             open_folder.triggered.connect(lambda *args: self.open_folder())
 
+            menu.addSection("图片处理快捷操作")  # 添加分组2
+            modified_files  = menu.addAction("源文件切换")
+            modified_files.triggered.connect(lambda *args: self.switch_source_tex_files())
+
+            updated_and_deleted_files = menu.addAction("删除处理过文件")
+            updated_and_deleted_files.triggered.connect(lambda *args: self.delete_processed_files())
+
             menu.exec_(self.viewport().mapToGlobal(position))
 
         # 测试按钮
@@ -1869,7 +1876,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 打开文件
         def open_file(self):
 
-            folder_path = self.get_selected_row_data()[0][7] # 获取选中行的第7列数据（文件路径）
+            folder_path = self.outer_instance.get_selected_row_data()[0][7] # 获取选中行的第7列数据（文件路径）
 
             if not os.path.exists(folder_path):
                 self.outer_instance.feedback.CPW('文件路径不存在') # 文件夹不存在
@@ -1881,7 +1888,7 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 打开文件夹
         def open_folder(self):
 
-            folder_path = self.get_selected_row_data()[0][7] # 获取选中行的第7列数据（文件路径）
+            folder_path = self.outer_instance.get_selected_row_data()[0][7] # 获取选中行的第7列数据（文件路径）
 
             if not os.path.exists(folder_path):
                 self.outer_instance.feedback.CPW('文件夹路径不存在') # 文件夹不存在
@@ -1890,33 +1897,135 @@ class TextureManagerWin(QtWidgets.QDialog):
             # 使用系统默认的文件管理器打开文件夹
             os.startfile(os.path.dirname(os.path.normpath(folder_path)))
 
-        # 获取选中行的数据
-        def get_selected_row_data(self):
-            # 获取当前选择模型
-            selection_model = self.selectionModel()
+        def add_suffix_to_filename(self, file_path, suffix):
+            # 分离文件路径和文件名
+            dir_name, file_name = os.path.split(file_path)
 
-            # 获取选中的索引
-            selected_indexes = selection_model.selectedIndexes()
+            # 分离文件名和扩展名
+            name, ext = os.path.splitext(file_name)
 
-            # 如果没有选中任何单元格
-            if not selected_indexes:
-                return None
+            # 添加后缀
+            new_file_name = f"{name}{suffix}{ext}"
 
-            # 用于存储选中的行数据
-            selected_rows_data = []
+            # 合并回完整路径
+            new_file_path = os.path.join(dir_name, new_file_name)
 
-            # 遍历所有选中的单元格
-            for index in selected_indexes:
-                row = index.row()  # 获取当前单元格所在的行
-                # 获取该行所有列的数据
-                row_data = [self.model().data(self.model().index(row, column)) for column in
-                            range(self.model().columnCount())]
+            return new_file_path
 
-                # 将该行的数据添加到选中的行数据列表中
-                if row_data not in selected_rows_data:
-                    selected_rows_data.append(row_data)
+        # 修改节点路径
+        def modify_node_path(self, node_name, new_path):
+            try:
+                cmds.setAttr(f"{node_name}.fileTextureName", new_path, type="string")
+            except:
+                self.feedback.CPW(f'无法重命名只读节点: {node_name}')
 
-            return selected_rows_data
+        # 刷新表格
+        def refresh_table(self, modify_row):
+            """
+            刷新表格数据并更新UI
+
+            modify_row: list, 需要修改的行数据，每一行的数据包含文件路径和其他信息
+            """
+            # 用于存储需要更新的数据字典
+            update_dict = {}
+
+            # 获取旧的材质节点数据字典
+            old_MterialNodeAllInfoDict = self.outer_instance.MterialNodeAllInfoDict
+
+            # 遍历需要修改的行数据，更新路径信息
+            for row in modify_row:
+                old_MterialNodeAllInfoDict[row[1]][row[0]]['Path'] = row[7]  # 更新每行的路径
+                update_dict[row[0]] = row[1]  # 记录更新的节点信息
+
+            # 调用外部方法更新节点状态
+            new_MterialNodeAllInfoDict = self.outer_instance.getnodedata.TM_StickerUpdateStatusDict(update_dict,
+                                                                                                    old_MterialNodeAllInfoDict)
+
+            # 获取临时存储的表格数据
+            temp_TextureManager_texture_table_data = self.outer_instance.dataM.bin_load_data(
+                self.outer_instance.TextureManager_texture_table_data_temp_path)
+
+            # 筛选出表格中存在的贴图数据，并将其以字典形式保存
+            select_texture_dict = {
+                temp_TextureManager_texture_table_data[index][0]: temp_TextureManager_texture_table_data[index][1]
+                for index in range(len(temp_TextureManager_texture_table_data))}
+
+            # 更新新的材质节点信息并刷新UI
+            self.outer_instance.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict)
+
+        def switch_source_tex_files(self):
+            """
+            切换源贴图文件，处理带有 "_TMProc" 后缀的文件，替换并修改节点路径
+
+            - 检查所选行数据
+            - 如果文件名中包含 "_TMProc"，删除该后缀并修改路径
+            - 如果文件名中没有 "_TMProc"，添加该后缀并修改路径
+            - 如果源文件存在，则更新表格中的路径和节点路径
+            """
+            # 获取当前选中的行数据
+            selected_row = self.outer_instance.get_selected_row_data()
+
+            # 如果没有选择任何行，显示提示并返回
+            if not selected_row:
+                self.outer_instance.feedback.CPW('未选择任何行')  # 提示未选择任何行
+                return
+
+            # 遍历选中的每一行数据
+            for row in selected_row:
+                path = row[7]  # 获取当前行的文件路径
+                if "_TMProc" in os.path.basename(path):
+                    # 如果文件名中包含 "_TMProc"，则删除该后缀
+                    source_path = os.path.normpath(path.replace("_TMProc", ""))
+
+                    # 如果源文件存在，则更新路径并修改节点路径
+                    if os.path.exists(source_path):
+                        row[7] = source_path  # 更新路径
+                        self.modify_node_path(row[0], source_path)  # 修改节点路径
+
+                else:
+                    # 否则，添加 "_TMProc" 后缀到文件路径
+                    source_path = os.path.normpath(self.add_suffix_to_filename(path, "_TMProc"))
+
+                    # 如果源文件存在，则更新路径并修改节点路径
+                    if os.path.exists(source_path):
+                        row[7] = source_path  # 更新路径
+                        self.modify_node_path(row[0], source_path)  # 修改节点路径
+                    else:
+                        self.outer_instance.feedback.CPW(f'文件不存在：{source_path}')
+            # 刷新表格数据
+            self.refresh_table(selected_row)
+
+        def delete_processed_files(self):
+            # 获取当前选中的行数据
+            selected_row = self.outer_instance.get_selected_row_data()
+
+            # 如果没有选择任何行，显示提示并返回
+            if not selected_row:
+                self.outer_instance.feedback.CPW('未选择任何行')  # 提示未选择任何行
+                return
+
+            # 遍历选中的每一行数据
+            for row in selected_row:
+                path = row[7]  # 获取当前行的文件路径
+
+                if not os.path.exists(path):
+                    self.outer_instance.feedback.CPW(f'文件不存在: {path}')  # 文件不存在
+                    continue
+
+                if "_TMProc" in os.path.basename(path):
+
+                    source_path = os.path.normpath(path.replace("_TMProc", ""))
+                    # 如果源文件存在，则更新路径并修改节点路径
+                    if os.path.exists(source_path):
+                        row[7] = source_path  # 更新路径
+                        self.modify_node_path(row[0], source_path)  # 修改节点路径
+                try:
+                    os.remove(path)  # 删除文件
+                except Exception as a:
+                    self.outer_instance.feedback.CPW(f'无法删除文件: {path}')
+            print(selected_row)
+            # 刷新表格数据
+            self.refresh_table(selected_row)
 
     def create_widgets(self):
         lang = self.language['create_widgets']
@@ -3025,6 +3134,22 @@ class TextureManagerWin(QtWidgets.QDialog):
 
     # 选择表格内容返回数据函数 -----------------------------------------结束
 
+    # 一些快捷操作函数 -----------------------------------------开始
+
+    # 刷新主窗口的数据
+    def refresh_main_window_texture_data(self):
+        # 获取主窗口的表格数据
+        old_table_data = self.TextureManagerWin.MterialNodeAllInfoDict
+
+        # 获取零时的表格列表数据
+        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(
+            self.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+
+
+
+
+
+    # 一些快捷操作函数 -----------------------------------------结束
     def state_set_background_colors(self, model):
         # 遍历模型中的每一行
         for row in range(model.rowCount()):
@@ -3047,26 +3172,26 @@ class TextureManagerWin(QtWidgets.QDialog):
             item = model.item(row, 6)
 
             item.setData(color, QtCore.Qt.BackgroundRole)
-
-        for row in range(model.rowCount()):
-            # 获取第六列（索引为5）的值
-            table_texture_name_item = model.item(row, 0)
-            table_texture_name = table_texture_name_item.text()
-            table_material_name_item = model.item(row, 1)
-            table_material_name = table_material_name_item.text()
-            path =  self.MterialNodeAllInfoDict[table_material_name][table_texture_name]['Path']
-
-            # 检查纹理名称是否包含 '_TMProc' 后缀
-            if  "_TMProc" in os.path.basename(path):
-                # 设置为黄色背景 (RGB: 255, 255, 0) 和 50% 透明度
-                color1 = QtGui.QColor(255, 255, 64, 64)  # RGB + Alpha
-            else:
-                continue
-
-            # 设置第一列的背景颜色
-            first_item = model.item(row,0)
-            if first_item:
-                first_item.setData(color1, QtCore.Qt.BackgroundRole)
+        #
+        # for row in range(model.rowCount()):
+        #     # 获取第六列（索引为5）的值
+        #     table_texture_name_item = model.item(row, 0)
+        #     table_texture_name = table_texture_name_item.text()
+        #     table_material_name_item = model.item(row, 1)
+        #     table_material_name = table_material_name_item.text()
+        #     path =  self.MterialNodeAllInfoDict[table_material_name][table_texture_name]['Path']
+        #
+        #     # 检查纹理名称是否包含 '_TMProc' 后缀
+        #     if  "_TMProc" in os.path.basename(path):
+        #         # 设置为黄色背景 (RGB: 255, 255, 0) 和 50% 透明度
+        #         color1 = QtGui.QColor(255, 255, 64, 64)  # RGB + Alpha
+        #     else:
+        #         continue
+        #
+        #     # 设置第一列的背景颜色
+        #     first_item = model.item(row,0)
+        #     if first_item:
+        #         first_item.setData(color1, QtCore.Qt.BackgroundRole)
 
 
     # 刷新获取场景的数据
@@ -3188,10 +3313,6 @@ class TextureManagerWin(QtWidgets.QDialog):
         config[key] = cont
 
         self.dataM.bin_save_data(self.TextureManager_config_path, config)
-
-    def test(self):
-        print('hello world')
-
 
     @Slot(dict)
     def replace_base_data_and_refresh_ui(self, new_MterialNodeAllInfoDict):
