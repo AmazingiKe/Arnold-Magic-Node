@@ -2140,13 +2140,16 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.select_large_textures_action = QAction('选出大贴图', self)
         self.select_large_textures_action.triggered.connect(lambda *args:  self.texture_list_intelligent_find_max_size(self.dataM.bin_load_data(self.TextureManager_config_path)['listwidget_data']))
 
+        self.select_processed_textures_action = QAction('选择处理过的贴图', self)
+        self.select_processed_textures_action.triggered.connect(lambda *args: self.texture_list_find_processed_textures())
+
         # 将动作添加到选择菜单
         self.select_menu.addAction(self.select_all_action)
         self.select_menu.addAction(self.deselect_all_action)
-        self.select_menu.addAction(self.select_missing_action)
         self.select_menu.addAction(self.invert_selection_action)
+        self.select_menu.addAction(self.select_missing_action)
         self.select_menu.addAction(self.select_large_textures_action)
-
+        self.select_menu.addAction(self.select_processed_textures_action)
 
         # 关于菜单及其动作
         self.about_menu = self.main_menu_bar.addMenu('关于') # 关于
@@ -2190,11 +2193,6 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 贴图搜索区域的按钮和搜索框
         Texture_Search_Layout.addWidget(self.TexturelList_Refresh_Button)
-        # Texture_Search_Layout.addWidget(self.MaterialList_SelectAll_Button)
-        # Texture_Search_Layout.addWidget(self.TexturelList_Unselect_All_Button)
-        # Texture_Search_Layout.addWidget(self.TexturelList_Find_Missing_Textures_Button)
-        # Texture_Search_Layout.addWidget(self.TexturelList_reverse_selection)
-        # Texture_Search_Layout.addWidget(self.TexturelList_Intelligent_Find_Max_Size_Button)
         Texture_Search_Layout.addWidget(self.TexturelListSearch)
         Texture_Search_Layout.addWidget(self.tolerance_doubleSpinBox)
         Texture_Search_Layout.addWidget(self.TexturelList_Search_And_Replace_Date_Button)
@@ -2568,48 +2566,44 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
 
         # 从临时文件中加载已保存的贴图数据
-        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManager_texture_table_data_temp_path)
+        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(
+            self.TextureManager_texture_table_data_temp_path)
 
-        texture_list_from_table = []
+        # 加载表格数据中的所有贴图名称
+        texture_list_from_table = {val[0] for val in temp_TextureManager_texture_table_data}
 
-        # 从加载的数据中提取贴图列表
-        for index, val in enumerate(temp_TextureManager_texture_table_data):
-            texture_list_from_table.append(val[0])
+        # 加载主字典中的所有贴图名称
+        texture_list_from_main_dict = {texName for matName in self.MterialNodeAllInfoDict for texName in
+                                       self.MterialNodeAllInfoDict[matName]}
 
-        texture_list_from_main_dict = []
+        # 计算反选的贴图列表
+        reverse_selected_texture_list = list(texture_list_from_main_dict - texture_list_from_table)
 
-        # 从材质信息字典中提取所有贴图的列表
-        for matName in self.MterialNodeAllInfoDict:
-            for texName in self.MterialNodeAllInfoDict[matName]:
-                texture_list_from_main_dict.append(texName)
+        # 获取反选的材质和贴图字典
+        reverse_selected_texture_dict = self.dataP.filter_material_textures(reverse_selected_texture_list,
+                                                                            self.MterialNodeAllInfoDict)
 
-        # 计算反选的贴图列表，即那些在主字典中存在但未在表格数据中出现的贴图
-        reverse_selected_texture_list = list(set(texture_list_from_main_dict) - set(texture_list_from_table))
-
-        # 根据反选的贴图列表过滤出对应的材质与贴图字典
-        reverse_selected_texture_dict = self.dataP.filter_material_textures(reverse_selected_texture_list, self.MterialNodeAllInfoDict)
-
-        # 为每个反选的贴图找到对应的材质，并准备要添加到表格中的数据
+        # 构建需要添加到表格的数据
         add_multiple_rows_dict = {}
         reverse_selected_mat_list = []
-        for matName in reverse_selected_texture_dict:
+
+        for matName, texNames in reverse_selected_texture_dict.items():
             reverse_selected_mat_list.append(matName)
-            for texName in reverse_selected_texture_dict[matName]:
+            for texName in texNames:
                 add_multiple_rows_dict[texName] = matName
 
         # 将反选的贴图数据添加到表格模型中
         _texture_data_list = self.add_multiple_rows(self.TEXTURELIST_MODEL, add_multiple_rows_dict)
 
-        # 设置贴图列表的模型数据
+        # 更新模型
         self.TexturelList.setModel(self.TEXTURELIST_MODEL)
 
         # 清除材质列表中所有项目的选中状态
         self.MaterialList.clearSelection()
 
-        # 根据反选的材质列表，选择材质列表中对应的项目
+        # 选择材质列表中的对应项目
         for i in range(self.MaterialList.count()):
             item = self.MaterialList.item(i)
-            # 如果项目的文本在反选材质列表中，则选中该项目
             if item.text() in reverse_selected_mat_list:
                 item.setSelected(True)
 
@@ -2622,28 +2616,29 @@ class TextureManagerWin(QtWidgets.QDialog):
         self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
 
         select_texture_dict = {}
-        select_matName_list = []
-        for matName in self.MterialNodeAllInfoDict:
-            for texName in self.MterialNodeAllInfoDict[matName]:
-                if self.MterialNodeAllInfoDict[matName][texName]['isLoaded'] == False:
+
+        # 遍历所有材质节点信息，提取未加载的贴图
+        for matName, texDict in self.MterialNodeAllInfoDict.items():
+            for texName, texInfo in texDict.items():
+                if not texInfo['isLoaded']:  # 判断贴图是否未加载
                     select_texture_dict[texName] = matName
-                    select_matName_list.append(matName)
 
         # 先取消MaterialList中所有项目的选中状态
         self.MaterialList.clearSelection()
-        
+
         # 选择出选中的材质
         for i in range(self.MaterialList.count()):
             item = self.MaterialList.item(i)
-            # 如果项目的文本在select_texture_list中，就选择它
-            if item.text() in select_matName_list:
+            if item.text() in select_texture_dict.values():  # 直接判断材质是否在字典中
                 item.setSelected(True)
 
+        # 添加选中的贴图数据到模型
         _texture_data_list = self.add_multiple_rows(self.TEXTURELIST_MODEL, select_texture_dict)
 
+        # 更新模型
         self.TexturelList.setModel(self.TEXTURELIST_MODEL)
 
-        # 每次刷新贴图表格就把贴图表格的数据写到临时文件里
+        # 只有在数据变化时才保存临时文件
         self.dataM.bin_save_data(self.TextureManager_texture_table_data_temp_path, _texture_data_list)
 
     # 智能获取最大值
@@ -2694,7 +2689,38 @@ class TextureManagerWin(QtWidgets.QDialog):
         # 每次刷新贴图表格就把贴图表格的数据写到临时文件里
         self.dataM.bin_save_data(self.TextureManager_texture_table_data_temp_path, _texture_data_list)
 
+    # 选择出处理过的贴图
+    def texture_list_find_processed_textures(self):
+        # 在加载选择对应的行之前先清除之前的
+        self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
 
+        select_texture_dict = {}
+
+        # 遍历所有材质节点信息，提取已处理的贴图
+        for matName, texDict in self.MterialNodeAllInfoDict.items():
+            for texName, texInfo in texDict.items():
+                if "_TMProc" in os.path.basename(texInfo['Path']):  # 判断贴图是否已处理
+                    select_texture_dict[texName] = matName
+
+
+        # 先取消MaterialList中所有项目的选中状态
+        self.MaterialList.clearSelection()
+
+        # 选择出选中的材质
+        for i in range(self.MaterialList.count()):
+            item = self.MaterialList.item(i)
+            if item.text() in select_texture_dict.values():  # 直接判断材质是否在字典中
+                item.setSelected(True)
+
+        # 添加选中的贴图数据到模型
+        _texture_data_list = self.add_multiple_rows(self.TEXTURELIST_MODEL, select_texture_dict)
+
+        # 更新模型
+        self.TexturelList.setModel(self.TEXTURELIST_MODEL)
+
+        # 只有在数据变化时才保存临时文件
+        self.dataM.bin_save_data(self.TextureManager_texture_table_data_temp_path, _texture_data_list)
+        
     # 更改贴图列表中的贴图节点名称还有路径
     def texture_list_texture_update(self, top_left, bottom_right, roles):
 
@@ -3000,28 +3026,21 @@ class TextureManagerWin(QtWidgets.QDialog):
     # 选择表格内容返回数据函数 -----------------------------------------结束
 
     def state_set_background_colors(self, model):
-
         # 遍历模型中的每一行
         for row in range(model.rowCount()):
             # 获取第六列（索引为5）的值
-            status_item = model.item(row, 6)
-            status_value = status_item.text()
+            table_texture_name_item = model.item(row, 0)
+            table_texture_name = table_texture_name_item.text()
+            table_material_name_item = model.item(row, 1)
+            table_material_name = table_material_name_item.text()
 
-            if status_value == self.language['state']['normal']: # 正常
+
+            if self.MterialNodeAllInfoDict[table_material_name][table_texture_name]['isLoaded']: # 正常
                 # 更细致的绿色 (RGB: 34, 177, 76) 和 50% 透明度
                 color = QtGui.QColor(34, 177, 76, 128)  # RGB + Alpha
-            elif status_value == self.language['state']['lack']: # 缺失
+            else: # 缺失
                 # 更细致的红色 (RGB: 237, 28, 36) 和 50% 透明度
                 color = QtGui.QColor(237, 28, 36, 128)  # RGB + Alpha
-            else:
-                color = QtGui.QColor(255, 255, 255, 255)  # 默认颜色，白色，不透明
-
-
-
-            # # 设置整行的背景颜色
-            # for col in range(model.columnCount()):
-            #   item = model.item(row, col)
-            #   item.setData(color, QtCore.Qt.BackgroundRole)
 
 
             # 设置第六行的背景颜色
@@ -3029,7 +3048,26 @@ class TextureManagerWin(QtWidgets.QDialog):
 
             item.setData(color, QtCore.Qt.BackgroundRole)
 
-            continue
+        for row in range(model.rowCount()):
+            # 获取第六列（索引为5）的值
+            table_texture_name_item = model.item(row, 0)
+            table_texture_name = table_texture_name_item.text()
+            table_material_name_item = model.item(row, 1)
+            table_material_name = table_material_name_item.text()
+            path =  self.MterialNodeAllInfoDict[table_material_name][table_texture_name]['Path']
+
+            # 检查纹理名称是否包含 '_TMProc' 后缀
+            if  "_TMProc" in os.path.basename(path):
+                # 设置为黄色背景 (RGB: 255, 255, 0) 和 50% 透明度
+                color1 = QtGui.QColor(255, 255, 64, 64)  # RGB + Alpha
+            else:
+                continue
+
+            # 设置第一列的背景颜色
+            first_item = model.item(row,0)
+            if first_item:
+                first_item.setData(color1, QtCore.Qt.BackgroundRole)
+
 
     # 刷新获取场景的数据
     def refresh_scene_node_info(self):
