@@ -4095,7 +4095,6 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
             selected_table_dict = self.get_selected_table_data(modify_scope)  # 提取成单独函数
 
-
             # 判断是否有数据
             if not selected_table_dict:
                 return False
@@ -4316,35 +4315,42 @@ class TM_RepathFiles(QtWidgets.QDialog):
             self.dataM.bin_save_data(self.outer_instance.tm_repath_file_cache_filepath, cache_dict)
 
         # 修改匹配正确的节点路径
-        def modify_correct_path(self, successful_matched_dict):
+        def modify_correct_path(self, successful_matched_dict, same_path_dict):
             """
             修改匹配正确的节点路径
 
-            matched_dict: dict, 匹配的正确路径字典
+            successful_matched_dict: dict, 匹配的正确路径字典
+            same_path_dict: dict, 具有相同路径的节点字典
             """
-            # 遍历匹配的正确路径字典
-            for textrue_name, cont in successful_matched_dict.items():
-                # 获取材质名称
-                matName = cont[1]
 
-                # 获取贴图名称
-                texName = cont[0]
-
-                # 获取正确的路径
-                correct_path = cont[2]
-
-                # 修改贴图路径
+            # 执行路径修改操作
+            def modify_texture_path(tex_name, correct_path):
                 try:
-                    cmds.setAttr(f"{texName}.fileTextureName", correct_path, type="string")
+                    cmds.setAttr(f"{tex_name}.fileTextureName", correct_path, type="string")
                 except:
-                    self.feedback.CPW('无法重命名只读节点:' + str(texName))
+                    self.feedback.CPW(f'无法重命名只读节点: {tex_name}')
+
+            # 处理匹配成功的路径字典
+            for tex_name, cont in successful_matched_dict.items():
+                tex_name = cont[0]
+                correct_path = cont[2]
+                modify_texture_path(tex_name, correct_path)
+
+            # 处理相同路径的字典
+            for tex_name, cont in same_path_dict.items():
+                for tex_cont in cont:
+                    tex_name = tex_cont[0]
+                    correct_path = tex_cont[2]
+                    modify_texture_path(tex_name, correct_path)
+
 
         # 刷新主窗口的贴图数据
-        def refresh_main_window_texture_data(self, successful_matched_dict):
+        def refresh_main_window_texture_data(self, successful_matched_dict, same_path_dict):
             """
             刷新主窗口的贴图数据
 
-            new_MterialNodeAllInfoDict: dict, 新的材质节点数据字典
+            successful_matched_dict: dict, 匹配成功的贴图数据字典
+            same_path_dict: dict, 具有相同路径的贴图数据字典
             """
             # 获取主窗口的表格数据
             old_table_data = self.outer_instance.TextureManagerWin.MterialNodeAllInfoDict
@@ -4352,30 +4358,30 @@ class TM_RepathFiles(QtWidgets.QDialog):
             # update_dict字典是为了储存接下来需要更新主数据
             update_dict = {}
 
-
             # 修改旧表格数据
             for tex_name, tex_cont in successful_matched_dict.items():
                 old_table_data[tex_cont[1]][tex_cont[0]]['Path'] = tex_cont[2]  # 更新主窗口的表格数据路径
                 update_dict[tex_cont[0]] = tex_cont[1]  # 记录需要更新的节点
+
+            # 同样处理相同路径的字典
+            for tex_name, tex_cont in same_path_dict.items():
+                for tex_info in tex_cont:
+                    old_table_data[tex_info[1]][tex_info[0]]['Path'] = tex_info[2]  # 更新主窗口的表格数据路径
+                    update_dict[tex_info[0]] = tex_info[1]  # 记录需要更新的节点
 
             # 更新主窗口的表格数据
             new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(update_dict,
                                                                                      old_table_data)
 
             # 获取零时的表格列表数据
-            temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.outer_instance.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+            temp_TextureManager_texture_table_data = self.dataM.bin_load_data(
+                self.outer_instance.TextureManagerWin.TextureManager_texture_table_data_temp_path)
 
-            # 获取当前表格中都有那些贴图
-            table_tex_list = []
-            for index, key in enumerate(temp_TextureManager_texture_table_data):
-                table_tex_list.append(temp_TextureManager_texture_table_data[index][0])
 
             # 把表格中有的贴图做成的列表在总信息中筛选出来
-            select_texture_dict = {}
-            for index, table_list in enumerate(temp_TextureManager_texture_table_data):
-                select_texture_dict[temp_TextureManager_texture_table_data[index][0]] = \
-                temp_TextureManager_texture_table_data[index][1]
-
+            select_texture_dict = {
+                temp_TextureManager_texture_table_data[index][0]: temp_TextureManager_texture_table_data[index][1]
+                for index in range(len(temp_TextureManager_texture_table_data))}
 
             # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
             self.outer_instance.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
@@ -4399,6 +4405,22 @@ class TM_RepathFiles(QtWidgets.QDialog):
 
             # 更新待搜索字典
             self.need_search_texture_dict = new_need_search_texture_dict
+
+        # 把匹配好内容更新到相同路径的字典并返回新的字典
+        def update_same_path_dict(self, successful_matched_dict):
+            """
+            把匹配好内容更新到相同路径的字典并返回新的字典
+
+            successful_matched_dict: dict, 匹配成功的字典
+            """
+
+            # 遍历原相同路径字典
+            for tex_file_name, tex_info in self.same_path_dict.items():
+                path = successful_matched_dict[tex_file_name][2]
+                for index, tex_info_entry  in enumerate(tex_info):
+                    self.same_path_dict[tex_file_name][index].append(path)
+
+            return self.same_path_dict
 
         # 主要逻辑函数
         def process(self):
@@ -4458,14 +4480,16 @@ class TM_RepathFiles(QtWidgets.QDialog):
                 # 把搜索正确的内容添加进正确内容更新字典
                 successful_matched_dict.update(normal_successful_matched_dict)
 
+            same_path_dict = self.update_same_path_dict(successful_matched_dict)
+
             # 刷新正确路径的缓存
             self.refresh_correct_path_cache(successful_matched_dict)
 
             # 修改匹配正确的节点路径
-            self.modify_correct_path(successful_matched_dict)
+            self.modify_correct_path(successful_matched_dict, same_path_dict)
 
             # 刷新主窗口的贴图数据
-            self.refresh_main_window_texture_data(successful_matched_dict)
+            self.refresh_main_window_texture_data(successful_matched_dict, same_path_dict)
 
     # 寻找文件夹并修复确实文件夹主要逻辑函数
     def fix_path(self):
