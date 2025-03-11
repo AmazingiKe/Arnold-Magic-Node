@@ -64,6 +64,6 @@ def main():
     InitialConfigFile.Main_program()
 
     # 加载并执行许可证校验模块
-    import LicenseValidator
-    importlib.reload(LicenseValidator)
-    LicenseValidator.Main_program()
+    import Arnold_Magic_Node
+    importlib.reload(Arnold_Magic_Node)
+    Arnold_Magic_Node.Main_program()

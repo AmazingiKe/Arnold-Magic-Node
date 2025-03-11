@@ -64,12 +64,12 @@ feedback = Arnold_Magic_Node_lib.FeedbackPrompt() # 导入报错模块
 cached_device_fingerprint = None  # 全局变量，用于缓存主板ID
 
 public_key = """-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1/6Xdm/snMpNWzdWxHVa
-Tpz7qzB2tSkDfX195IDn+xMRMkMArpxasskvJ/53SqUkrkh+0oHX42HKZ5IE+QMg
-EKVboiGNEoTtiyQUdCDngqvAvUXK+Yn1LWKnoAjfwZedAPDw6ctz1pDaXqTn3uM1
-ZleHANi5wyQ6BEo/2E2PqTMlqidW8EcYKpyrINeXBPNXTQhKUxRKGNr4uFED/HCI
-W1yYchf66HvmXIZ89vaC0vvhUWuUAEE9Jrz7EMKuwcVQrR3fAwwaCo0xgVzpEH1T
-ctSoqGFRg+ZV20lLkVXMsGbhKLl5VkdCMt+dmurKwQBSV7yCzYDZ/y8ebMRmsFtT
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwuxCNMPlIHxyMiKieHem
+AgsQNMQjXM9n2i1zN8nWftrmiUAp92QlfJPa17dMZZ64pzTYDMlRGW0fdiXTjkyn
+KPrpW4EDhDcA/6ktdOaGBd7tine5WlmJKP979dQ1TapPChWvj3oPDsO/SvskiDaN
+9Dp3SxyrpvJEvlrVAYQHcSJ4vqXgBEqeGKSBQUkg3WemuAPXAdGXc+Vxoia+mVbE
+A9LOBamOiDcbnKUI8ymtrs26Ukyg6Fqu4+RhS5GDoK77wsK5wdb7X/aXz6m3bwFm
+0edzIcRSHDPgd+qHWO69pqQAxTEk+aUoSuAkatqCfyNOEDNtBfw0IxSszEYul+dK
 lwIDAQAB
 -----END PUBLIC KEY-----"""
 
@@ -304,10 +304,6 @@ def verify_license(public_key_pem, license_b64, current_device_fingerprint, curr
         license_data = json.loads(decrypted_license.decode())
 
 
-
-
-
-
         # 验证步骤------------
         # [0]获取许可证内容
         # 获取到期日
@@ -346,10 +342,10 @@ def verify_license(public_key_pem, license_b64, current_device_fingerprint, curr
                 # 如果所有检查通过，返回True，表示许可证有效 并返回许可时间
                 return {'validate': True, 'license_type': license_data['license_type'], 'expiry_date': expiry_date}
 
-    except InvalidSignature:
+    except InvalidSignature as e:
         feedback.CPW(LT['04'])
         return False
-    except ValueError:
+    except ValueError as e:
         feedback.CPW(LT['05'])
         return False
     except Exception as e:
@@ -559,8 +555,9 @@ def Main_program():
 
         validating = verify_license(public_key, license, cached_device_fingerprint, current_timestamp, public_password)
 
-        if validating['validate'] == True:
-            MainStart(cached_device_fingerprint, public_key, public_password, validating)
-        else:
+        if 'validate' not in validating or validating['validate'] == False:
             LicenseM = LicenseWin()
             LicenseM.show()
+        else:
+            MainStart(cached_device_fingerprint, public_key, public_password, validating)
+

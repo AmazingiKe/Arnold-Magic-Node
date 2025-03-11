@@ -7,6 +7,7 @@ import hashlib
 import json
 import base64
 import secrets
+import logging
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -20,40 +21,40 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 Script_path = os.path.join(os.path.dirname(__file__))
 
 private_key = """-----BEGIN RSA PRIVATE KEY-----
-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
+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
 -----END RSA PRIVATE KEY-----"""
 
 public_key ="""-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1/6Xdm/snMpNWzdWxHVa
-Tpz7qzB2tSkDfX195IDn+xMRMkMArpxasskvJ/53SqUkrkh+0oHX42HKZ5IE+QMg
-EKVboiGNEoTtiyQUdCDngqvAvUXK+Yn1LWKnoAjfwZedAPDw6ctz1pDaXqTn3uM1
-ZleHANi5wyQ6BEo/2E2PqTMlqidW8EcYKpyrINeXBPNXTQhKUxRKGNr4uFED/HCI
-W1yYchf66HvmXIZ89vaC0vvhUWuUAEE9Jrz7EMKuwcVQrR3fAwwaCo0xgVzpEH1T
-ctSoqGFRg+ZV20lLkVXMsGbhKLl5VkdCMt+dmurKwQBSV7yCzYDZ/y8ebMRmsFtT
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwuxCNMPlIHxyMiKieHem
+AgsQNMQjXM9n2i1zN8nWftrmiUAp92QlfJPa17dMZZ64pzTYDMlRGW0fdiXTjkyn
+KPrpW4EDhDcA/6ktdOaGBd7tine5WlmJKP979dQ1TapPChWvj3oPDsO/SvskiDaN
+9Dp3SxyrpvJEvlrVAYQHcSJ4vqXgBEqeGKSBQUkg3WemuAPXAdGXc+Vxoia+mVbE
+A9LOBamOiDcbnKUI8ymtrs26Ukyg6Fqu4+RhS5GDoK77wsK5wdb7X/aXz6m3bwFm
+0edzIcRSHDPgd+qHWO69pqQAxTEk+aUoSuAkatqCfyNOEDNtBfw0IxSszEYul+dK
 lwIDAQAB
 -----END PUBLIC KEY-----"""
 
@@ -65,9 +66,9 @@ public_password = "ea54b522ed180be0691d084cde28c930".encode()
 
 
 
-#   生成公钥和私钥
+# 生成公钥和私钥
 #------------------------------------------------------------------------
-#   生成密钥
+# 生成密钥对
 def generate_key_pair(key_size=2048):
     """
     生成一对RSA公私钥，并将其保存为PEM格式文件。
@@ -103,7 +104,7 @@ def generate_key_pair(key_size=2048):
 
     return private_key_pem, public_key_pem
 
-#   保存模块
+# 保存模块
 def save_key_to_file(key_data, file_name):
     """
     将密钥保存到文件中。
@@ -115,7 +116,7 @@ def save_key_to_file(key_data, file_name):
     with open(file_name, "wb") as key_file:
         key_file.write(key_data)
 
-#   生成并保存到指定地方
+# 生成并保存到指定地方
 def create_and_save_keys(private_key_path = None, public_key_path = None):
     """
     生成一对RSA密钥对，并将它们保存到指定的路径中。
@@ -125,33 +126,17 @@ def create_and_save_keys(private_key_path = None, public_key_path = None):
         public_key_path (str): 公钥保存的路径和文件名，默认为 'public_key.pem'。
     """
     private_key_pem, public_key_pem = generate_key_pair()
-
-    # 保存私钥和公钥到指定路径
     save_key_to_file(private_key_pem, private_key_path)
     save_key_to_file(public_key_pem, public_key_path)
+    logging.info(f"密钥已生成并保存到文件：{private_key_path} 和 {public_key_path}")
 
-    feedback.CP(f"密钥已生成并保存到文件：{private_key_path} 和 {public_key_path}")
-
+# 生成对称密钥
+def generate_passworld(length = 32):
+    return secrets.token_hex(length)
 #------------------------------------------------------------------------
 
 
-#   生成对称密钥
-def generate_passworld(length = 32):
-    return secrets.token_hex(length)
-
-
-
-
-
-
-
-
-
-
-
-
-
-#   生成加密密钥
+# 生成加密密钥
 def generate_encryption_key(length=32, password=None, salt=None):
     """
     生成加密密钥。
@@ -241,7 +226,6 @@ def generate_license(private_key_pem, device_fingerprint, days_valid = None, pas
     encryptor = cipher.encryptor()
     encrypted_license = encryptor.update(license_json) + encryptor.finalize()
 
-    # 使用私钥对加密后的许可证信息进行签名
     signature = private_key.sign(
         encrypted_license,
         padding.PSS(
@@ -251,7 +235,6 @@ def generate_license(private_key_pem, device_fingerprint, days_valid = None, pas
         hashes.SHA256()
     )
 
-    # 将加密的许可证信息、签名、初始化向量和盐组合起来
     license_package = {
         "license": base64.b64encode(encrypted_license).decode(),
         "iv": base64.b64encode(iv).decode(),
@@ -259,10 +242,8 @@ def generate_license(private_key_pem, device_fingerprint, days_valid = None, pas
         "salt": base64.b64encode(salt).decode() if salt else None  # 将盐值编码为Base64
     }
 
-    # 序列号为最终的许可证包，编码为Base64格式
     return base64.b64encode(json.dumps(license_package).encode()).decode()
 
-from datetime import datetime
 
 def get_license_remaining_time(license_package_b64, password=None):
     """
@@ -309,6 +290,10 @@ def get_license_remaining_time(license_package_b64, password=None):
 
 
 if __name__ == '__main__':
+
+
+    # print(generate_passworld())
+    # create_and_save_keys(os.path.join(Script_path, 'private_key.pem'), os.path.join(Script_path, 'public_key.pem'))
     device_fingerprint = str(input("输入device_fingerprint设别标识符"))
 
     license_types = {

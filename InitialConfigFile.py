@@ -36,7 +36,7 @@ Arnold_Magic_Settings = {
             'sRGB', 'Gamma 2.2 / Rec.709', 'Rec.1886 / Rec.709 video', 'AdobeRGB',
             'PCI-P3 D65', 'ACEScg', 'ACES2065-1', 'scene-linear Rec.709-sRGB',
             'scene-linear DCI-P3 D65', 'scene-linear Rec.2020', 'Raw', 'ACEScct',
-            'Utility-Raw', 'Utility - linear - sRGB', 'Utility - sRGB - Texture'
+            'Utility - Raw', 'Utility - linear - sRGB', 'Utility - sRGB - Texture'
         ],  # 支持的颜色空间配置列表
         "params": {
             'base': 'Raw',  # 基础纹理使用原始颜色空间

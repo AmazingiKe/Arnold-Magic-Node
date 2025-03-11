@@ -137,7 +137,7 @@ def main():
         'Arnold_Magic_Node_Start.py',
         'InitialConfigFile.py',
         'InitialConfigFolder.py',
-        'LicenseValidator.py',
+        # 'LicenseValidator.py',
         'DependenciesLibs.py',
         'README.md'
     ]
@@ -149,7 +149,7 @@ def main():
         'Arnold_Magic_Node_Start.py',
         'InitialConfigFile.py',
         'InitialConfigFolder.py',
-        'LicenseValidator.py',
+        # 'LicenseValidator.py',
         'DependenciesLibs.py'
     ]
 

@@ -56,7 +56,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.0.0" # 插件版本号
+SoftwareVersion = "1.1.0" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -162,7 +162,7 @@ class Arnold_Magic_Node_UI(object):
     def __init__(self):
         global AMN_UI_WorkSpaceControl
         # 初始化窗口标题，显示软件状态和版本等信息
-        WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}   {LicenseV_type_name} : {str(LicenseV_remaining_time)}"
+        WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}"
 
         # 检查窗口是否已存在，如果存在则删除
         if cmds.window(WIN_TITLE, exists=True):
@@ -510,7 +510,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     def initialize_window_config(self):
 
-        WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}  {LicenseV_type_name} : {str(LicenseV_remaining_time)} "  # Win名称
+        WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}"  # Win名称
 
         delete_window_if_existe('ArnoldMagicNodeSettingsPanel')
 
@@ -1789,7 +1789,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         #...窗口名字
 
-        self.WINDOWS_NAME = f"{self.language['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}    {self.language['__init__']['remaining_time']} : {str(LicenseV_remaining_time)}"
+        self.WINDOWS_NAME = f"{self.language['__init__']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}"
 
         # 判断窗口是否存在，如果存在则删除
         delete_window_if_existe('TextureManagerWin')
@@ -3970,11 +3970,11 @@ class TM_RepathFiles(QtWidgets.QDialog):
         self.edit_menu = self.menu_bar.addMenu("编辑")  # 编辑
 
         # 重置设置
-        self.reset_settings = QtWidgets.QAction('重置设置')  # 重置设置
+        self.reset_settings = QAction('重置设置', self)  # 重置设置
         self.reset_settings.triggered.connect(lambda *args: os.remove(self.TM_repath_files_config_FilePath))
 
         # 创建“清除路径缓存”动作
-        self.clear_cache = QtWidgets.QAction('清除正确路径的缓存')  # 清除缓存 ！谨慎删除！
+        self.clear_cache = QAction('清除正确路径的缓存', self)  # 清除缓存 ！谨慎删除！
         self.clear_cache.triggered.connect(lambda *args: os.remove(self.tm_repath_file_cache_filepath))  # 绑定清除缓存函数
 
         self.edit_menu.addAction(self.reset_settings)
@@ -6719,7 +6719,7 @@ class Path_Detection_Connection:
                                                new_mat_name,
                                                self.texture_filter_dict, # 过滤贴图的数据
                                                self.config['proc_node_config']['params'], # 相应贴图节点的参数
-                                               self.config['magic_conn_config']['params'], # 相应贴图是否要连接的参数
+                                               self.config['magic_conn_config']['conn_params'], # 相应贴图是否要连接的参数
                                                self.config['proc_node_config']['conn_params']) # 相应贴图是否要连接相应的节点
 
                     # 判断是否要修改颜色空间
@@ -7063,39 +7063,7 @@ class SceneNameOptimization:
                         )
 
 # 主要运行程序
-def Main_program(cached_device_fingerprint, public_key, public_password, validating):
-    # cached_device_fingerprint, public_key, public_password, remaining_time
-    global LicenseV_device_fingerprint, LicenseV_public_key, LicenseV_public_password, LicenseV_type, LicenseV_type_name,  LicenseV_remaining_time
-
-    dataM = DataManager()  # 数据管理
-
-    language_config = dataM.ascii_load_data(
-        os.path.join(script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
-
-    language = dataM.ascii_load_data(
-        os.path.join(script_path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNode']['licenses_name']
-
-
-
-    # 把验证完的相关信息传回主程序，备着使用
-    LicenseV_device_fingerprint = cached_device_fingerprint
-    LicenseV_public_key = public_key
-    LicenseV_public_password = public_password
-    LicenseV_type = validating['license_type']
-    LicenseV_type_name = language[LicenseV_type]
-
-    if validating['expiry_date'] == None:
-        LicenseV_remaining_time = language['expiry_date_01']
-    else:
-        current_time = datetime.utcnow()
-
-
-        remaining_time = validating['expiry_date'] - current_time
-
-        LicenseV_remaining_time = remaining_time.days
-
-
-
+def Main_program():
 
     # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
