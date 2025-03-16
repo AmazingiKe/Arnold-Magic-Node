@@ -1,6 +1,5 @@
 ##############################################################################################
 # # ++ 导入所需的库和模块
-from time import sleep
 
 # 1. Maya 库
 import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命令和操作场景
@@ -10,7 +9,6 @@ import maya.OpenMayaUI as omui  # 导入 Maya 的 OpenMayaUI 模块，用于操�
 import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import shutil
-import threading # 多线程
 import concurrent.futures # 并发执行
 # 3. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
@@ -37,15 +35,6 @@ from Arnold_Magic_Node_lib import *  # 从自定义库中导入所有内容
 
 import InitialConfigFile
 
-# 10. 初始化变量
-# 创建初始化变量
-LicenseV_device_fingerprint = None
-LicenseV_public_key = None
-LicenseV_public_password = None
-LicenseV_remaining_time = None
-LicenseV_type = None
-LicenseV_type_name = None
-
 # 这个是默认窗口的名称记录函数
 AMN_UI_WorkSpaceControl = None
 
@@ -56,7 +45,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0" # 插件版本号
+SoftwareVersion = "1.1.0.01" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -202,6 +191,17 @@ class Arnold_Magic_Node_UI(object):
             c=lambda *args: TextureBatchImporterWin(),
             i=icon_path + "\\RenderToTextureShelf_200.png"
         )
+
+
+        cmds.menuItem(label="AOV管理器", divider=True)  # 渲染预设设置
+
+        # 添加渲染预设选项
+        cmds.menuItem(
+            label="AOV灯光组",
+            c=lambda *args: AOVLightGroupManagerInstance(),
+            i=os.path.join(icon_path,"LightManagerShelf_200.png")
+        )
+
 
         cmds.menuItem(label=self.language['create_widgets']['xryssz_menu'], divider=True)  # 渲染预设设置
 
@@ -538,15 +538,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.settings_menu.addAction(self.reset_data_action)
 
-        # 许可证菜单及其动作
-        self.license_menu = self.main_menu_bar.addMenu(self.language['create_menu']['license_menu']) # 许可证
-
-        # 创建“更换许可证”动作
-        self.change_license_action = QAction(self.language['create_menu']['change_license_action'], self) # 更换许可证
-        self.change_license_action.triggered.connect(lambda *args: self.replace_license())
-
-        # 将动作添加到许可证菜单
-        self.license_menu.addAction(self.change_license_action)
+        # # 许可证菜单及其动作
+        # self.license_menu = self.main_menu_bar.addMenu(self.language['create_menu']['license_menu']) # 许可证
+        #
+        # # 创建“更换许可证”动作
+        # self.change_license_action = QAction(self.language['create_menu']['change_license_action'], self) # 更换许可证
+        # self.change_license_action.triggered.connect(lambda *args: self.replace_license())
+        #
+        # # 将动作添加到许可证菜单
+        # self.license_menu.addAction(self.change_license_action)
 
 
         # 关于菜单及其动作
@@ -5635,6 +5635,208 @@ class TM_TexturePack(QtWidgets.QDialog):
         self.dataM.bin_save_data(self.TM_texture_pack_config_FilePath, config)
     # --------------------保存设置内容的函数
 
+#______________________________________________________________________________>>>AOV灯光组管理器
+class AOVLightGroupManager(QtWidgets.QDialog):
+    def __init__(self, parent = MayaMainWindows()):
+        super(AOVLightGroupManager, self).__init__(parent)
+
+        # 创建实例类
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.getnodedata = GetNodeData()  # 提取数据模块
+        self.dataM = DataManager()  # 储存模块
+        self.dataP = DataProcessor()  # 数据处理模块
+
+        self.WINDOWS_NAME = f"AOV灯光组  {SoftwareState} : {SoftwareVersion}"
+
+
+        # 判断窗口是否存在，如果存在则删除
+        delete_window_if_existe('AOVLightGroupManager')
+
+        self.setObjectName('AOVLightGroupManager')
+        self.setWindowTitle(self.WINDOWS_NAME)
+
+        # ...窗口长宽
+        self.setMinimumHeight(700)
+        self.setMinimumWidth(1500)
+
+
+        # 窗口标志（隐藏放大/缩小按钮）
+        self.setWindowFlags(
+            QtCore.Qt.Window |
+            QtCore.Qt.WindowMinimizeButtonHint |
+            QtCore.Qt.WindowMaximizeButtonHint |
+            QtCore.Qt.WindowCloseButtonHint
+        )
+
+        self._create_widgets()
+        self._create_menu()
+        self._create_layouts()
+
+
+    def _create_widgets(self):
+        # 使用QtreeWidget控件创建一个类似Maya的节点树
+        self.light_group_tree_widget = QtWidgets.QTreeWidget(self)
+        self.light_group_tree_widget.setHeaderLabels(['AOV灯光组'])
+
+        # 设置QTreeWidget支持拖放操作
+        self.light_group_tree_widget.setDragEnabled(True)
+        self.light_group_tree_widget.setAcceptDrops(True)
+
+
+        # 设置灯光树的大小
+        self.light_group_tree_widget.setFixedWidth(400)
+        self.light_group_tree_widget.setFixedHeight(700)
+
+        # 刷新灯光组树
+        self._refresh_light_group_tree()
+
+        # 覆盖 dropEvent 方法
+        # self.light_group_tree_widget.dropEvent = self._on_drop_event
+
+    def _create_menu(self):
+        pass
+
+    def _create_layouts(self):
+        Main_Layout = QtWidgets.QVBoxLayout()
+
+
+        # 灯光组树布局
+        light_group_tree_layout = QtWidgets.QHBoxLayout()
+        light_group_tree_layout.addWidget(self.light_group_tree_widget)
+
+
+
+
+        Main_Layout.addLayout(light_group_tree_layout)
+
+    def _on_drop_event(self, event):
+        """处理拖放完成事件"""
+        item = self.light_group_tree_widget.itemAt(event.pos())
+
+        if item:
+            print(f"拖放完成！目标节点: {item.text(0)}")
+
+        selected_items = self.light_group_tree_widget.selectedItems()
+
+        if selected_items:
+            for selected_item in selected_items:
+                parent = selected_item.parent()
+
+                if parent:
+                    parent.removeChild(selected_item)
+                else:
+                    index = self.light_group_tree_widget.indexOfTopLevelItem(selected_item)
+                    self.light_group_tree_widget.takeTopLevelItem(index)
+
+        # 调用父类的 dropEvent 确保拖拽的 UI 行为正常处理
+        super(QtWidgets.QTreeWidget, self.light_group_tree_widget).dropEvent(event)
+
+    def _refresh_light_group_tree(self):
+        global icon_path
+        """按AOV灯光组结构刷新树控件"""
+        # 清空当前 QTreeWidget 内容
+        self.light_group_tree_widget.clear()
+
+        # 获取带分组信息的灯光数据
+        lights_and_type = self._get_light_and_type()
+        light_groups = self._get_light_group(lights_and_type)
+
+        # 图标路径字典 (可以替换为实际的图标路径)
+        icon_paths = {
+            'aiAreaLight': os.path.join(icon_path, 'aiAreaLight.svg'),
+            'aiSkyDomeLight': os.path.join(icon_path, 'aiSkyDomeLight.svg'),
+            'aiPhotometricLight': os.path.join(icon_path, 'aiPhotometricLight.svg'),
+            'aiMeshLight':os.path.join(icon_path, 'aiMeshLight.svg'),
+            'aiLightPortal': os.path.join(icon_path, 'aiLightPortal.svg'),
+            'default': os.path.join(icon_path, 'aiAreaLight.svg') # 如果找不到对应的图标就用这个
+        }
+
+        # 创建树形结构
+        for light_name, lights in light_groups.items():
+
+
+            parent_item = QtWidgets.QTreeWidgetItem(self.light_group_tree_widget, [light_name])
+            parent_item.setFlags(
+                QtCore.Qt.ItemIsEnabled |
+                QtCore.Qt.ItemIsSelectable |
+                QtCore.Qt.ItemIsDropEnabled
+            )
+
+            # 添加子节点
+            for light_data in lights:
+
+
+                child_item = QtWidgets.QTreeWidgetItem(parent_item, [light_data])
+                child_item.setFlags(
+                    QtCore.Qt.ItemIsEnabled |
+                    QtCore.Qt.ItemIsSelectable |
+                    QtCore.Qt.ItemIsDragEnabled
+                )
+                # 设置图标
+
+                light_type = lights_and_type[light_data]
+                icon_path = icon_paths.get(light_type, icon_paths['default'])
+                child_item.setIcon(0, QtGui.QIcon(icon_path))
+
+        self.light_group_tree_widget.expandAll()
+
+    # 场景灯光采集
+    def _get_light_and_type(self):
+        """获取场景中所有 Arnold 灯光节点，返回 {'灯光名称': '灯光类型'} 格式的字典
+
+        该方法用于遍历场景中的所有 Arnold 灯光节点，并根据灯光类型进行分类。
+        返回一个字典，其中键为灯光节点的名称，值为对应的灯光类型。
+        这对于灯光管理、批量操作以及灯光类型统计非常有用。
+        """
+        arnold_lights = {}
+        # Arnold 灯光类型列表
+        arnold_light_types = [
+            'aiAreaLight', 'aiSkyDomeLight', 'aiPhotometricLight',
+            'aiMeshLight', 'aiLightPortal', 'aiVolumeLight'
+        ]
+        # 遍历所有 Arnold 灯光类型
+        for light_type in arnold_light_types:
+            # 获取场景中当前类型的所有灯光形状节点
+            light_shapes = cmds.ls(type=light_type)
+            if light_shapes:
+                for light_shape in light_shapes:
+                    # 获取该形状节点的父节点，即灯光的名称
+                    light_name = cmds.listRelatives(light_shape, parent=True)[0]
+                    arnold_lights[light_name] = light_type
+
+        return arnold_lights
+
+    # 获取灯光组
+    def _get_light_group(self, lights):
+        """获取灯光的 AOV light group 并使用 light group 去分类灯光
+
+        参数:
+            lights (dict): 格式为 {'灯光名称': '灯光类型'} 的字典
+
+        返回:
+            dict: 按照 light group 分类后的灯光字典，格式为 {'lightGroup': [灯光名称1, 灯光名称2, ...]}
+        """
+        light_groups = {}
+
+        for light_name in lights:
+            print(light_name)
+            # 获取灯光的 AOV light group
+            try:
+                light_group = cmds.getAttr(f"{light_name}.aiAov")  # 假设每个灯光节点有 lightGroup 属性
+            except Exception as e:
+                light_group = 'default'
+
+            # 如果该 light group 尚未被记录，初始化列表
+            if light_group not in light_groups:
+                light_groups[light_group] = []
+
+            # 将灯光名称添加到对应的 light group 分类下
+            light_groups[light_group].append(light_name)
+
+        return light_groups
+
+
+
 
 def delete_window_if_existe(window_name):
     for widget in QtWidgets.QApplication.allWidgets():
@@ -5712,6 +5914,16 @@ class LeftAlignDelegate(QtWidgets.QStyledItemDelegate):
 def  TextureManagerWinInstance():
     texture_manager = TextureManagerWin()
     texture_manager.show()
+
+def  AOVLightGroupManagerInstance():
+    aov_light_group_manager = AOVLightGroupManager()
+    aov_light_group_manager.show()
+
+
+
+
+
+
 
 #______________________________________________________________________________>>> 贴图批量导入器
 class TextureBatchImporterWin:
