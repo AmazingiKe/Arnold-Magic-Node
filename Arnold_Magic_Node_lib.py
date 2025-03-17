@@ -1171,7 +1171,7 @@ class GetNodeData():
 
         self.feedback = FeedbackPrompt() # 错误提示模块
     
-    #   获取指定类型的所有节点名称。
+    # 获取指定类型的所有节点名称。
     def GetAllNodeData(self, NodeTypes):
         """
         获取指定类型的所有节点名称。
@@ -1193,7 +1193,7 @@ class GetNodeData():
 
         return NodeNameList
     
-    #   上游节点查找器
+    # 上游节点查找器
     def UpStreamNodeFinder(self, Node, NodeTypes):
         """查找当前选择的材质球连接的所有特定类型（如file类型）节点。
 
@@ -1241,7 +1241,7 @@ class GetNodeData():
         # 去重后返回
         return list(set(finder_list))
 
-    #   批量获取file节点的路径
+    # 批量获取file节点的路径
     def GetFileNodePath(self, NodeList):
         """
         批量获取file节点的路径。
@@ -1266,7 +1266,7 @@ class GetNodeData():
         # 返回包含所有节点及其文件路径的字典
         return NodePathDict
 
-    #   获取所有材质节点的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率
+    # 获取所有材质节点的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率
     def GetMterialNodeAllInfo(self , __material_node_tyoes_list = None):
 
         """
@@ -1370,7 +1370,7 @@ class GetNodeData():
 
         return MterialNodeAllInfoDict
 
-    #   查找未列出的纹理文件
+    # 查找未列出的纹理文件
     def FindUnlistedTextures(self, TexturesList):
         """
         查找未列出的纹理文件。
@@ -1393,7 +1393,7 @@ class GetNodeData():
 
         return missing_elements
 
-    #   获取贴图的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率
+    # 获取贴图的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率
     def GetTexturesNodeAllInfo(self, TexturesList):
 
         TexturesNodeAllInfoDict = {}
@@ -1462,7 +1462,7 @@ class GetNodeData():
 
         return TexturesNodeAllInfoDict
 
-    #   更新数据列表中的分辨率等的数据
+    # 更新数据列表中的分辨率等的数据
     def TM_StickerUpdateStatusDict(self, target_diact, update_dict):
 
         # 使用前一定要先更改一次路径先
@@ -1588,6 +1588,64 @@ class GetNodeData():
 
         # 返回包含文件名和路径的字典
         return ContentsDict
+
+
+    # 获取场景灯光节点和类
+    def get_scene_arnold_lights_and_type(self):
+        """
+        获取场景中的所有灯光节点。
+
+        返回:
+        - lights (list): 包含所有灯光节点名称的列表。
+        """
+        arnold_lights_and_type= {}
+        # Arnold 灯光类型列表
+        arnold_light_types = [
+            'aiAreaLight', 'aiSkyDomeLight', 'aiPhotometricLight',
+            'aiMeshLight', 'aiLightPortal', 'aiVolumeLight'
+        ]
+        # 遍历所有 Arnold 灯光类型
+        for light_type in arnold_light_types:
+            # 获取场景中当前类型的所有灯光形状节点
+            light_shapes = cmds.ls(type=light_type)
+            if light_shapes:
+                for light_shape in light_shapes:
+                    # 获取该形状节点的父节点，即灯光的名称
+                    light_name = cmds.listRelatives(light_shape, parent=True)[0]
+                    arnold_lights_and_type[light_name] = light_type
+
+        return arnold_lights_and_type
+
+    # 获取灯光的灯光组
+    def get_light_group(self, lights):
+        """获取灯光的 AOV light group 并使用 light group 去分类灯光
+        参数:
+            lights (dict): 格式为 {'灯光名称': '灯光类型'} 的字典
+        返回:
+            dict: 按照 light group 分类后的灯光字典，格式为 {'lightGroup': [灯光名称1, 灯光名称2, ...]}
+        """
+        light_groups = {}
+        for light_name in lights:
+            print(f"Processing light: {light_name}")
+            try:
+                # 获取灯光的 AOV light group
+                light_group = cmds.getAttr(f"{light_name}.aiAov")
+
+                # 检查是否是字符串，确保类型正确
+                if not isinstance(light_group, str):
+                    print(f"Warning: {light_name}.aiAov is not a string, type is {type(light_group)}. Using 'default'.")
+                    light_group = 'default'
+
+            except Exception as e:
+                print(f"Error retrieving aiAov for {light_name}: {e}")
+                light_group = 'default'
+            # 如果该 light group 尚未被记录，初始化列表
+            if light_group not in light_groups:
+                light_groups[light_group] = []
+            # 将灯光名称添加到对应的 light group 分类下
+            light_groups[light_group].append(light_name)
+
+        return light_groups
 
 # 专门负责各种数据的处理
 class DataProcessor():
@@ -1739,7 +1797,6 @@ class DataProcessor():
 
         # 返回匹配后的字典
         return matched_dict
-
 
 # 专门用来处理图像
 class ImageProcessor():

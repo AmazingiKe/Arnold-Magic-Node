@@ -23,6 +23,7 @@ except ImportError:
     from PySide2.QtWidgets import QAction
     from shiboken2 import wrapInstance
 
+from contextlib import contextmanager
 # ------------------------------------------
 # 获取脚本路径
 script_path = os.path.normpath(os.path.join(os.path.dirname(__file__))) # 获取当前脚本的目录路径
@@ -45,7 +46,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.01" # 插件版本号
+SoftwareVersion = "1.1.0.02" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -2023,7 +2024,7 @@ class TextureManagerWin(QtWidgets.QDialog):
                     os.remove(path)  # 删除文件
                 except Exception as a:
                     self.outer_instance.feedback.CPW(f'无法删除文件: {path}')
-            print(selected_row)
+
             # 刷新表格数据
             self.refresh_table(selected_row)
 
@@ -2829,7 +2830,7 @@ class TextureManagerWin(QtWidgets.QDialog):
 
         # 只有在数据变化时才保存临时文件
         self.dataM.bin_save_data(self.TextureManager_texture_table_data_temp_path, _texture_data_list)
-        
+
     # 更改贴图列表中的贴图节点名称还有路径
     def texture_list_texture_update(self, top_left, bottom_right, roles):
 
@@ -5636,8 +5637,211 @@ class TM_TexturePack(QtWidgets.QDialog):
     # --------------------保存设置内容的函数
 
 #______________________________________________________________________________>>>AOV灯光组管理器
+
+@contextmanager
+def block_updates_and_signals(widget):
+    widget.setUpdatesEnabled(False)
+    widget.blockSignals(True)
+    try:
+        yield
+    finally:
+        widget.blockSignals(False)
+        widget.setUpdatesEnabled(True)
+        widget.viewport().update()
+
+
+class CustomTreeWidget(QtWidgets.QTreeWidget):
+    def __init__(self, parent=None):
+        super(CustomTreeWidget, self).__init__(parent)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        self.setSelectionMode(QtWidgets.QTreeWidget.ExtendedSelection)
+        self.setUniformRowHeights(True)
+        self.itemClicked.connect(self.enable_drag_drop_flags)
+
+    def enable_drag_drop_flags(self, item):
+        if item.parent() is None:
+            # 父级: 允许拖拽和放置
+            flags = item.flags() | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled | QtCore.Qt.ItemIsEditable
+        else:
+            # 子级: 允许拖拽但禁止放置，防止嵌套
+            flags = item.flags() | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
+            flags &= ~QtCore.Qt.ItemIsDropEnabled
+        item.setFlags(flags)
+
+    def contextMenuEvent(self, event):
+        menu = QtWidgets.QMenu(self)
+        add_action = menu.addAction("添加父级")
+        add_action.triggered.connect(self.add_parent)
+
+        selected = self.selectedItems()
+        delete_action = menu.addAction("删除父级")
+        if len(selected) == 1 and selected[0].parent() is None:
+            delete_action.triggered.connect(lambda: self.delete_parent(selected[0]))
+            delete_action.setEnabled(True)
+        else:
+            delete_action.setEnabled(False)
+        menu.exec_(event.globalPos())
+
+    def add_parent(self):
+        selected_items = self.selectedItems()
+        if not selected_items:
+            return
+
+        new_parent = QtWidgets.QTreeWidgetItem()
+        new_parent.setText(0, "new_light_group")
+        new_parent.setFlags(new_parent.flags() | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled | QtCore.Qt.ItemIsEditable)
+        self.addTopLevelItem(new_parent)
+
+        with block_updates_and_signals(self):
+            sorted_items = sorted(selected_items, key=self.get_item_index, reverse=True)
+            for item in sorted_items:
+                # 仅移动子级项，跳过父级项
+                if item.parent() is None:
+                    continue
+                old_parent = item.parent()
+                old_parent.removeChild(item)
+                new_parent.addChild(item)
+        new_parent.setExpanded(True)
+
+    def delete_parent(self, parent_item):
+        if parent_item.parent() is not None:
+            return
+
+        children = []
+        while parent_item.childCount() > 0:
+            child = parent_item.takeChild(0)
+            children.append(child)
+
+        with block_updates_and_signals(self):
+            for child in children:
+                self.addTopLevelItem(child)
+            index = self.indexOfTopLevelItem(parent_item)
+            if index != -1:
+                self.takeTopLevelItem(index)
+
+    def get_item_index(self, item):
+        parent = item.parent()
+        return parent.indexOfChild(item) if parent else self.indexOfTopLevelItem(item)
+
+    def _is_ancestor(self, item, target):
+        parent = target.parent() if target else None
+        while parent:
+            if parent == item:
+                return True
+            parent = parent.parent()
+        return False
+
+    def validate_drop(self, target, items, drop_indicator_pos):
+        # 禁止拖拽到自身或祖先
+        for item in items:
+            if self._is_ancestor(item, target):
+                return False
+
+        # 处理 OnItem 放置
+        if drop_indicator_pos == QtWidgets.QAbstractItemView.OnItem:
+            # 仅允许拖放到顶级父级
+            if not (target and target.parent() is None):
+                return False
+
+        # 处理 Above/Below 放置
+        elif drop_indicator_pos in (QtWidgets.QAbstractItemView.AboveItem, QtWidgets.QAbstractItemView.BelowItem):
+            # 如果目标存在且是子级，检查其父级是否允许放置
+            if target and target.parent() is not None:
+                parent = target.parent()
+                # 确保父级是顶级项
+                if parent.parent() is not None:
+                    return False
+
+        # 检查被拖动的父级项是否被非法放置
+        for item in items:
+            if item.parent() is None:  # 父级项
+                # 禁止将父级拖放到其他项内部
+                if drop_indicator_pos == QtWidgets.QAbstractItemView.OnItem:
+                    return False
+                # 禁止将父级拖放到子级附近（会成为子级）
+                if target and target.parent() is not None:
+                    return False
+
+        return True
+
+    def dropEvent(self, event):
+        # 保存展开状态
+        expanded_state = self._get_expanded_state()
+        super(CustomTreeWidget, self).dropEvent(event)
+        # 恢复展开状态
+        self._restore_expanded_state(expanded_state)
+
+    def _get_expanded_state(self):
+        state = {}
+        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+        while iterator.value():
+            item = iterator.value()
+            state[id(item)] = item.isExpanded()
+            iterator += 1
+        return state
+
+    def _restore_expanded_state(self, state):
+        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+        while iterator.value():
+            item = iterator.value()
+            item.setExpanded(state.get(id(item), False))
+            iterator += 1
+    def startDrag(self, supported_actions):
+        """
+        开始拖动操作，构造 QDrag 对象，
+        并使用选中项的 MIME 数据启动拖动。
+        """
+        drag = QtGui.QDrag(self)
+        mime_data = self.model().mimeData(self.selectedIndexes())
+        drag.setMimeData(mime_data)
+        drag.exec_(QtCore.Qt.MoveAction)
+
+    def validate_drop(self, target, items, drop_indicator_pos):
+        """
+        验证拖放操作是否符合以下规则：
+        1. 若拖放到某项（OnItem），则不允许拖到非顶级项（target 深度 >= 1），
+           且不能拖入自身后代中。
+        2. 若拖放到项上方/下方，新位置的父项必须为顶级项（深度 0），
+           同时也不能拖入自身后代中。
+        3. 拖动的项本身不能包含子项（确保只移动单个项）。
+        """
+        if drop_indicator_pos == QtWidgets.QAbstractItemView.OnItem:
+            if target and self.get_item_depth(target) >= 1:
+                return False
+            if any(self._is_ancestor(item, target) for item in items):
+                return False
+        elif drop_indicator_pos in (QtWidgets.QAbstractItemView.AboveItem, QtWidgets.QAbstractItemView.BelowItem):
+            new_parent = target.parent() if target else None
+            if new_parent and self.get_item_depth(new_parent) >= 1:
+                return False
+            if any(self._is_ancestor(item, new_parent) for item in items):
+                return False
+        # 拖动的项不能包含子项
+        for item in items:
+            if item.childCount() > 0:
+                return False
+        return True
+
+    def get_item_depth(self, item):
+        """
+        计算项在树中的深度，根节点深度为 0。
+        遍历项的父链，计数每一级父项。
+        """
+        depth = 0
+        parent = item.parent()
+        while parent:
+            depth += 1
+            parent = parent.parent()
+        return depth
+
+
 class AOVLightGroupManager(QtWidgets.QDialog):
+    
     def __init__(self, parent = MayaMainWindows()):
+
         super(AOVLightGroupManager, self).__init__(parent)
 
         # 创建实例类
@@ -5645,8 +5849,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         self.getnodedata = GetNodeData()  # 提取数据模块
         self.dataM = DataManager()  # 储存模块
         self.dataP = DataProcessor()  # 数据处理模块
-
-        self.WINDOWS_NAME = f"AOV灯光组  {SoftwareState} : {SoftwareVersion}"
+        self.WINDOWS_NAME = f"AOV灯光组管理器  {SoftwareState} : {SoftwareVersion}"
 
 
         # 判断窗口是否存在，如果存在则删除
@@ -5672,10 +5875,9 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         self._create_menu()
         self._create_layouts()
 
-
     def _create_widgets(self):
         # 使用QtreeWidget控件创建一个类似Maya的节点树
-        self.light_group_tree_widget = QtWidgets.QTreeWidget(self)
+        self.light_group_tree_widget = CustomTreeWidget(self)
         self.light_group_tree_widget.setHeaderLabels(['AOV灯光组'])
 
         # 设置QTreeWidget支持拖放操作
@@ -5688,10 +5890,10 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         self.light_group_tree_widget.setFixedHeight(700)
 
         # 刷新灯光组树
-        self._refresh_light_group_tree()
+        self._refresh_light_group_tree(icon_path)
 
-        # 覆盖 dropEvent 方法
-        # self.light_group_tree_widget.dropEvent = self._on_drop_event
+        #debug
+        print(self._get_all_items())
 
     def _create_menu(self):
         pass
@@ -5709,37 +5911,20 @@ class AOVLightGroupManager(QtWidgets.QDialog):
 
         Main_Layout.addLayout(light_group_tree_layout)
 
-    def _on_drop_event(self, event):
-        """处理拖放完成事件"""
-        item = self.light_group_tree_widget.itemAt(event.pos())
-
-        if item:
-            print(f"拖放完成！目标节点: {item.text(0)}")
-
-        selected_items = self.light_group_tree_widget.selectedItems()
-
-        if selected_items:
-            for selected_item in selected_items:
-                parent = selected_item.parent()
-
-                if parent:
-                    parent.removeChild(selected_item)
-                else:
-                    index = self.light_group_tree_widget.indexOfTopLevelItem(selected_item)
-                    self.light_group_tree_widget.takeTopLevelItem(index)
-
-        # 调用父类的 dropEvent 确保拖拽的 UI 行为正常处理
-        super(QtWidgets.QTreeWidget, self.light_group_tree_widget).dropEvent(event)
-
-    def _refresh_light_group_tree(self):
-        global icon_path
+    def _refresh_light_group_tree(self, icon_path = None):
         """按AOV灯光组结构刷新树控件"""
+
+
+        # 获取场景中的阿诺德灯光
+        lights_and_type= self.getnodedata.get_scene_arnold_lights_and_type()
+
+        light_groups = self.getnodedata.get_light_group(lights_and_type)
+
+
         # 清空当前 QTreeWidget 内容
         self.light_group_tree_widget.clear()
 
-        # 获取带分组信息的灯光数据
-        lights_and_type = self._get_light_and_type()
-        light_groups = self._get_light_group(lights_and_type)
+
 
         # 图标路径字典 (可以替换为实际的图标路径)
         icon_paths = {
@@ -5752,10 +5937,10 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         }
 
         # 创建树形结构
-        for light_name, lights in light_groups.items():
+        for light_group, lights in light_groups.items():
 
 
-            parent_item = QtWidgets.QTreeWidgetItem(self.light_group_tree_widget, [light_name])
+            parent_item = QtWidgets.QTreeWidgetItem(self.light_group_tree_widget, [light_group])
             parent_item.setFlags(
                 QtCore.Qt.ItemIsEnabled |
                 QtCore.Qt.ItemIsSelectable |
@@ -5763,77 +5948,40 @@ class AOVLightGroupManager(QtWidgets.QDialog):
             )
 
             # 添加子节点
-            for light_data in lights:
+            for light in lights:
 
 
-                child_item = QtWidgets.QTreeWidgetItem(parent_item, [light_data])
+                child_item = QtWidgets.QTreeWidgetItem(parent_item, [light])
                 child_item.setFlags(
                     QtCore.Qt.ItemIsEnabled |
                     QtCore.Qt.ItemIsSelectable |
                     QtCore.Qt.ItemIsDragEnabled
                 )
-                # 设置图标
 
-                light_type = lights_and_type[light_data]
+                # 设置图标
+                light_type = lights_and_type[light]
                 icon_path = icon_paths.get(light_type, icon_paths['default'])
                 child_item.setIcon(0, QtGui.QIcon(icon_path))
 
         self.light_group_tree_widget.expandAll()
 
-    # 场景灯光采集
-    def _get_light_and_type(self):
-        """获取场景中所有 Arnold 灯光节点，返回 {'灯光名称': '灯光类型'} 格式的字典
+    def _get_all_items(self):
+        def traverse_items(item):
+            data = {
+                "text": item.text(0),  # 获取第0列的文本
+                "children": []
+            }
+            for i in range(item.childCount()):
+                child_item = item.child(i)
+                data["children"].append(traverse_items(child_item))
+            return data
 
-        该方法用于遍历场景中的所有 Arnold 灯光节点，并根据灯光类型进行分类。
-        返回一个字典，其中键为灯光节点的名称，值为对应的灯光类型。
-        这对于灯光管理、批量操作以及灯光类型统计非常有用。
-        """
-        arnold_lights = {}
-        # Arnold 灯光类型列表
-        arnold_light_types = [
-            'aiAreaLight', 'aiSkyDomeLight', 'aiPhotometricLight',
-            'aiMeshLight', 'aiLightPortal', 'aiVolumeLight'
-        ]
-        # 遍历所有 Arnold 灯光类型
-        for light_type in arnold_light_types:
-            # 获取场景中当前类型的所有灯光形状节点
-            light_shapes = cmds.ls(type=light_type)
-            if light_shapes:
-                for light_shape in light_shapes:
-                    # 获取该形状节点的父节点，即灯光的名称
-                    light_name = cmds.listRelatives(light_shape, parent=True)[0]
-                    arnold_lights[light_name] = light_type
+        root_data = []
+        for i in range(self.light_group_tree_widget.topLevelItemCount()):
+            root_item = self.light_group_tree_widget.topLevelItem(i)
+            root_data.append(traverse_items(root_item))
 
-        return arnold_lights
-
-    # 获取灯光组
-    def _get_light_group(self, lights):
-        """获取灯光的 AOV light group 并使用 light group 去分类灯光
-
-        参数:
-            lights (dict): 格式为 {'灯光名称': '灯光类型'} 的字典
-
-        返回:
-            dict: 按照 light group 分类后的灯光字典，格式为 {'lightGroup': [灯光名称1, 灯光名称2, ...]}
-        """
-        light_groups = {}
-
-        for light_name in lights:
-            print(light_name)
-            # 获取灯光的 AOV light group
-            try:
-                light_group = cmds.getAttr(f"{light_name}.aiAov")  # 假设每个灯光节点有 lightGroup 属性
-            except Exception as e:
-                light_group = 'default'
-
-            # 如果该 light group 尚未被记录，初始化列表
-            if light_group not in light_groups:
-                light_groups[light_group] = []
-
-            # 将灯光名称添加到对应的 light group 分类下
-            light_groups[light_group].append(light_name)
-
-        return light_groups
+        return root_data
 
 
 
