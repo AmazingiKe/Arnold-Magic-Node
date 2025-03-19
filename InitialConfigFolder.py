@@ -19,7 +19,8 @@ datas_folder_list = [
     'texture_manager',  # 纹理管理
     'keys',  # 密钥文件夹
     'execution_logs',  # 执行日志
-    'logs'  # 普通日志
+    'logs',  # 普通日志
+    'aov_light_group_manager' # AOV灯光组管理器
 ]
 
 # 要检查或创建的文件夹列表（位于脚本根目录下）
