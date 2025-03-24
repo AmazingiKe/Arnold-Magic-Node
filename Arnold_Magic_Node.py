@@ -47,7 +47,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.05" # 插件版本号
+SoftwareVersion = "1.1.0.06" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -539,17 +539,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         self.settings_menu.addAction(self.reset_data_action)
-
-        # # 许可证菜单及其动作
-        # self.license_menu = self.main_menu_bar.addMenu(self.language['create_menu']['license_menu']) # 许可证
-        #
-        # # 创建“更换许可证”动作
-        # self.change_license_action = QAction(self.language['create_menu']['change_license_action'], self) # 更换许可证
-        # self.change_license_action.triggered.connect(lambda *args: self.replace_license())
-        #
-        # # 将动作添加到许可证菜单
-        # self.license_menu.addAction(self.change_license_action)
-
+        # 创建“语言设置”动作
 
         # 关于菜单及其动作
         self.about_menu = self.main_menu_bar.addMenu(self.language['create_menu']['about_menu']) # 关于
@@ -1683,27 +1673,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         .replace(",", " , "))
 
 
-    def replace_license(self):
-        win_list = ['ArnoldMagicNodeSettingsPanel',
-                    'TextureManagerWin',
-                    'TM_FindAndReplace_Win',
-                    'TM_RepathFiles_Win',
-                    'TM_ImageProcessing_Win'
-                    ]
-        import LicenseValidator
 
-        for win_obj in win_list:
-            try:
-                delete_window_if_existe(win_obj)
-            except:
-                pass
-
-        # 判主窗口是否存在，如果存在则删除
-        if cmds.window(AMN_UI_WorkSpaceControl, exists=True):
-            cmds.deleteUI(AMN_UI_WorkSpaceControl)
-
-        replace_license = LicenseValidator.LicenseWin()
-        replace_license.show()
 
     # --------------------保存设置内容的函数 结束
 
@@ -5736,7 +5706,15 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
             parent = parent.parent()
         return False
 
+    # 合并两个validate_drop方法为一个更完善的版本
     def validate_drop(self, target, items, drop_indicator_pos):
+        """
+        验证拖放操作是否符合以下规则：
+        1. 禁止拖拽到自身或祖先
+        2. 若拖放到某项（OnItem），则只允许拖到顶级项
+        3. 若拖放到项上方/下方，新位置的父项必须为顶级项
+        4. 父级项不能拖放到子级项内部或成为子级项
+        """
         # 禁止拖拽到自身或祖先
         for item in items:
             if self._is_ancestor(item, target):
@@ -5745,7 +5723,7 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
         # 处理 OnItem 放置
         if drop_indicator_pos == QtWidgets.QAbstractItemView.OnItem:
             # 仅允许拖放到顶级父级
-            if not (target and target.parent() is None):
+            if target and self.get_item_depth(target) >= 1:
                 return False
 
         # 处理 Above/Below 放置
@@ -5817,31 +5795,6 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
         drag.setMimeData(mime_data)
         drag.exec_(QtCore.Qt.MoveAction)
 
-    def validate_drop(self, target, items, drop_indicator_pos):
-        """
-        验证拖放操作是否符合以下规则：
-        1. 若拖放到某项（OnItem），则不允许拖到非顶级项（target 深度 >= 1），
-           且不能拖入自身后代中。
-        2. 若拖放到项上方/下方，新位置的父项必须为顶级项（深度 0），
-           同时也不能拖入自身后代中。
-        3. 拖动的项本身不能包含子项（确保只移动单个项）。
-        """
-        if drop_indicator_pos == QtWidgets.QAbstractItemView.OnItem:
-            if target and self.get_item_depth(target) >= 1:
-                return False
-            if any(self._is_ancestor(item, target) for item in items):
-                return False
-        elif drop_indicator_pos in (QtWidgets.QAbstractItemView.AboveItem, QtWidgets.QAbstractItemView.BelowItem):
-            new_parent = target.parent() if target else None
-            if new_parent and self.get_item_depth(new_parent) >= 1:
-                return False
-            if any(self._is_ancestor(item, new_parent) for item in items):
-                return False
-        # 拖动的项不能包含子项
-        for item in items:
-            if item.childCount() > 0:
-                return False
-        return True
 
     def get_item_depth(self, item):
         """
@@ -5869,7 +5822,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         self.dataP = DataProcessor()  # 数据处理模块
 
 
-        self.WINDOWS_NAME = f"AOV灯光组管理器(Beta)  {SoftwareState} : {SoftwareVersion}"
+        self.WINDOWS_NAME = f"AOV灯光组管理器  {SoftwareState} : {SoftwareVersion}"
 
 
         # 判断窗口是否存在，如果存在则删除
@@ -6261,6 +6214,10 @@ class AOVLightGroupManager(QtWidgets.QDialog):
             # 获取当前灯光组名称
             light_group_name = group['text']
 
+            # 跳过默认灯光组（根据业务逻辑需要可以调整）
+            if light_group_name == 'default':
+                continue
+
             # 为每个AOV通道创建对应的灯光组AOV
             for channel in aov_channels:
                 # 生成符合规范的AOV名称（通道_灯光组）
@@ -6319,37 +6276,80 @@ class AOVLightGroupManager(QtWidgets.QDialog):
     # 为所有没有父级的子级项创建同名父级，并将子级移动至其下
     def _create_parent_for_child_items(self):
         """
-        为所有没有父级的子级项创建同名父级，并将子级移动至其下
-        - 强制保证名为 "default" 的父级存在，并至少包含一个子级项
-        - 自动删除空父级（排除 "default"）
+        为没有父级的子级项或default组内的子级项创建同名父级，并将子级移动至其下
+        规则：
+        1. 为没有父级的灯光项创建同名父级组
+        2. 为default组内的灯光项创建同名父级组（即使它们已经有父级）
+        3. 其它已有父级的灯光项保持不变
+        4. 确保有default父级组存在
+        5. 删除除default外的空父级组
         """
         self.update_light_group_data()  # 同步数据到Maya
         parent_icon = QtGui.QIcon(os.path.join(icon_path, 'BakeGeometryShelf_200.png'))  # 父级图标
+
         with block_updates_and_signals(self.light_group_tree_widget):
-            # 收集所有子级项（无子项的项视为灯光项）
-            child_items = []
-            iterator = QtWidgets.QTreeWidgetItemIterator(self.light_group_tree_widget)
-            while iterator.value():
-                item = iterator.value()
-                if item.childCount() == 0:  # 假设子级项没有子项
-                    child_items.append(item)
-                iterator += 1
-            # 处理每个子级项
-            for child_item in child_items:
+            # 查找default父级
+            default_parent = None
+            for i in range(self.light_group_tree_widget.topLevelItemCount()):
+                top_item = self.light_group_tree_widget.topLevelItem(i)
+                if top_item.text(0) == "default":
+                    default_parent = top_item
+                    break
+
+            # 如果default父级不存在，创建一个
+            if not default_parent:
+                default_parent = QtWidgets.QTreeWidgetItem()
+                default_parent.setText(0, "default")
+                default_parent.setIcon(0, parent_icon)
+                self.light_group_tree_widget.addTopLevelItem(default_parent)
+                default_parent.setExpanded(True)
+
+            # 收集需要处理的子级项（无父级的项或default组内的项）
+            items_to_process = []
+            default_children = []
+
+            # 先收集所有顶级项（没有父级的灯光项）
+            top_level_items = []
+            for i in range(self.light_group_tree_widget.topLevelItemCount()):
+                item = self.light_group_tree_widget.topLevelItem(i)
+                # 检查是否为灯光项（无子项的项）
+                if item.childCount() == 0:
+                    top_level_items.append(item)
+
+            # 收集default组内的子级项
+            for j in range(default_parent.childCount()):
+                default_children.append(default_parent.child(j))
+
+            # 合并需要处理的项
+            items_to_process.extend(top_level_items)
+            items_to_process.extend(default_children)
+
+            # 处理每个需要移动的子级项
+            for child_item in items_to_process:
                 child_name = child_item.text(0)
-                # 查找或创建同名父级
+
+                # 跳过处理名为"default"的子项，防止循环引用
+                if child_name == "default":
+                    continue
+
+                # 查找是否已有同名父级
                 existing_parent = None
-                new_parent = None  # 初始化new_parent变量，避免未定义错误
                 for i in range(self.light_group_tree_widget.topLevelItemCount()):
                     top_item = self.light_group_tree_widget.topLevelItem(i)
-                    if top_item.text(0) == child_name:
+                    if top_item.text(0) == child_name and top_item != child_item:
                         existing_parent = top_item
                         break
+
+                # 处理找到的同名父级或创建新父级
                 if existing_parent:
-                    # 父级已存在则直接移动
+                    # 父级已存在则移动子项
                     current_parent = child_item.parent()
                     if current_parent:
                         current_parent.removeChild(child_item)
+                    else:  # 顶级项
+                        index = self.light_group_tree_widget.indexOfTopLevelItem(child_item)
+                        if index != -1:
+                            self.light_group_tree_widget.takeTopLevelItem(index)
                     existing_parent.addChild(child_item)
                 else:
                     # 创建新父级并设置属性
@@ -6357,14 +6357,16 @@ class AOVLightGroupManager(QtWidgets.QDialog):
                     new_parent.setText(0, child_name)
                     new_parent.setIcon(0, parent_icon)
 
-                    # 移动子级到新父级
+                    # 先处理从原父级移除
                     current_parent = child_item.parent()
                     if current_parent:
                         current_parent.removeChild(child_item)
-                    else:  # 处理顶层项
+                    else:  # 顶级项
                         index = self.light_group_tree_widget.indexOfTopLevelItem(child_item)
                         if index != -1:
                             self.light_group_tree_widget.takeTopLevelItem(index)
+
+                    # 添加到新父级并将新父级添加到树
                     new_parent.addChild(child_item)
                     self.light_group_tree_widget.addTopLevelItem(new_parent)
                     new_parent.setExpanded(True)
@@ -6374,26 +6376,9 @@ class AOVLightGroupManager(QtWidgets.QDialog):
                 top_item = self.light_group_tree_widget.topLevelItem(i)
                 if top_item.childCount() == 0 and top_item.text(0) != "default":
                     self.light_group_tree_widget.takeTopLevelItem(i)
-            # 强制保证default父级存在并至少有一个子级
-            default_parent = None
-            for i in range(self.light_group_tree_widget.topLevelItemCount()):
-                top_item = self.light_group_tree_widget.topLevelItem(i)
-                if top_item.text(0) == "default":
-                    default_parent = top_item
-                    break
-            if not default_parent:
-                # 创建default父级
-                default_parent = QtWidgets.QTreeWidgetItem()
-                default_parent.setText(0, "default")
-                default_parent.setIcon(0, parent_icon)
-                self.light_group_tree_widget.addTopLevelItem(default_parent)
-                default_parent.setExpanded(True)
-            if default_parent.childCount() == 0:
-                # 创建default子级
-                default_child = QtWidgets.QTreeWidgetItem()
-                default_child.setText(0, "default")
-                default_parent.addChild(default_child)
-            self.update_light_group_data()  # 最终数据同步
+
+        # 完成后同步更新
+        self.update_light_group_data()
 
     # 清除所有父级并将灯光移动到默认default组
     def _clear_all_light_groups(self):
