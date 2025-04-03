@@ -6,7 +6,6 @@ import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命�
 
 # 2. 文件与系统操作
 import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
-import sys  # 提供与 Python 解释器交互的功能，如获取脚本路径、调整模块搜索路径等
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 
 # 3. 数据处理
@@ -19,7 +18,7 @@ import numpy as np
 
 # 4. 字符串处理
 import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
-import difflib  # 用于比较文本差异，生成差异报告或补丁，适合版本控制和文本分析
+
 
 # 5. 图像处理
 from PIL import Image # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
@@ -1602,7 +1601,7 @@ class GetNodeData():
         # Arnold 灯光类型列表
         arnold_light_types = [
             'aiAreaLight', 'aiSkyDomeLight', 'aiPhotometricLight',
-            'aiMeshLight', 'aiLightPortal', 'aiVolumeLight'
+            'aiMeshLight', 'aiLightPortal'
         ]
         # 遍历所有 Arnold 灯光类型
         for light_type in arnold_light_types:
@@ -1626,18 +1625,15 @@ class GetNodeData():
         """
         light_groups = {}
         for light_name in lights:
-            print(f"Processing light: {light_name}")
             try:
                 # 获取灯光的 AOV light group
                 light_group = cmds.getAttr(f"{light_name}.aiAov")
 
                 # 检查是否是字符串，确保类型正确
                 if not isinstance(light_group, str):
-                    print(f"Warning: {light_name}.aiAov is not a string, type is {type(light_group)}. Using 'default'.")
                     light_group = 'default'
 
             except Exception as e:
-                print(f"Error retrieving aiAov for {light_name}: {e}")
                 light_group = 'default'
             # 如果该 light group 尚未被记录，初始化列表
             if light_group not in light_groups:

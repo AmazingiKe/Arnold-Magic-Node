@@ -47,7 +47,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.06" # 插件版本号
+SoftwareVersion = "1.1.0.07" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -2527,7 +2527,6 @@ class TextureManagerWin(QtWidgets.QDialog):
 
     # 修改材质名称
     def material_list_material_rename(self):
-
         # 在加载选择对应的行之前先清除之前的表格数据
         self.TEXTURELIST_MODEL.removeRows(0, self.TEXTURELIST_MODEL.rowCount())
 
@@ -2540,7 +2539,6 @@ class TextureManagerWin(QtWidgets.QDialog):
         try:
             matNewName = cmds.rename(self.temp_cache_material_sl, selected_mat_node_list)
         except:
-            self.feedback.CP('请不要输入非法字符哦！')
             return
 
         new_dict = {}
@@ -3386,11 +3384,24 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.select_group.addButton(self.sl_texture, 2)
         self.select_group.addButton(self.sl_texture_path, 3)
         self.select_group.buttonClicked.connect(lambda button: (
-            self.modify_config('modify_content_options', self.select_group.id(button)),
-            self.select_group_logic(self.select_group.id(button))
+            self.modify_config('modify_content_options', self.select_group.id(button))
         ))
-        # 使用编号选中按钮（这里选中ID为1的按钮）
-        # self.select_button_by_id(self.group1, 1)
+
+        # 创建目标内容和替换内容交换的按钮
+        self.button_target_to_replace = QtWidgets.QPushButton('↓')  # 目标内容 → 替换内容
+        self.button_target_to_replace.setFixedWidth(50)
+        self.button_target_to_replace.clicked.connect(self.target_to_replace)
+        self.button_replace_to_target = QtWidgets.QPushButton('↑')  # 替换内容 → 目标内容
+        self.button_replace_to_target.setFixedWidth(50)
+        self.button_replace_to_target.clicked.connect(self.replace_to_target)
+        self.button_swap = QtWidgets.QPushButton('↑↓')  # 互相切换
+        self.button_swap.setFixedWidth(50)
+        self.button_swap.clicked.connect(self.swap_content)
+        self.button_clear = QtWidgets.QPushButton('✖')  # 清除按钮
+        self.button_clear.setFixedWidth(50)
+        self.button_clear.clicked.connect(self.clear_content)
+
+
 
         self.label_modify_options = QtWidgets.QLabel(lang['label_modify_options'])  # 修改内容的范围
         self.label_modify_options.setAlignment(QtCore.Qt.AlignCenter)  # 居中文字
@@ -3474,7 +3485,6 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         modify_options_label_layout.setAlignment(self.label_modify_options, QtCore.Qt.AlignTop)
 
         # 修改内容的范围的选项
-
         modify_options_layout = QtWidgets.QHBoxLayout()
         modify_options_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
         modify_options_layout.addWidget(self.radio_all)
@@ -3487,12 +3497,41 @@ class TM_FindAndReplace(QtWidgets.QDialog):
 
 
         # 第二行：竖向布局，包含标签和输入框
+        # 在原有的 modify_content_layout 部分修改如下
         modify_content_layout = QtWidgets.QVBoxLayout()
-        modify_content_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
-        modify_content_layout.addWidget(self.label_find)
-        modify_content_layout.addWidget(self.line_edit_find)
-        modify_content_layout.addWidget(self.label_replace)
-        modify_content_layout.addWidget(self.line_edit_replace)
+        modify_content_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+        # 目标内容列
+        target_layout = QtWidgets.QVBoxLayout()
+        target_layout.addWidget(self.label_find)
+        target_layout.addWidget(self.line_edit_find)
+
+        # 按钮列
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(self.button_target_to_replace)
+        button_layout.addWidget(self.button_replace_to_target)
+        button_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        button_layout.addWidget(self.label_replace)
+        button_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        button_layout.addWidget(self.button_swap)
+        button_layout.addWidget(self.button_clear)
+
+        button_layout.addStretch()
+
+        # 替换内容列
+        replace_layout = QtWidgets.QVBoxLayout()
+
+        replace_layout.addWidget(self.line_edit_replace)
+
+        modify_content_layout.addLayout(target_layout)
+        modify_content_layout.addLayout(button_layout)
+        modify_content_layout.addLayout(replace_layout)
+        modify_content_layout.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
 
         # 第三行：横向布局，包含复选框
         search_settings_layout = QtWidgets.QHBoxLayout()
@@ -3522,13 +3561,34 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         # 设置对话框的布局
         self.setLayout(main_layout)
 
-    def select_group_logic(self, cont):
-        if cont == 1:
-            self.radio_table.setEnabled(False)
-            self.modify_config('radio_table_enabled', False)
-        else:
-            self.radio_table.setEnabled(True)
-            self.modify_config('radio_table_enabled', True)
+    def target_to_replace(self):
+        # 将目标内容复制到替换内容
+        self.line_edit_replace.setText(self.line_edit_find.text())
+        self.modify_config('replace_content', self.line_edit_find.text())
+
+    def replace_to_target(self):
+        # 将替换内容复制到目标内容
+        self.line_edit_find.setText(self.line_edit_replace.text())
+        self.modify_config('search_content', self.line_edit_replace.text())
+
+    def swap_content(self):
+        # 交换目标内容和替换内容
+        temp = self.line_edit_find.text()
+        self.line_edit_find.setText(self.line_edit_replace.text())
+        self.line_edit_replace.setText(temp)
+
+        # 更新配置
+        self.modify_config('search_content', self.line_edit_find.text())
+        self.modify_config('replace_content', self.line_edit_replace.text())
+
+    def clear_content(self):
+        # 清除目标内容和替换内容
+        self.line_edit_find.clear()
+        self.line_edit_replace.clear()
+
+        # 更新配置
+        self.modify_config('search_content', '')
+        self.modify_config('replace_content', '')
 
     def initial_config(self):
 
@@ -3547,7 +3607,6 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         if modify_group_button:
             modify_group_button.setChecked(True)  # 设置该按钮为选中状态
 
-        self.radio_table.setEnabled(self.dataM.bin_load_data(self.config_path)['radio_table_enabled'])
 
         self.line_edit_find.setText(self.dataM.bin_load_data(self.config_path)['search_content'])
         self.line_edit_replace.setText(self.dataM.bin_load_data(self.config_path)['replace_content'])
@@ -3555,245 +3614,206 @@ class TM_FindAndReplace(QtWidgets.QDialog):
         self.checkbox_case_sensitive.setChecked(self.dataM.bin_load_data(self.config_path)['case_sensitive'])
         self.checkbox_regex.setChecked(self.dataM.bin_load_data(self.config_path)['use_regex'])
 
-    def replace_button(self):
-        # 初始化默认变量
-        config = self.dataM.bin_load_data(self.config_path)
-
-        # 访问继承TextureManagerWin里面最新的MterialNodeAllInfoDict
-        TM_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
-
-        # 获取零时数据
-        temp_TextureManager_texture_table_data = self.dataM.bin_load_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path)
-
-        tex_filter_list = []
-        mat_filter_list = []
-        # 1，全选
-        if config['modify_scope_options'] == 1:
-            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
-
-        # 2，选择表格内的数据
-        elif config['modify_scope_options'] == 2:
-            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
-
-            # 获取出表格中的所有贴图名称
-            for index, value in enumerate(temp_TextureManager_texture_table_data):
-                tex_filter_list.append(temp_TextureManager_texture_table_data[index][0])
-
-        # 3，表格内选择的数据
-        elif config['modify_scope_options'] == 3:
-            MterialNodeAllInfoDict = TM_MterialNodeAllInfoDict
-
-            # 获取出表格中
-            selected_indexes = self.TextureManagerWin.TexturelList.selectionModel().selectedRows()
-            if selected_indexes:
-                # 用于存储所有选中行的数据
-                all_selected_rows_data = []
-
-                for index in selected_indexes:
-                    selected_row = index.row()
-
-                    # 获取该行的所有列内容
-                    row_data = []
-                    for column in range(self.TextureManagerWin.TEXTURELIST_MODEL.columnCount()):
-                        cell_value = self.TextureManagerWin.TEXTURELIST_MODEL.index(selected_row, column).data()
-                        row_data.append(cell_value)
-
-                    # 将该行数据添加到所有选中行的数据列表中
-                    all_selected_rows_data.append(row_data)
-            else:
-                self.feedback.CP("没有选中任何行")
-
-            for index, value in enumerate(all_selected_rows_data):
-                tex_filter_list.append(value[0])
-
-            MaterialList_selected_items = self.TextureManagerWin.MaterialList.selectedItems()  # 获取所有选中的项
-            mat_filter_list = [item.text() for item in MaterialList_selected_items]  # 获取选中项的文本列表
-
-        # # 材质列表使用 set 去重（保留顺序）
-        # mat_filter_list = list(dict.fromkeys(mat_filter_list))
 
 
-        # 1，是修改材质
-        if config['modify_content_options'] == 1:
-            # 初始化一个新的字典，用于存储修改后的材质信息
-            new_MterialNodeAllInfoDict = {}
-            # 遍历现有的材质信息字典
-            for matName, value in MterialNodeAllInfoDict.items():
 
-                # 如果修改范围选项为3，则只修改过滤列表中的材质
-                if config['modify_scope_options'] == 3:
-                    # 检查材质名称是否在过滤列表中
-                    if matName in mat_filter_list:
-                        newContent = self.dataP.SimpleSearchAndReplaceData(matName,
-                                                                           self.line_edit_find.text(),
-                                                                           self.line_edit_replace.text(),
-                                                                           config['case_sensitive'], config['use_regex'])
-                    else:
-                        newContent = matName
-                    # 对所有材质进行查找和替换
+    class ReplaceContent:
+        def __init__(self, outer_instance):
+
+            self.outer_instance = outer_instance # 存储对外部类实例的引用
+
+            self.dataM = DataManager() # 数据管理
+            self.dataP = DataProcessor() # 数据处理
+            self.feedback = FeedbackPrompt()  # 错误提示模块
+            self.getnodedata = GetNodeData() # 获取节点数据模块
+
+            # 初始化默认变量
+            self.config = self.dataM.bin_load_data(self.outer_instance.config_path)
+
+            # 访问继承TextureManagerWin里面最新的MterialNodeAllInfoDict
+            self.old_material_node_all_info_dict = self.outer_instance.TextureManagerWin.MterialNodeAllInfoDict
+
+            # 获取零时数据
+            self.temp_TextureManager_texture_table_data = self.dataM.bin_load_data(
+                self.outer_instance.TextureManagerWin.TextureManager_texture_table_data_temp_path)
+
+        def save_temp_data(self, temp_TextureManager_texture_table_data):
+
+            # 保存修改后的数据到临时文件
+            self.dataM.bin_save_data(self.outer_instance.TextureManagerWin.TextureManager_texture_table_data_temp_path,
+                                     temp_TextureManager_texture_table_data)
+
+        # 修改材质名称
+        def change_material_name (self, select_data):
+            # 创建初始变量
+            temp_TextureManager_texture_table_data = self.temp_TextureManager_texture_table_data
+            new_material_node_all_info_dict = self.old_material_node_all_info_dict
+
+            # 遍历选中的数据
+            for material_name, value in list(select_data.items()):
+                old_material_name = material_name
+
+                # 修改材质的名称
+                new_material_name = self.dataP.SimpleSearchAndReplaceData(
+                                                                   old_material_name,
+                                                                   self.config['search_content'],
+                                                                   self.config['replace_content'],
+                                                                   self.config['case_sensitive'],
+                                                                   self.config['use_regex'])
+
+                # 重命名材质
+                if old_material_name == new_material_name:
+                    continue
                 else:
-                    newContent = self.dataP.SimpleSearchAndReplaceData(matName, self.line_edit_find.text(),
-                                                                       self.line_edit_replace.text(),
-                                                                      config['case_sensitive'], config['use_regex'])
-                # 材质重命名
-                try:
-                    cmds.rename(matName, newContent)
+                    try:
+                        cmds.rename(old_material_name, new_material_name)
+                    except Exception as e:
+                        self.feedback.CPW(e)
+                        continue
 
-                except RuntimeError:
-                    self.feedback.CP('无法重命名只读节点:'+ str(newContent))
-
-                    # 如果无法更改名称将会使用原来的名称
-                    newContent = matName
-
-                except :
-                    self.feedback.CP("你的修改名称有非法字符:" + str(newContent))
-
-                    # 如果无法更改名称将会使用原来的名称
-                    newContent = matName
-
-                # 重构字典
-                if not matName == newContent:
-                    # 如果内容不一样就更新新的材质新名称进去
-                    new_MterialNodeAllInfoDict[newContent] = value
-                else:
-                    # 如果内容一样就用之前的值继续重构
-                    new_MterialNodeAllInfoDict[matName] = value
+                # 修改数据内容的键
+                if old_material_name in new_material_node_all_info_dict:
+                    # 获取旧键对应的值
+                    material_info = new_material_node_all_info_dict.pop(old_material_name)
+                    # 使用新键创建新的字典项
+                    new_material_node_all_info_dict[new_material_name] = material_info
 
                 # 修改零时缓存数据
                 for index, value in enumerate(temp_TextureManager_texture_table_data):
-                    if temp_TextureManager_texture_table_data[index][1] == matName:
-                        temp_TextureManager_texture_table_data[index][1] = newContent
+                    if temp_TextureManager_texture_table_data[index][1] == old_material_name:
+                        temp_TextureManager_texture_table_data[index][1] = new_material_name
 
-            # 重新保存修改过后的零时表格数据
-            self.dataM.bin_save_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path, temp_TextureManager_texture_table_data)
+                self.save_temp_data(temp_TextureManager_texture_table_data)
 
-            # 激活一次讯号到主窗口，并把修改好的字典传递回去
-            self.base_data_signal.emit(new_MterialNodeAllInfoDict)
+                # 激活一次讯号到主窗口，并把修改好的字典传递回去
+                self.outer_instance.base_data_signal.emit(new_material_node_all_info_dict)
 
-        # 2，是修改贴图名称
-        elif config['modify_content_options'] == 2:
-            # 修改完构建新字典的空字典
-            new_MterialNodeAllInfoDict = {}
+        # 修改贴图名称
+        def change_texture_name (self, select_data):
+            # 创建初始变量
+            temp_TextureManager_texture_table_data = self.temp_TextureManager_texture_table_data
+            new_material_node_all_info_dict = self.old_material_node_all_info_dict
 
+            for material_name, value in list(select_data.items()):
+                for texture_name, texture_data in list(value.items()):
 
+                        old_texture_name = texture_name
 
-            for matName, matData in MterialNodeAllInfoDict.items():
-                # 重构字典内容 先写入材质名称
-                new_MterialNodeAllInfoDict[matName] = {}
+                        # 修贴图名称
+                        new_texture_name = self.dataP.SimpleSearchAndReplaceData(
+                            old_texture_name,
+                            self.config['search_content'],
+                            self.config['replace_content'],
+                            self.config['case_sensitive'],
+                            self.config['use_regex'])
 
-                for texName, texData in MterialNodeAllInfoDict[matName].items():
-                    if config['modify_scope_options'] in [2, 3]:
-                        # 检查贴图名称是否在过滤列表中
-                        if texName in tex_filter_list:
-                            newContent = self.dataP.SimpleSearchAndReplaceData(texName,
-                                                                               self.line_edit_find.text(),
-                                                                               self.line_edit_replace.text(),
-                                                                               config['case_sensitive'],
-                                                                               config['use_regex'])
+                        # 如果贴图名称没有变化就使用原来的名称
+                        if old_texture_name == new_texture_name:
+                            continue
                         else:
-                            newContent = texName
+                            try:
+                                cmds.rename(old_texture_name, new_texture_name)
+                            except Exception as e:
+                                self.feedback.CPW(e)
+                                continue
 
-                        # 对所有材质进行查找和替换
-                    else:
-                        newContent = self.dataP.SimpleSearchAndReplaceData(texName,
-                                                                           self.line_edit_find.text(),
-                                                                           self.line_edit_replace.text(),
-                                                                           config['case_sensitive'],
-                                                                           config['use_regex'])
-                    # 修改贴图名称
-                    try:
-                        cmds.rename(texName, newContent)
+                        # 修改数据内容的键
+                        if old_texture_name in new_material_node_all_info_dict[material_name]:
+                            # 获取旧键对应的值
+                            material_info =  new_material_node_all_info_dict[material_name].pop(old_texture_name)
+                            # 使用新键创建新的字典项
+                            new_material_node_all_info_dict[material_name][new_texture_name] = material_info
 
-                    except RuntimeError:
-                        self.feedback.CP('无法重命名只读节点:'+ str(newContent))
+                        # 修改零时缓存数据
+                        for index, value in enumerate(temp_TextureManager_texture_table_data):
+                            if temp_TextureManager_texture_table_data[index][0] == old_texture_name:
+                                temp_TextureManager_texture_table_data[index][0] = new_texture_name
 
-                        # 如果无法更改名称将会使用原来的名称
-                        newContent = texName
+                        self.save_temp_data(temp_TextureManager_texture_table_data)
 
-                    # 重构字典内容 写入贴图名称 还有贴图的相关信息 如果名称一样就用回之前的名称，不一样就用新的名称
-                    if texName == newContent:
-                        new_MterialNodeAllInfoDict[matName][texName] = texData
-                    else:
-                        new_MterialNodeAllInfoDict[matName][newContent] = texData
+                        # 激活一次讯号到主窗口，并把修改好的字典传递回去
+                        self.outer_instance.base_data_signal.emit(new_material_node_all_info_dict)
 
+        # 修改贴图路径
+        def change_texture_path(self, select_data):
+            # 获取临时纹理管理器表格数据和材质节点信息字典
+            temp_TextureManager_texture_table_data = self.temp_TextureManager_texture_table_data
+            new_material_node_all_info_dict = self.old_material_node_all_info_dict
 
-                    # 修改零时缓存数据
-                    for index, value in enumerate(temp_TextureManager_texture_table_data):
-                        if temp_TextureManager_texture_table_data[index][0] == texName:
-                            temp_TextureManager_texture_table_data[index][0] = newContent
-                # 重新保存修改过后的零时表格数据
-            self.dataM.bin_save_data(self.TextureManagerWin.TextureManager_texture_table_data_temp_path,  temp_TextureManager_texture_table_data)
-
-            # 激活一次讯号到主窗口，并把修改好的字典传递回去
-            self.base_data_signal.emit(new_MterialNodeAllInfoDict)
-
-        # 3，是修改路径
-        elif config['modify_content_options'] == 3:
-
-            # 修改完构建新字典的空字典
-            new_MterialNodeAllInfoDict = MterialNodeAllInfoDict
-
-            # 修改完后的新数据空字典，暂时储存。   作用是更新列表中的大小 链接状况等的内容
-            new_tex_tabl_temp_data = {}
-
+            # 初始化需要更新的节点字典
             update_dict = {}
-
-            for matName, matData in MterialNodeAllInfoDict.items():
-                for texName, texData in matData.items():
-
-                    # 旧的地址
-                    old_path = MterialNodeAllInfoDict[matName][texName]['Path']
-
-                    if config['modify_scope_options'] in [2, 3]:
-                        # 检查贴图名称是否在过滤列表中
-                        if texName in tex_filter_list:
-                            # 搜索修改完的新内容
-                            newContent = self.dataP.SimpleSearchAndReplaceData(old_path,
-                                                                               self.line_edit_find.text(),
-                                                                               self.line_edit_replace.text(),
-                                                                               config['case_sensitive'],
-                                                                               config['use_regex'])
-                        else:
-                            newContent = old_path
-
-                        # 对所有材质进行查找和替换
+            # 遍历选中的数据
+            for material_name, value in list(select_data.items()):
+                for texture_name, texture_data in list(value.items()):
+                    # 获取旧的纹理路径
+                    old_path = texture_data['Path']
+                    # 使用搜索替换方法获取新的纹理路径
+                    new_path = self.dataP.SimpleSearchAndReplaceData(
+                        old_path,
+                        self.config['search_content'],
+                        self.config['replace_content'],
+                        self.config['case_sensitive'],
+                        self.config['use_regex'])
+                    # 如果路径没有变化，跳过当前循环
+                    if old_path == new_path:
+                        continue
                     else:
-                        newContent = self.dataP.SimpleSearchAndReplaceData(old_path,
-                                                                           self.line_edit_find.text(),
-                                                                           self.line_edit_replace.text(),
-                                                                           config['case_sensitive'],
-                                                                           config['use_regex'])
-
-                    # 修改贴图名称 在不同的情况下才会修改（也就是修改了内容才会修改内容，没有需改的则不修改）
-                    if not old_path == newContent:
-                        # 把修改了的贴图记录到new_tex_tabl_temp_data字典中
-                        new_tex_tabl_temp_data[matName] = texName
-
                         try:
-                            cmds.setAttr(f"{texName}.fileTextureName", newContent , type="string")
-                        except :
-                            pass
+                            # 尝试更新Maya文件纹理节点的路径
+                            cmds.setAttr(f"{texture_name}.fileTextureName", new_path, type="string")
+                        except Exception as e:
+                            # 如果更新失败，打印错误信息并继续下一个循环
+                            self.feedback.CPW(e)
+                            continue
+                    # 更新材质节点信息字典中的路径
+                    new_material_node_all_info_dict[material_name][texture_name]['Path'] = new_path
+                    # 记录需要更新状态的节点
+                    update_dict[texture_name] = material_name
+                    # 更新临时缓存数据中的纹理路径
+                    for index, value in enumerate(temp_TextureManager_texture_table_data):
+                        if temp_TextureManager_texture_table_data[index][7] == old_path:
+                            temp_TextureManager_texture_table_data[index][7] = new_path
+                    # 保存更新后的临时数据
+                    self.save_temp_data(temp_TextureManager_texture_table_data)
+            # 更新材质节点的状态
+            new_material_node_all_info_dict = self.getnodedata.TM_StickerUpdateStatusDict(
+                update_dict,
+                new_material_node_all_info_dict
+            )
+            # 创建选中纹理的字典
+            select_texture_dict = {
+                table_list[0]: table_list[1]
+                for table_list in temp_TextureManager_texture_table_data
+            }
+            # 发送更新后的材质节点信息和选中纹理字典到主窗口
+            self.outer_instance.base_data_bundle_signal.emit(
+                new_material_node_all_info_dict,
+                select_texture_dict
+            )
 
-                        # 修改字典中的路径
-                        new_MterialNodeAllInfoDict[matName][texName]['Path'] = newContent
 
-                        # 写入需要更新的节点
-                        update_dict[texName] = matName
 
-            new_MterialNodeAllInfoDict  = self.getnodedata.TM_StickerUpdateStatusDict(update_dict, new_MterialNodeAllInfoDict)
+        def process(self):
 
-            # 获取当前表格中都有那些贴图
-            table_tex_list = []
-            for index, key in enumerate(temp_TextureManager_texture_table_data):
-                table_tex_list.append(temp_TextureManager_texture_table_data[index][0])
+            select_data = self.outer_instance.TextureManagerWin.get_selected_table_data(self.config['modify_scope_options'])
 
-            # 把表格中有的贴图做成的列表在总信息中筛选出来
-            select_texture_dict = {}
-            for index, table_list in enumerate(temp_TextureManager_texture_table_data):
-                select_texture_dict[temp_TextureManager_texture_table_data[index][0]] = temp_TextureManager_texture_table_data[index][1]
 
-            # 激活一次讯号到主窗口，并把修改好的字典传递回去
-            self.base_data_bundle_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
+            # 1，修改材质名称
+            if self.config['modify_content_options'] == 1:
+                self.change_material_name(select_data)
+
+            # 2，修改贴图名称
+            elif self.config['modify_content_options'] == 2:
+                self.change_texture_name(select_data)
+
+            # 3，修改贴图路径
+            elif self.config['modify_content_options'] == 3:
+                self.change_texture_path(select_data)
+                
+    def replace_button(self):
+        replace_content = self.ReplaceContent(self)
+        replace_content.process()
+
 
     # --------------------保存设置内容的函数
     def modify_config(self, key, cont):
@@ -7140,9 +7160,11 @@ class rendering_preset_settings_button():
                                "pngSkipAlpha", "pngUnpremultAlpha", "prefix", "preserveLayerName", "quality",
                                "renderSession", "skipAlpha", "subpixelMerge", "tiffCompression", "tiffFormat",
                                "tiffTiled", "unpremultAlpha", "useRGBOpacity"]
+
         defaultArnoldFilter = ["aiFilterWeights", "aiTranslator", "aiUserOptions", "aiWidth", "binMembership", "caching",
                                "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message",
                                "minimum", "nodeState", "scalarMode", "width"]
+
         defaultArnoldRenderOptions = ["AAAdaptiveThreshold", "AASampleClamp", "AASamples", "AASamplesMax", "AA_seed",
                                       "GIDiffuseDepth", "GIDiffuseSamples", "GISpecularDepth", "GISpecularSamples",
                                       "GISssSamples", "GITotalDepth", "GITransmissionDepth", "GITransmissionSamples",
@@ -7237,6 +7259,10 @@ class rendering_preset_settings_button():
         aiFilter_att_list = ["aiFilterWeights", "aiTranslator", "aiUserOptions", "aiWidth", "binMembership", "caching",
                              "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message",
                              "minimum", "nodeState", "scalarMode", "width"]
+
+        if cmds.objExists("defaultArnoldRenderOptions") == False:
+            self.feedback.CPW("没检测到阿诺德渲染器节点，无法写入阿诺德的内容请切换渲染器先")
+            return None
 
         aiAov_name_list = cmds.listConnections("defaultArnoldRenderOptions.aovList", source=True)
         # 这是所有aiAOV的名字
