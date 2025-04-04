@@ -47,7 +47,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.07" # 插件版本号
+SoftwareVersion = "1.1.0.08" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -5530,7 +5530,43 @@ class TM_TexturePack(QtWidgets.QDialog):
             # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
             self.outer_instance.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, select_texture_dict)
 
+        def _find_udim_textures(self, filepath):
+            """
+            根据给定的贴图文件路径，查找同一目录下所有同名且带有 UDIM 编号的文件。
+            参数:
+                filepath (str): 带有 UDIM 编号的贴图文件路径，例如 "C:\\path\\to\\texture.1001.jpeg"
+            返回:
+                list: 同一目录下所有匹配的 UDIM 贴图文件名列表，例如 ["texture.1002.jpeg", "texture.1003.jpeg"]
+            """
+            directory = os.path.dirname(filepath)
+            filename = os.path.basename(filepath)
+            # 使用正则表达式解析文件名，提取基名、UDIM 编号和扩展名
+            # 例如，"Helmet_emissive.1001.jpeg" 中 base="Helmet_emissive", udim="1001", ext="jpeg"
+            udim_pattern = re.compile(r'^(?P<base>.+)\.(?P<udim>\d{4})\.(?P<ext>[^.]+)$')
+            match = udim_pattern.match(filename)
 
+            if not match:
+                print(f"输入文件名 '{filename}' 不符合 UDIM 命名约定。")
+                return []
+            base = match.group('base')
+            ext = match.group('ext')
+            # 构建用于匹配的正则表达式
+            search_pattern = re.compile(rf'^{re.escape(base)}\.(\d{{4}})\.{re.escape(ext)}$')
+            # 列出目录中所有文件
+            try:
+                all_files = os.listdir(directory)
+            except FileNotFoundError:
+                print(f"目录 '{directory}' 不存在。")
+                return []
+            except PermissionError:
+                print(f"没有权限访问目录 '{directory}'。")
+                return []
+            # 筛选出匹配的 UDIM 文件（除了输入文件本身）
+            udim_files = [
+                f for f in all_files
+                if search_pattern.match(f) and os.path.isfile(os.path.join(directory, f)) and f != filename
+            ]
+            return udim_files
 
         def process(self):
             # 0, 定义变量
@@ -5567,39 +5603,90 @@ class TM_TexturePack(QtWidgets.QDialog):
                         self.feedback.CPW(f"文件路径不存在: {os.path.basename(old_info_path)}")
                         continue
 
-                    ## 3, 复制文件到输出路径
+                    ## 3，检测这个文件是否是UDIM贴图
+                    if self._find_udim_textures(old_info_path) != []:
+                        # 如果是UDIM贴图就获取所有的UDIM贴图
+                        old_file_udim = self._find_udim_textures(old_info_path)
+                        self.feedback.CP(f"检测到{os.path.basename(old_info_path)}是UDIM，其他UDIM贴图: {str(old_file_udim).replace('[','').replace(']','')}")
+
+
+                    ## 4, 复制文件到输出路径
                     if new_output_path == os.path.normpath(os.path.dirname(old_info_path)):
                         self.feedback.CP(f"文件已经存在目标文件夹中: {os.path.basename(old_info_path)}")
                         continue
                     else:
                         self._copy_to_output(old_info_path, new_output_path)
 
-                    ## 4, 检查是否需要打包tx文件
+                    ## 5, 检查是否需要打包tx文件
                     if self.config['copy_tx_files']:
                         tx_files = self._find_tx_files(old_info_path)
                         for tx_file in tx_files:
                             new_tx_file_path = os.path.join(new_output_path, os.path.basename(tx_file))
                             self._copy_to_output(tx_file, new_tx_file_path)
 
-                    ## 5, 检查是否需要删除源文件
+                    ## 6, 检查是否需要删除源文件
                     if self.config['delete_source_files']:
                         self._delete_files(old_info_path)
 
-                    ## 6, 检查是否需要删除源tx文件
+                    ## 7, 检查是否需要删除源tx文件
                     if self.config['delete_source_tx_files']:
                         for tx_file in tx_files:
                             self._delete_files(tx_file)
 
-                    ## 7，检测是否要修改路径
+
+                    ## 8，执行UDIM贴图的处理
+                    if old_file_udim:
+                        # 遍历每一个UDIM贴图文件
+                        for udim_file_name in old_file_udim:
+                            # 获取新/旧文件目录路径
+                            new_dir_name = os.path.dirname(new_path)
+                            old_dir_name = os.path.dirname(old_info_path)
+
+                            # 构建完整的旧UDIM文件路径和新目标路径
+                            old_udim_file_path = os.path.join(old_dir_name, udim_file_name)
+                            new_udim_file_path = os.path.join(new_dir_name, udim_file_name)
+
+                            ## 8.1, 复制文件到输出路径
+                            # 如果目标路径已存在相同文件，跳过复制
+                            if new_udim_file_path == old_udim_file_path:
+                                self.feedback.CP(f"文件已经存在目标文件夹中: {new_udim_file_path}")
+                                continue
+                            else:
+                                # 执行文件复制操作
+                                self._copy_to_output(old_udim_file_path, new_udim_file_path)
+
+                            ## 8.2, 检查是否需要打包tx文件
+                            # 如果配置要求复制tx文件（Arnold压缩纹理）
+                            if self.config['copy_tx_files']:
+                                # 查找当前UDIM文件对应的tx文件
+                                udim_tx_files = self._find_tx_files(old_udim_file_path)
+                                # 遍历并复制所有关联的tx文件
+                                for tx_file in udim_tx_files:
+                                    new_tx_file_path = os.path.join(new_dir_name, os.path.basename(tx_file))
+                                    self._copy_to_output(tx_file, new_tx_file_path)
+
+                            ## 8.3, 检查是否需要删除源文件
+                            # 如果配置要求删除原始文件
+                            if self.config['delete_source_files']:
+                                self._delete_files(old_udim_file_path)
+
+                            ##8.4, 检查是否需要删除源tx文件
+                            # 如果配置要求删除原始tx文件
+                            if self.config['delete_source_tx_files']:
+                                # 遍历并删除所有关联的tx文件
+                                for tx_file in udim_tx_files:
+                                    self._delete_files(tx_file)
+
+                    ## 8，检测是否要修改路径
                     if self.config['modify_path']:
                         # 如果需要修改路径，更新节点的路径
                         if os.path.exists(new_path):
                             self._update_node_path(node_name, new_path)
 
-                        ## 8, 修改主窗口数据的贴图路径
+                        ## 9, 修改主窗口数据的贴图路径
                         self._refresh_main_window_texture_path_data(mat_name, node_name, new_path)
 
-                        ## 9, 存入需要修改的数据
+                        ## 10, 存入需要修改的数据
                         update_dict[node_name] = mat_name
 
             # 6, 更新主窗口的贴图数据
