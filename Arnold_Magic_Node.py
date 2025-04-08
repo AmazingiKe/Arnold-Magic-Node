@@ -47,7 +47,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.09" # 插件版本号
+SoftwareVersion = "1.1.0.10" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -101,6 +101,7 @@ TM_RepathFiles_config_dict = {
 }
 
 TM_ImageProcessing_config_dict = {
+    "modify_scope_options" : 1 ,
     "format" : "jpg",
     "zoom" : "100",
     "resampling_mode" : 1,
@@ -3066,7 +3067,11 @@ class TextureManagerWin(QtWidgets.QDialog):
         返回：
         new_dict: dict, 新的字典，按材质名称组织，包含匹配的纹理数据。
         """
+        print("target_list", target_list)
+        print("data_dict", data_dict)
+
         new_dict = {}  # 用于存储最终结果的字典
+
 
         if target_list is None:
             self.feedback.CPW('没有选中任何行')
@@ -3100,6 +3105,9 @@ class TextureManagerWin(QtWidgets.QDialog):
         elif modify_scope == 3:
             selected_table_data = self.get_selected_row_data()
             return self.convert_list_to_dict(self.MterialNodeAllInfoDict, selected_table_data)
+
+
+
         return {}  # 默认返回空字典
 
     # 选择表格内容返回数据函数 -----------------------------------------结束
@@ -4827,7 +4835,17 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
         self.png_quality_display_label = QtWidgets.QLabel()
 
+        self.modify_group = QtWidgets.QButtonGroup(self)
+        self.radio_all = QtWidgets.QRadioButton('全部')  # '全部'选项
+        self.radio_table = QtWidgets.QRadioButton('表格内')  # '表格内'选项
+        self.radio_selection = QtWidgets.QRadioButton('选择中')  # '选择中'选项
+        self.modify_group.addButton(self.radio_all, 1)  # 将按钮加入组
+        self.modify_group.addButton(self.radio_table, 2)
+        self.modify_group.addButton(self.radio_selection, 3)
 
+        # 当选择变化时，更新配置文件中的选项
+        self.modify_group.buttonClicked.connect(
+            lambda button: self.modify_config('modify_scope_options', self.modify_group.id(button)))
 
         self.convert_format_check_box = QtWidgets.QCheckBox(widgets_lang['convert_format_check_box']) # 转换格式
         self.convert_format_check_box.clicked.connect(
@@ -4878,6 +4896,16 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         png_config_layout.addWidget(self.png_quality_display_label)
         png_config_layout.addStretch()  # 控制空白区域
 
+        selection_layout = QtWidgets.QHBoxLayout()
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_all)
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_table)
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        selection_layout.addWidget(self.radio_selection)
+        selection_layout.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+
+
         radio_button = QtWidgets.QHBoxLayout()
         radio_button.addStretch()
         radio_button.addWidget(self.convert_format_check_box)
@@ -4895,6 +4923,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         Main_Layout.addLayout(jpg_config_layout)
         Main_Layout.addLayout(png_config_layout)
         Main_Layout.addStretch()
+        Main_Layout.addLayout(selection_layout)
         Main_Layout.addLayout(radio_button)
         Main_Layout.addLayout(conversion_layout)
 
@@ -4904,6 +4933,11 @@ class TM_ImageProcessing(QtWidgets.QDialog):
 
     def initial_widgets_settings(self):
         initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+
+        # 设置 select_group 的默认选中按钮（通过 ID）
+        modify_group_button = self.modify_group.button(initial_config['modify_scope_options'])
+        if modify_group_button:
+            modify_group_button.setChecked(True)  # 设置该按钮为选中状态
 
         # 设置质量标签的初始值
         self.jpg_quality_display_label.setText(str(initial_config['JPG_quality']))
@@ -5043,178 +5077,480 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         # 返回新的完整路径
         return os.path.join(directory, new_file_name)
 
-    # 转换格式按钮
-    def image_conversion(self):
-        # 代码大概流程：
-        # 1,加载配置文件：从指定路径加载配置文件，检查是否需要进行格式转换或缩放。
-        # 2,检查操作条件：如果既不需要格式转换，也不需要缩放，或没有选中任何项目，则直接返回，不执行任何操作。
-        # 3,图像路径处理：对选中的每个图像路径进行处理。检查图像路径是否有效，获取路径中的文件名和后缀，准备进行后续操作。
-        # 4,图像后缀处理：如果图像已经带有处理后的后缀，去除后缀并重新定位源文件。如果找不到源文件，则直接使用删除后缀的图像文件作为源文件。
-        # 5,生成新文件路径：为处理后的图像生成新的文件路径，并标准化路径。
-        # 6,格式转换：如果配置文件要求转换格式，则根据指定格式将图像转换为目标格式，同时处理压缩质量等选项。随后删除相同名称的其他格式文件。
-        # 7,图像缩放：在需要的情况下对图像进行缩放。
-        # 8,更新Maya节点：将转换或缩放后的图像路径更新到Maya中的相关节点。
-        # 9,刷新缓存：更新主窗口缓存数据并刷新窗口显示
 
-        # 配置文件
-        initial_config = self.dataM.bin_load_data(self.TM_image_processing_config_FilePath)
+    class ImageProcessing:
+        def __init__(self, outer_instance):
 
-        # 如果没有勾选转换格式和缩放比例那不会有任何操作，会直接退出函数
-        if not initial_config.get('convert_format', False) and not initial_config.get('scale_texture', False):
-            return  # 如果两者都是 False，直接 return
-
-        # 如果没有选中内容不会执行
-        if self.get_selected_rows_data() == []:
-            return
-
-        # 图像处理后的后缀名称
-        image_processed_suffix = initial_config['processed_suffix']
+            # 实例数据管理器
+            self.dataM = DataManager()  # 数据管理
+            self.dataP = DataProcessor()  # 数据处理
+            self.feedback = FeedbackPrompt()  # 错误提示模块
+            self.getnodedata = GetNodeData()  # 获取节点数据模块
+            self.imageP = ImageProcessor()  # 处理图像
 
 
-        # 从主窗口获取的材质所有数据
-        old_MterialNodeAllInfoDict = self.TextureManagerWin.MterialNodeAllInfoDict
+            # 配置文件
+            self.config = self.dataM.bin_load_data(outer_instance.TM_image_processing_config_FilePath)
+            self.congig_path = outer_instance.TM_image_processing_config_FilePath
+            self.outer_instance = outer_instance  # 存储对外部类实例的引用
 
-
-        # 输出格式与扩展名映射
-        format_mapping = {
-            'jpg': 'jpg',
-            'jpeg': 'jpg',
-            'png': 'png',
-            'tif': 'tiff',
-            'bmp': 'bmp',
-        }
-
-        need_update_dict = {}
-
-        for val in self.get_selected_rows_data():
-            # 获取旧路径并标准化路径
-            old_info_path = os.path.normpath(old_MterialNodeAllInfoDict[val[1]][val[0]]['Path'])
-
-            # 如果路径不存在会直接跳过这个循环
-            if not os.path.exists(old_info_path):
-                self.feedback.CP(self.lang['image_conversion']['01'] + old_info_path) # 你的这张图片路径连接失败
-                continue
-
-
-            # 逻辑分析：
-            # 1，检测旧的路径是否包含后缀如果包含后缀就删除后缀
-            # 2, 检查删除后缀的文件是否存在，不存在就用旧路径删除文件的后缀用这个文件去进行处理
-
-            # 分离文件路径和文件名
-            file_dir, file_name = os.path.split(old_info_path)
-
-            # 分离文件名和扩展名
-            name, ext = os.path.splitext(file_name)
-
-            # 列出目录下的所有文件
-            files_in_directory = os.listdir(file_dir)
-
-            # 如果文件名中已经包含处理后的后缀，移除后缀处理
-            if image_processed_suffix in name:
-                # 删除后缀
-                delete_suffix_name = name.replace(image_processed_suffix, '')
-
-                # [plan2方案] 如果有源文件可以找到源文件就无序在进行删除并创建 尝试找到不带后缀的原始文件
-                try:
-                    # 遍历文件列表，找到与已知文件名匹配的文件
-                    for file in files_in_directory:
-                        # 分离文件名和扩展名
-                        name, ext = os.path.splitext(file)
-
-                        # 检查文件名是否匹配
-                        if name == delete_suffix_name:
-                            known_file_suffix = ext
-                            break
-
-                    old_info_path = os.path.join(file_dir, delete_suffix_name+ known_file_suffix)
-
-                except UnboundLocalError:
-                    # [plam2方案] 如果找不到原文件，使用删除后缀的修改文件作为源文件
-                    new_info_path = old_info_path.replace(image_processed_suffix, '')
-                    os.rename(old_info_path, new_info_path)
-                    old_info_path = new_info_path
-
-
-            # -------在文件名中添加处理后缀并生成新路径----------
-            # 分离文件名和扩展名
-            name, ext = os.path.splitext(os.path.basename(old_info_path))
-            # 在文件名中的适当位置添加后缀
-            new_name = f"{name}{image_processed_suffix}{ext}"
-            # 生成新的完整文件路径 并标准化路径
-            backup_image_file_path = os.path.normpath(os.path.join(file_dir, new_name))
-            # -----------------
+            self.old_material_node_all_info_dict = self.outer_instance.TextureManagerWin.MterialNodeAllInfoDict
 
 
 
-            # 检查是否需要转换格式
-            if initial_config['convert_format']:
-                # 根据输出格式生成输出路径
-                if initial_config['format'] in format_mapping:
-                    # 通过分割文件名，去掉原文件扩展名，并添加新的扩展名
-                    backup_image_file_path = f"{backup_image_file_path.rsplit('.', 1)[0]}.{format_mapping[initial_config['format']]}"
-                else:
-                    # 如果格式不被支持，输出反馈信息并返回
-                    self.feedback.CP(f"{self.lang['image_conversion']['02']} {initial_config['format']}") # 不支持的格式
-                    return
+            # 图像处理后的后缀名称
+            self.image_processed_suffix = self.config['processed_suffix']
 
+            # 输出格式与扩展名映射
+            self.format_mapping = {
+                'jpg': 'jpg',
+                'jpeg': 'jpg',
+                'png': 'png',
+                'tif': 'tiff',
+                'bmp': 'bmp',
+            }
 
-                # 执行格式转换，使用备份图像文件名作为输入和输出路径
-                convert_image_format_state = self.imageP.convert_image_format(input_path=old_info_path,
-                                                                             output_path=backup_image_file_path,
-                                                                             output_format=format_mapping[initial_config['format']],
-                                                                             jpg_quality=initial_config['JPG_quality'],
-                                                                             png_compression=initial_config['PNG_quality'])
-                if convert_image_format_state == False:
-                    return
+        def _find_udim_textures(self, filepath):
+            """
+            根据给定的贴图文件路径，查找同一目录下所有同名且带有 UDIM 编号的文件。
+            参数:
+                filepath (str): 带有 UDIM 编号的贴图文件路径，例如 "C:\\path\\to\\texture.1001.jpeg"
+            返回:
+                list: 同一目录下所有匹配的 UDIM 贴图文件名列表，例如 ["texture.1002.jpeg", "texture.1003.jpeg"]
+            """
+            directory = os.path.dirname(filepath)
+            filename = os.path.basename(filepath)
+            # 使用正则表达式解析文件名，提取基名、UDIM 编号和扩展名
+            # 例如，"Helmet_emissive.1001.jpeg" 中 base="Helmet_emissive", udim="1001", ext="jpeg"
+            udim_pattern = re.compile(r'^(?P<base>.+)\.(?P<udim>\d{4})\.(?P<ext>[^.]+)$')
+            match = udim_pattern.match(filename)
 
-                # 删除相同名称的其他格式文件
-                self.delete_other_formats(file_dir, files_in_directory, os.path.basename(backup_image_file_path),
-                                          format_mapping[initial_config['format']])
+        def _parse_udim_filename(self, filename):
+            """
+            UDIM文件名解析函数
+            格式规范：文件名.<UDIM编号>.<扩展名>
+            UDIM要求：4位数字，范围1001-9999（Maya官方规范）
 
-                # 如果需要缩放，则在转换格式后进行缩放
-                if initial_config['scale_texture']:
-                    resize_image_state = self.imageP.resize_image(input_path=backup_image_file_path,
-                                                                 output_path=backup_image_file_path,
-                                                                 scale_percent=int(initial_config['zoom']),
-                                                                 resample_mode=str(initial_config['resampling_mode']))
-                    if resize_image_state == False:
-                        continue
+            :param filename: 完整文件名(需包含扩展名)
+            :return: 解析结果字典
+            """
+            # 分离基础名称和扩展名
+            base_name, file_ext = os.path.splitext(filename)
+            parts = base_name.split('.')
 
-                # 写入缓存
-                # write_image_processing_cache(val[4], backup_image_file_path)
+            # UDIM正则检测（严格模式）
+            udim_pattern = r'^(1\d{3}|[2-9]\d{3})$'  # 1001-9999
 
-            # 如果没有进行格式转换，但需要缩放，则直接缩放
-            elif initial_config['scale_texture']:
-                resize_image_state = self.imageP.resize_image(input_path=old_info_path,
-                                                             output_path=backup_image_file_path,
-                                                             scale_percent=int(initial_config['zoom']),
-                                                             resample_mode=str(initial_config['resampling_mode']))
-                # 如果图片处理返回False直接退出循环
-                if resize_image_state == False:
+            # 反向遍历寻找UDIM编号
+            for i in reversed(range(len(parts))):
+                if re.match(udim_pattern, parts[i]):
+                    # 分离名称部分和UDIM编号
+                    udim_id = parts[i]
+                    name_part = '.'.join(parts[:i])
+                    return {
+                        'is_udim': True,
+                        'file_name': name_part,
+                        'udim_id': udim_id,
+                        'extension': file_ext.lower().lstrip('.')
+                    }
+
+            # 未找到符合UDIM编号的情况
+            return {
+                'is_udim': False,
+                'file_name': base_name,
+                'extension': file_ext.lower().lstrip('.')
+            }
+
+        def _find_similar_filenames(self, dirList, keyword, excludeFormats):
+            """
+            查找与关键字相似（文件名中包含关键字），
+            并且排除掉指定格式的文件名。
+
+            参数：
+                dirList (list[str]): 文件名或路径的列表
+                keyword (str): 搜索关键词
+                excludeFormats (list[str]): 需要排除的格式列表，例如 ["jpg", "png"] 等
+
+            返回：
+                list[str]: 返回符合要求的关键字匹配且未被排除格式过滤掉的文件名列表
+            """
+            result = []
+            for file_name in dirList:
+                # 提取文件扩展名
+                ext = file_name.split('.')[-1].lower()
+
+                # 如果文件后缀在排除列表中，跳过
+                if ext in excludeFormats:
                     continue
 
+                # 如果文件名中包含关键词，加入结果列表
+                if keyword.lower() in file_name.lower():
+                    result.append(file_name)
 
+            return result
 
-            # 更新 Maya 节点中的文件路径
+        def _find_udim_textures(self, filepath):
+            """
+            根据给定的贴图文件路径，查找同一目录下所有同名且带有 UDIM 编号的文件。
+            参数:
+                filepath (str): 带有 UDIM 编号的贴图文件路径，例如 "C:\\path\\to\\texture.1001.jpeg"
+            返回:
+                list: 同一目录下所有匹配的 UDIM 贴图文件名列表，例如 ["texture.1002.jpeg", "texture.1003.jpeg"]
+            """
+            directory = os.path.dirname(filepath)
+            filename = os.path.basename(filepath)
+            # 使用正则表达式解析文件名，提取基名、UDIM 编号和扩展名
+            # 例如，"Helmet_emissive.1001.jpeg" 中 base="Helmet_emissive", udim="1001", ext="jpeg"
+            udim_pattern = re.compile(r'^(?P<base>.+)\.(?P<udim>\d{4})\.(?P<ext>[^.]+)$')
+            match = udim_pattern.match(filename)
+
+            if not match:
+                print(f"输入文件名 '{filename}' 不符合 UDIM 命名约定。")
+                return []
+            base = match.group('base')
+            ext = match.group('ext')
+            # 构建用于匹配的正则表达式
+            search_pattern = re.compile(rf'^{re.escape(base)}\.(\d{{4}})\.{re.escape(ext)}$')
+            # 列出目录中所有文件
             try:
-                cmds.setAttr(f"{val[0]}.fileTextureName", backup_image_file_path, type="string")
-            except Exception as e:
-                self.feedback.CPW(f"{self.lang['image_conversion']['03']} {val[0]} {self.lang['image_conversion']['04']} {e}") # 更新节点 # 失败
+                all_files = os.listdir(directory)
+            except FileNotFoundError:
+                print(f"目录 '{directory}' 不存在。")
+                return []
+            except PermissionError:
+                print(f"没有权限访问目录 '{directory}'。")
+                return []
+            # 筛选出匹配的 UDIM 文件（除了输入文件本身）
+            udim_files = [
+                f for f in all_files
+                if search_pattern.match(f) and os.path.isfile(os.path.join(directory, f)) and f != filename
+            ]
+            return udim_files
 
-            # 最后一部 修改主窗口缓存数据
-            old_MterialNodeAllInfoDict[val[1]][val[0]]['Path'] = backup_image_file_path
+        def _udim_file_process(self, texture_path, old_file_info):
+            # 寻找其他的udim文件
+            udim_files = self._find_udim_textures(texture_path)
 
-            # 把更新目标写入字典
-            need_update_dict[val[0]] = val[1]
-
-        # 更新主窗口字典数据
-        new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(need_update_dict,
-                                                                                 old_MterialNodeAllInfoDict)
+            dir_path = os.path.dirname(texture_path)
 
 
+            for udim_file in udim_files:
 
-        # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
-        self.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
+
+
+                    # 构建完整的文件路径
+                    udim_file_path = os.path.join(dir_path, udim_file)
+
+
+                    # 2，如果路径不存在会直接跳过这个循环
+                    if not os.path.exists(udim_file_path):
+                        self.feedback.CP(self.lang['image_conversion']['01'] + udim_file_path) # 你的这张图片路径连接失败
+                        continue  # 如果路径不存在，跳过这个循环
+
+
+
+                    # 分离文件名和扩展名 如果是UDIM文件名则会返回一个字典
+                    old_file_info = self._parse_udim_filename(udim_file)
+
+                    # 获取源文件的路径
+                    if self.image_processed_suffix in old_file_info['file_name']:
+                        # 步骤 1：从文件名中删除处理后缀（例如 "_TMProc"）
+                        delete_suffix_name = old_file_info['file_name'].replace(self.image_processed_suffix, '')
+
+                        # 步骤 2：列出旧文件所在目录中的所有文件
+                        files_in_directory = os.listdir(dir_path)
+
+                        if old_file_info['is_udim']:
+                            # UDIM 文件处理分支
+                            # 筛选条件：
+                            # 1. 文件名包含删除后缀后的基础名（例如 "Helmet_roughness"）
+                            # 2. 不包含处理后缀（避免重复处理）
+                            # 3. 正则匹配 UDIM ID（例如 .1001.）
+                            source_file_name = [
+                                filename for filename in files_in_directory
+                                if (
+                                        delete_suffix_name in filename and
+                                        self.config['processed_suffix'] not in filename and
+                                        re.search(rf'\.{old_file_info["udim_id"]}\.', filename)
+                                )
+                            ]
+
+                            # 取第一个匹配的文件名构建完整路径
+                            source_file_path = os.path.join(dir_path, source_file_name[0])
+                        else:
+                            # 非 UDIM 文件处理分支
+                            # 筛选条件：
+                            # 1. 文件名包含基础名
+                            # 2. 不包含处理后缀
+                            source_file_name = [
+                                filename for filename in files_in_directory
+                                if delete_suffix_name in filename and
+                                   self.config['processed_suffix'] not in filename
+                            ]
+                            source_file_path = os.path.join(dir_path, source_file_name)
+
+                    else:
+                        # 如果原始文件名不包含处理后缀，直接使用旧路径
+                        source_file_path = udim_file_path
+
+
+
+                    # 构建备份文件路径
+                    if old_file_info['is_udim']:
+                        # UDIM 备份路径格式：基础名 + 处理后缀 + UDIM ID + 扩展名
+                        # 示例：Helmet_roughness_TMProc.1001.jpeg
+                        backup_image_file_path = os.path.join(
+                            dir_path,
+                            old_file_info['file_name'].replace(self.image_processed_suffix, '')  # 删除旧后缀
+                            + self.image_processed_suffix  # 重新添加后缀（可能需验证逻辑）
+                            + '.' + old_file_info['udim_id']  # 插入 UDIM ID
+                            + '.' + old_file_info['extension']  # 文件扩展名
+                        )
+                    else:
+                        # 非 UDIM 备份路径格式：基础名 + 处理后缀 + 扩展名
+                        # 示例：Helmet_roughness_TMProc.jpeg
+                        backup_image_file_path = os.path.join(
+                            dir_path,
+                            old_file_info['file_name'].replace(self.image_processed_suffix, '')  # 删除旧后缀
+                            + self.image_processed_suffix  # 重新添加后缀
+                            + '.' + old_file_info['extension']  # 文件扩展名
+                        )
+
+                    # 检查是否需要转换格式
+                    if self.config['convert_format']:
+                        # 根据输出格式生成输出路径
+                        if self.config['format'] in self.format_mapping:
+                            # 通过分割文件名，去掉原文件扩展名，并添加新的扩展名
+                            convert_format_backup_image_name = f"{backup_image_file_path.rsplit('.', 1)[0]}.{self.format_mapping[self.config['format']]}"
+                            backup_image_file_path = convert_format_backup_image_name
+
+                        else:
+                            # 如果格式不被支持，输出反馈信息并返回
+                            self.feedback.CP(f"{self.lang['image_conversion']['02']} {self.config['format']}")  # 不支持的格式
+
+                        # 执行格式转换，使用备份图像文件名作为输入和输出路径
+                        convert_image_format_state = self.imageP.convert_image_format(input_path=source_file_path,
+                                                                                      output_path=convert_format_backup_image_name,
+                                                                                      output_format=self.format_mapping[
+                                                                                          self.config['format']],
+                                                                                      jpg_quality=self.config['JPG_quality'],
+                                                                                      png_compression=self.config[
+                                                                                          'PNG_quality'])
+
+                        # 如果图片处理返回False直接退出循环
+                        if convert_image_format_state == False:
+                            return
+
+                        dirlist = os.listdir(dir_path)
+                        # 删除相同名称的其他格式文件
+                        self.outer_instance.delete_other_formats(dir_path, dirlist,
+                                                                 os.path.basename(backup_image_file_path),
+                                                                 self.format_mapping[self.config['format']])
+
+                        # 如果需要缩放，则在转换格式后进行缩放
+                        if self.config['scale_texture']:
+                            resize_image_state = self.imageP.resize_image(input_path=convert_format_backup_image_name,
+                                                                          output_path=convert_format_backup_image_name,
+                                                                          scale_percent=int(self.config['zoom']),
+                                                                          resample_mode=str(self.config['resampling_mode']))
+                            if resize_image_state == False:
+                                continue
+
+                    # 如果没有进行格式转换，但需要缩放，则直接缩放
+                    elif self.config['scale_texture']:
+                        resize_image_state = self.imageP.resize_image(input_path=source_file_path,
+                                                                      output_path=backup_image_file_path,
+                                                                      scale_percent=int(self.config['zoom']),
+                                                                      resample_mode=str(self.config['resampling_mode']))
+
+                        # 如果图片处理返回False直接退出循环
+                        if resize_image_state == False:
+                            continue
+
+        def process(self):
+            # 0,创建一个空的字典用来存储处理后的贴图
+            need_update_dict = {}
+
+
+            # 1, 如果没有勾选转换格式和缩放比例那不会有任何操作，会直接退出函数
+            if not self.config.get('convert_format', False) and not self.config.get('scale_texture', False):
+                return  # 如果两者都是 False，直接 return
+
+            # 2, 获取选中的行数据
+            select_data = self.outer_instance.TextureManagerWin.get_selected_table_data(
+                self.config['modify_scope_options'])
+
+            # 3, 如果没有选中任何行，提前返回
+            if select_data == {} or select_data == {'lambert1': {}, 'standardSurface1': {}, 'Unlisted Textures': {}}:
+                self.feedback.CPW("没有选中任何内容")
+                return  # 如果没有选中任何行，提前返回
+
+
+            # 4，对选择的内容遍历
+            for material_name, texture_data in list(select_data.items()):
+                for texture_name, texture_info in list(texture_data.items()):
+                    # 1,  获取旧路径并标准化路径
+                    old_path = os.path.normpath(texture_info['Path'])
+
+                    # 2，如果路径不存在会直接跳过这个循环
+                    if not os.path.exists(old_path):
+                        self.feedback.CP(self.lang['image_conversion']['01'] + old_path) # 你的这张图片路径连接失败
+                        continue  # 如果路径不存在，跳过这个循环
+
+                    # 分离文件路径和文件名
+                    old_file_dir, old_file_name = os.path.split(old_path)
+
+                    # 分离文件名和扩展名 如果是UDIM文件名则会返回一个字典
+                    old_file_info = self._parse_udim_filename(old_file_name)
+
+                    # 获取源文件的路径
+                    if self.image_processed_suffix in old_file_info['file_name']:
+                        # 步骤 1：从文件名中删除处理后缀（例如 "_TMProc"）
+                        delete_suffix_name = old_file_info['file_name'].replace(self.image_processed_suffix, '')
+
+                        # 步骤 2：列出旧文件所在目录中的所有文件
+                        files_in_directory = os.listdir(old_file_dir)
+
+                        if old_file_info['is_udim']:
+                            # UDIM 文件处理分支
+                            # 筛选条件：
+                            # 1. 文件名包含删除后缀后的基础名（例如 "Helmet_roughness"）
+                            # 2. 不包含处理后缀（避免重复处理）
+                            # 3. 正则匹配 UDIM ID（例如 .1001.）
+                            source_file_name = [
+                                filename for filename in files_in_directory
+                                if (
+                                        delete_suffix_name in filename and
+                                        self.config['processed_suffix'] not in filename and
+                                        re.search(rf'\.{old_file_info["udim_id"]}\.', filename)
+                                )
+                            ]
+
+                            # 取第一个匹配的文件名构建完整路径
+                            source_file_path = os.path.join(old_file_dir, source_file_name[0])
+                        else:
+                            # 非 UDIM 文件处理分支
+                            # 筛选条件：
+                            # 1. 文件名包含基础名
+                            # 2. 不包含处理后缀
+                            source_file_name = [
+                                filename for filename in files_in_directory
+                                if delete_suffix_name in filename and
+                                   self.config['processed_suffix'] not in filename
+                            ]
+                            source_file_path = os.path.join(old_file_dir, source_file_name)
+
+                    else:
+                        # 如果原始文件名不包含处理后缀，直接使用旧路径
+                        source_file_path = old_path
+
+
+                    # 构建备份文件路径
+                    if old_file_info['is_udim']:
+                        # UDIM 备份路径格式：基础名 + 处理后缀 + UDIM ID + 扩展名
+                        # 示例：Helmet_roughness_TMProc.1001.jpeg
+                        backup_image_file_path = os.path.join(
+                            old_file_dir,
+                            old_file_info['file_name'].replace(self.image_processed_suffix, '')  # 删除旧后缀
+                            + self.image_processed_suffix  # 重新添加后缀（可能需验证逻辑）
+                            + '.' + old_file_info['udim_id']  # 插入 UDIM ID
+                            + '.' + old_file_info['extension']  # 文件扩展名
+                        )
+                    else:
+                        # 非 UDIM 备份路径格式：基础名 + 处理后缀 + 扩展名
+                        # 示例：Helmet_roughness_TMProc.jpeg
+                        backup_image_file_path = os.path.join(
+                            old_file_dir,
+                            old_file_info['file_name'].replace(self.image_processed_suffix, '')  # 删除旧后缀
+                            + self.image_processed_suffix  # 重新添加后缀
+                            + '.' + old_file_info['extension']  # 文件扩展名
+                        )
+
+                    # 检查是否需要转换格式
+                    if self.config['convert_format']:
+                        # 根据输出格式生成输出路径
+                        if self.config['format'] in self.format_mapping:
+                            # 通过分割文件名，去掉原文件扩展名，并添加新的扩展名
+                            convert_format_backup_image_name = f"{backup_image_file_path.rsplit('.', 1)[0]}.{self.format_mapping[self.config['format']]}"
+                            backup_image_file_path = convert_format_backup_image_name
+
+                        else:
+                            # 如果格式不被支持，输出反馈信息并返回
+                            self.feedback.CP(f"{self.lang['image_conversion']['02']} {self.config['format']}") # 不支持的格式
+
+
+
+                        # 执行格式转换，使用备份图像文件名作为输入和输出路径
+                        convert_image_format_state = self.imageP.convert_image_format(input_path=source_file_path,
+                                                                                     output_path=convert_format_backup_image_name,
+                                                                                     output_format=self.format_mapping[self.config['format']],
+                                                                                     jpg_quality=self.config['JPG_quality'],
+                                                                                     png_compression=self.config['PNG_quality'])
+
+                        # 如果图片处理返回False直接退出循环
+                        if convert_image_format_state == False:
+                            return
+
+
+                        dirlist = os.listdir(old_file_dir)
+                        # 删除相同名称的其他格式文件
+                        self.outer_instance.delete_other_formats(old_file_dir, dirlist,
+                                                  os.path.basename(backup_image_file_path),
+                                                  self.format_mapping[self.config['format']])
+
+                        # 如果需要缩放，则在转换格式后进行缩放
+                        if self.config['scale_texture']:
+                            resize_image_state = self.imageP.resize_image(input_path=convert_format_backup_image_name,
+                                                                         output_path=convert_format_backup_image_name,
+                                                                         scale_percent=int(self.config['zoom']),
+                                                                         resample_mode=str(self.config['resampling_mode']))
+                            if resize_image_state == False:
+                                continue
+
+                    # 如果没有进行格式转换，但需要缩放，则直接缩放
+                    elif self.config['scale_texture']:
+                        resize_image_state = self.imageP.resize_image(input_path=source_file_path,
+                                                                     output_path=backup_image_file_path,
+                                                                     scale_percent=int(self.config['zoom']),
+                                                                     resample_mode=str(self.config['resampling_mode']))
+
+                        # 如果图片处理返回False直接退出循环
+                        if resize_image_state == False:
+                            continue
+
+                    # 检测UDIM贴图，如果有也进行修改
+                    if old_file_info['is_udim']:
+                        self._udim_file_process(old_path, old_file_info)
+
+
+                    # 更新 Maya 节点中的文件路径
+                    try:
+                        cmds.setAttr(f"{texture_name}.fileTextureName", backup_image_file_path, type="string")
+                    except Exception as e:
+                        self.feedback.CPW(f"{self.lang['image_conversion']['03']} {texture_name} {self.lang['image_conversion']['04']} {e}") # 更新节点 # 失败
+
+                    # 最后一部 修改主窗口缓存数据
+                    self.old_material_node_all_info_dict[material_name][texture_name]['Path'] = backup_image_file_path
+
+                    # 把更新目标写入字典
+                    need_update_dict[texture_name]= material_name
+
+                # 更新主窗口字典数据
+                new_MterialNodeAllInfoDict = self.getnodedata.TM_StickerUpdateStatusDict(need_update_dict,
+                                                                                         self.old_material_node_all_info_dict)
+
+
+
+                # 把新的MterialNodeAllInfoDict字典传递回主窗口并刷新窗口
+                self.outer_instance.new_MterialNodeAllInfoDict_signal.emit(new_MterialNodeAllInfoDict, need_update_dict)
+
+
+
+    # 转换格式按钮
+    def image_conversion(self):
+        image_processing = self.ImageProcessing(self)
+        image_processing.process()
+
 
     # 删除相同名称的其他格式文件
     def delete_other_formats(self, file_dir, files_in_directory, name_with_suffix, format):
