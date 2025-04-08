@@ -47,7 +47,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.10" # 插件版本号
+SoftwareVersion = "1.1.0.11" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -3679,12 +3679,17 @@ class TM_FindAndReplace(QtWidgets.QDialog):
                         self.feedback.CPW(e)
                         continue
 
-                # 修改数据内容的键
+                # 在修改字典键时保持原有顺序
                 if old_material_name in new_material_node_all_info_dict:
-                    # 获取旧键对应的值
-                    material_info = new_material_node_all_info_dict.pop(old_material_name)
-                    # 使用新键创建新的字典项
-                    new_material_node_all_info_dict[new_material_name] = material_info
+                    # 将字典内容转为有序的键值对列表
+                    items = list(new_material_node_all_info_dict.items())
+                    # 替换旧键为新键
+                    new_items = [(new_material_name if k == old_material_name else k, v) for k, v in items]
+                    # 清空原字典以保持引用不变
+                    new_material_node_all_info_dict.clear()
+                    # 按顺序重新插入所有键值对
+                    for k, v in new_items:
+                        new_material_node_all_info_dict[k] = v
 
                 # 修改零时缓存数据
                 for index, value in enumerate(temp_TextureManager_texture_table_data):
