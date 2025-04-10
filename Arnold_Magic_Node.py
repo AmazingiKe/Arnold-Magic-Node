@@ -11,6 +11,9 @@ import os  # 提供与操作系统交互的功能，如文件路径操作、目�
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
 import shutil
 import concurrent.futures # 并发执行
+import difflib # 用于比较文本差异
+
+
 # 3. PySide 库
 # 导入 PySide 库，根据可用版本导入 PySide2 或 PySide6
 try:
@@ -47,7 +50,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.11" # 插件版本号
+SoftwareVersion = "1.1.0.12" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -1927,75 +1930,200 @@ class TextureManagerWin(QtWidgets.QDialog):
             self.outer_instance.replace_path_data_and_refresh_ui(new_MterialNodeAllInfoDict, select_texture_dict)
 
         def switch_source_tex_files(self):
-            """
-            切换源贴图文件，处理带有 "_TMProc" 后缀的文件，替换并修改节点路径
-
-            - 检查所选行数据
-            - 如果文件名中包含 "_TMProc"，删除该后缀并修改路径
-            - 如果文件名中没有 "_TMProc"，添加该后缀并修改路径
-            - 如果源文件存在，则更新表格中的路径和节点路径
-            """
             # 获取当前选中的行数据
             selected_row = self.outer_instance.get_selected_row_data()
-
-            # 如果没有选择任何行，显示提示并返回
             if not selected_row:
-                self.outer_instance.feedback.CPW('未选择任何行')  # 提示未选择任何行
+                self.outer_instance.feedback.CPW('未选择任何行')
                 return
-
-            # 遍历选中的每一行数据
+            # 定义可能的扩展名列表，可根据需要调整
+            IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.tif', '.tiff', '.exr', '.bmp']
             for row in selected_row:
-                path = row[7]  # 获取当前行的文件路径
-                if "_TMProc" in os.path.basename(path):
-                    # 如果文件名中包含 "_TMProc"，则删除该后缀
-                    source_path = os.path.normpath(path.replace("_TMProc", ""))
+                path = row[7]
+                dir_name = os.path.dirname(path)
+                file_name = os.path.basename(path)
+                base, ext = os.path.splitext(file_name)
 
-                    # 如果源文件存在，则更新路径并修改节点路径
-                    if os.path.exists(source_path):
-                        row[7] = source_path  # 更新路径
-                        self.modify_node_path(row[0], source_path)  # 修改节点路径
+                # 预处理文件名（移除可能的版本后缀）
+                base_parts = base.split('.')
+                version_suffix = ''
+                # 检测版本号模式（如 .0001）
+                if len(base_parts) > 1 and re.match(r'^\d+$', base_parts[-1]):
+                    version_suffix = '.' + base_parts.pop()
+                main_base = '.'.join(base_parts)
 
+                if "_TMProc" in main_base:
+                    # 删除_TMProc模式
+                    new_base = main_base.replace("_TMProc", "") + version_suffix
+                    search_pattern = new_base + '*'  # 匹配任意扩展名
+
+                    # 构建可能的候选路径
+                    candidate_paths = [
+                        os.path.join(dir_name, new_base + ext) for ext in IMAGE_EXTS
+                    ]
+
+                    # 添加原始扩展名到首位
+                    candidate_paths.insert(0, os.path.join(dir_name, new_base + ext))
                 else:
-                    # 否则，添加 "_TMProc" 后缀到文件路径
-                    source_path = os.path.normpath(self.add_suffix_to_filename(path, "_TMProc"))
+                    # 添加_TMProc模式
+                    new_base = main_base + "_TMProc" + version_suffix
+                    search_pattern = new_base + '*'  # 匹配任意扩展名
 
-                    # 如果源文件存在，则更新路径并修改节点路径
-                    if os.path.exists(source_path):
-                        row[7] = source_path  # 更新路径
-                        self.modify_node_path(row[0], source_path)  # 修改节点路径
-                    else:
-                        self.outer_instance.feedback.CPW(f'文件不存在：{source_path}')
-            # 刷新表格数据
+                    # 构建可能的候选路径
+                    candidate_paths = [
+                        os.path.join(dir_name, new_base + ext) for ext in IMAGE_EXTS
+                    ]
+                    # 添加原始扩展名到首位
+                    candidate_paths.insert(0, os.path.join(dir_name, new_base + ext))
+
+                # 查找存在的文件
+                source_path = None
+                for candidate in candidate_paths:
+                    if os.path.exists(candidate):
+                        source_path = candidate
+                        break
+
+                if source_path:
+                    row[7] = os.path.normpath(source_path)
+                    self.modify_node_path(row[0], source_path)
+                else:
+                    self.outer_instance.feedback.CPW(f'未找到对应文件：{search_pattern}')
             self.refresh_table(selected_row)
 
+        def _parse_udim_filename(self, filename):
+            """
+            UDIM文件名解析函数
+            格式规范：文件名.<UDIM编号>.<扩展名>
+            UDIM要求：4位数字，范围1001-9999（Maya官方规范）
+
+            :param filename: 完整文件名(需包含扩展名)
+            :return: 解析结果字典
+            """
+            # 分离基础名称和扩展名
+            base_name, file_ext = os.path.splitext(filename)
+            parts = base_name.split('.')
+
+            # UDIM正则检测（严格模式）
+            udim_pattern = r'^(1\d{3}|[2-9]\d{3})$'  # 1001-9999
+
+            # 反向遍历寻找UDIM编号
+            for i in reversed(range(len(parts))):
+                if re.match(udim_pattern, parts[i]):
+                    # 分离名称部分和UDIM编号
+                    udim_id = parts[i]
+                    name_part = '.'.join(parts[:i])
+                    return {
+                        'is_udim': True,
+                        'file_name': name_part,
+                        'udim_id': udim_id,
+                        'extension': file_ext.lower().lstrip('.')
+                    }
+
+            # 未找到符合UDIM编号的情况
+            return {
+                'is_udim': False,
+                'file_name': base_name,
+                'extension': file_ext.lower().lstrip('.')
+            }
+
+        def _find_udim_textures(self, filepath):
+            """
+            根据给定的贴图文件路径，查找同一目录下所有同名且带有 UDIM 编号的文件。
+            参数:
+                filepath (str): 带有 UDIM 编号的贴图文件路径，例如 "C:\\path\\to\\texture.1001.jpeg"
+            返回:
+                list: 同一目录下所有匹配的 UDIM 贴图文件名列表，例如 ["texture.1002.jpeg", "texture.1003.jpeg"]
+            """
+            directory = os.path.dirname(filepath)
+            filename = os.path.basename(filepath)
+            # 使用正则表达式解析文件名，提取基名、UDIM 编号和扩展名
+            # 例如，"Helmet_emissive.1001.jpeg" 中 base="Helmet_emissive", udim="1001", ext="jpeg"
+            udim_pattern = re.compile(r'^(?P<base>.+)\.(?P<udim>\d{4})\.(?P<ext>[^.]+)$')
+            match = udim_pattern.match(filename)
+
+            if not match:
+                print(f"输入文件名 '{filename}' 不符合 UDIM 命名约定。")
+                return []
+            base = match.group('base')
+            ext = match.group('ext')
+            # 构建用于匹配的正则表达式
+            search_pattern = re.compile(rf'^{re.escape(base)}\.(\d{{4}})\.{re.escape(ext)}$')
+            # 列出目录中所有文件
+            try:
+                all_files = os.listdir(directory)
+            except FileNotFoundError:
+                print(f"目录 '{directory}' 不存在。")
+                return []
+            except PermissionError:
+                print(f"没有权限访问目录 '{directory}'。")
+                return []
+            # 筛选出匹配的 UDIM 文件（除了输入文件本身）
+            udim_files = [
+                f for f in all_files
+                if search_pattern.match(f) and os.path.isfile(os.path.join(directory, f)) and f != filename
+            ]
+            return udim_files
+
         def delete_processed_files(self):
+
             # 获取当前选中的行数据
             selected_row = self.outer_instance.get_selected_row_data()
 
             # 如果没有选择任何行，显示提示并返回
             if not selected_row:
-                self.outer_instance.feedback.CPW('未选择任何行')  # 提示未选择任何行
+                self.outer_instance.feedback.CPW('未选择任何行')
                 return
 
-            # 遍历选中的每一行数据
-            for row in selected_row:
-                path = row[7]  # 获取当前行的文件路径
+            # 收集所有需要删除的文件路径
+            all_files_to_delete = set()
 
+            for row in selected_row:
+                path = row[7]
                 if not os.path.exists(path):
-                    self.outer_instance.feedback.CPW(f'文件不存在: {path}')  # 文件不存在
+                    self.outer_instance.feedback.CPW(f'文件不存在: {path}')
                     continue
 
-                if "_TMProc" in os.path.basename(path):
+                filename = os.path.basename(path)
+                udim_info = self._parse_udim_filename(filename)
+                is_udim = udim_info['is_udim']
 
-                    source_path = os.path.normpath(path.replace("_TMProc", ""))
-                    # 如果源文件存在，则更新路径并修改节点路径
-                    if os.path.exists(source_path):
-                        row[7] = source_path  # 更新路径
-                        self.modify_node_path(row[0], source_path)  # 修改节点路径
+                if is_udim:
+                    # 提取原基名（去除可能存在的_TMProc后缀）
+                    original_base = udim_info['file_name'].split('_TMProc')[0]
+                    # 构建处理过的基名
+                    processed_base = original_base + '_TMProc'
+                    # 构建虚拟处理过的文件名用于查找UDIM文件
+                    processed_filename = f"{processed_base}.{udim_info['udim_id']}.{udim_info['extension']}"
+                    virtual_processed_path = os.path.join(os.path.dirname(path), processed_filename)
+
+                    # 查找所有处理过的UDIM文件
+                    processed_udim_files = self._find_udim_textures(virtual_processed_path)
+                    directory = os.path.dirname(virtual_processed_path)
+                    for f in processed_udim_files:
+                        full_path = os.path.join(directory, f)
+                        all_files_to_delete.add(full_path)
+
+                    # 添加当前文件到删除列表（如果是处理过的文件）
+                    if '_TMProc' in filename:
+                        all_files_to_delete.add(path)
+                else:
+                    # 处理非UDIM文件
+                    if '_TMProc' in filename:
+                        all_files_to_delete.add(path)
+
+            # 删除所有收集到的文件并处理源文件恢复
+            for file_path in all_files_to_delete:
                 try:
-                    os.remove(path)  # 删除文件
-                except Exception as a:
-                    self.outer_instance.feedback.CPW(f'无法删除文件: {path}')
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        # 构造源文件路径并检查是否需要恢复
+                        source_path = file_path.replace('_TMProc', '')
+                        # 更新选中行中对应的路径
+                        for row in selected_row:
+                            if row[7] == file_path and os.path.exists(source_path):
+                                row[7] = source_path
+                                self.modify_node_path(row[0], source_path)
+                except Exception as e:
+                    self.outer_instance.feedback.CPW(f'无法删除文件: {file_path}')
 
             # 刷新表格数据
             self.refresh_table(selected_row)
