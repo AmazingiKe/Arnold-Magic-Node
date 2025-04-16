@@ -26,7 +26,6 @@ LibsPath =  os.path.normpath(os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVer
 MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe')) # maya maypy文件位置
 
 LibsFilesDict = {
-    #'cv2': 'opencv-python',  # OpenCV 库
     'imagesize': 'imagesize',  # 获取图像尺寸的库
     'keyboard': 'keyboard',  # 键盘事件处理库
     'msgpack': 'msgpack',  # 消息打包库
@@ -34,13 +33,8 @@ LibsFilesDict = {
     'pyexr': 'pyexr',  # OpenEXR 图像文件处理库
     'Imath.py': 'Imath',  # Imath 是一个独立的数学库
     'OpenEXR.pyd': 'OpenEXR',  # OpenEXR 是一个单独的图像文件处理库
-    'cryptography' : 'cryptography',  # 加密库
-    'requests' : 'requests',  # HTTP 请求库
-    'ntplib.py' : 'ntplib',  # 网络时间协议库
-    'aiohttp' : 'aiohttp',  # 异步 HTTP 客户端/服务器库
     'ahocorapy' : 'ahocorapy',  # Aho-Corasick 算法库
     'Levenshtein' : 'python-Levenshtein',  # Levenshtein 距离计算库
-    'wmi.py' : 'WMI',  # Windows 管理规范库
 }
 
 def ascii_load_data(file_path):
@@ -196,29 +190,6 @@ def show_restart_popup():
     # 显示窗口，将以上设置的控件展示给用户
     cmds.showWindow(window)
 
-def check_and_install_pywin32(mayapy_path):
-
-    try:
-        import wmi
-    except ModuleNotFoundError:
-        feedback.cp(language["check_and_install_pywin32"]["01"]) # 检测到pywin32无法找到
-        feedback.cp(language["check_and_install_pywin32"]["02"])  # 正在尝试重新安装 pywin32...
-
-        # 卸载旧版本
-        subprocess.run([mayapy_path, '-m', 'pip', 'uninstall', 'pywin32', '-y'])
-
-        # 重新安装 pywin32
-        subprocess.run([mayapy_path, '-m', 'pip', 'install', 'pywin32', "--upgrade", "-i", "https://mirrors.aliyun.com/pypi/simple/"])
-
-        # 手动注册 pywin32
-        pywin32_postinstall_path = r"{}\Lib\site-packages\pywin32_system32\pywin32_postinstall.py".format(mayapy_path[:-12])
-        subprocess.run([mayapy_path, pywin32_postinstall_path, '-install'])
-
-        feedback.cp(language["check_and_install_pywin32"]["03"]) # pywin32 安装完成，请重启 Maya
-
-        # Show the restart popup
-        show_restart_popup()
-
 def Main_program():
     """
     主程序函数，用于初始化并执行核心逻辑。
@@ -256,8 +227,6 @@ def Main_program():
 
     end_time = time.time()  # 记录结束时间
     elapsed_time = end_time - start_time  # 计算经过的时间
-
-    check_and_install_pywin32(MayapyPath) # 检测wmi是否可以使用
 
     # 输出库检索的耗时信息
     feedback.cp(f'{language["MP"]["01"]}{format(elapsed_time,".4f")}{language["MP"]["02"]}')

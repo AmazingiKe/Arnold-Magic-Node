@@ -50,7 +50,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.0.12" # 插件版本号
+SoftwareVersion = "1.1.2" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -299,6 +299,11 @@ class Arnold_Magic_Node_UI(object):
                       c=lambda *args: self.scene_name_optimization_instance())
 
         cmds.menuItem(divider=True)
+        cmds.menuItem(label='修复选择的FBX材质')
+        cmds.menuItem(label='修复所有FBX材质')
+
+
+        cmds.menuItem(divider=True)
 
         # 设置面板选项
         cmds.menuItem(
@@ -320,15 +325,15 @@ class Arnold_Magic_Node_UI(object):
             c=lambda *args: path_detection_connection_button()
         )
 
-        # self.color_mix = cmds.button(
-        #     label=self.language['create_widgets']['color_mix'],
-        #     c=lambda *args: blend_rgba_node()
-        # )
-        #
-        # self.gray_mix = cmds.button(
-        #     label=self.language['create_widgets']['gray_mix'],
-        #     c=lambda *args: blend_greg_manager()
-        # )
+        self.color_mix = cmds.button(
+            label=self.language['create_widgets']['color_mix'],
+            c=lambda *args: blend_rgba_node()
+        )
+
+        self.gray_mix = cmds.button(
+            label=self.language['create_widgets']['gray_mix'],
+            c=lambda *args: blend_greg_manager()
+        )
 
         # 直连按钮
         self.direct_connection = cmds.button(
@@ -3950,7 +3955,7 @@ class TM_FindAndReplace(QtWidgets.QDialog):
             # 3，修改贴图路径
             elif self.config['modify_content_options'] == 3:
                 self.change_texture_path(select_data)
-                
+
     def replace_button(self):
         replace_content = self.ReplaceContent(self)
         replace_content.process()
@@ -6077,7 +6082,8 @@ class TM_TexturePack(QtWidgets.QDialog):
                         # 如果是UDIM贴图就获取所有的UDIM贴图
                         old_file_udim = self._find_udim_textures(old_info_path)
                         self.feedback.CP(f"检测到{os.path.basename(old_info_path)}是UDIM，其他UDIM贴图: {str(old_file_udim).replace('[','').replace(']','')}")
-
+                    else:
+                        old_file_udim = None
 
                     ## 4, 复制文件到输出路径
                     if new_output_path == os.path.normpath(os.path.dirname(old_info_path)):
@@ -6386,7 +6392,7 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
 
 
 class AOVLightGroupManager(QtWidgets.QDialog):
-    
+
     def __init__(self, parent = MayaMainWindows()):
 
         super(AOVLightGroupManager, self).__init__(parent)
@@ -8420,7 +8426,7 @@ def magic_connection_button():
 
 # 颜色混合
 def blend_rgba_node():
-    
+
     BlendNM = BlendNodeManager() # 混合节点模块
     feedback = FeedbackPrompt()  # 错误提示模块
 

@@ -12,10 +12,77 @@ import os
 import maya.mel
 import maya.cmds as cmds
 
+# Import Qt libraries
+try:
+    from PySide6 import QtCore, QtWidgets, QtGui
+    from PySide6.QtCore import Signal, Slot
+except ImportError:
+    from PySide2 import QtCore, QtWidgets, QtGui
+    from PySide2.QtCore import Signal, Slot
+
+
+class LicenseWindow(QtWidgets.QDialog):
+    def __init__(self, parent=None, installer=None):
+        super(LicenseWindow, self).__init__(parent)
+        self.installer = installer
+        self.setWindowTitle("Arnold Magic Node - EULA")
+        self.setFixedSize(600, 800)
+        self.setup_ui()
+
+    def setup_ui(self):
+        main_layout = QtWidgets.QVBoxLayout(self)
+
+        # Title
+        title_label = QtWidgets.QLabel("Arnold Magic Node | End User License Agreement")
+        title_label.setStyleSheet("background-color: #333333; color: white; font-weight: bold; padding: 5px;")
+        title_label.setFixedHeight(30)
+        title_label.setAlignment(QtCore.Qt.AlignCenter)
+        main_layout.addWidget(title_label)
+
+        # License text area
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "Arnold_Magic_Node_License.txt"), "r",
+                      encoding="utf-8") as f:
+                license_text = f.read()
+        except FileNotFoundError:
+            license_text = "许可证文件未找到 (License file not found)"
+
+        self.text_area = QtWidgets.QTextEdit()
+        self.text_area.setReadOnly(True)
+        self.text_area.setText(license_text)
+        # self.text_area.setFixedHeight(450)
+        main_layout.addWidget(self.text_area)
+
+        # Buttons layout
+        button_layout = QtWidgets.QHBoxLayout()
+
+        # Decline button
+        decline_button = QtWidgets.QPushButton("Not Accept")
+        decline_button.setFixedWidth(240)
+        decline_button.clicked.connect(self.reject)
+
+        # Accept button
+        accept_button = QtWidgets.QPushButton("Yes, I Accept")
+        accept_button.setFixedWidth(240)
+        accept_button.clicked.connect(self.accept_license)
+
+        button_layout.addWidget(decline_button)
+        button_layout.addSpacing(20)  # Add spacing between buttons
+        button_layout.addWidget(accept_button)
+
+        main_layout.addLayout(button_layout)
+
+    def accept_license(self):
+        if self.installer:
+            self.installer.license_shown = True
+            self.installer.INSTALL()
+        self.accept()
+
 
 class LicenseInstaller:
     def __init__(self):
         self.license_shown = False
+        self.license_window = None
 
     def show_license_window(self):
         """
@@ -26,85 +93,13 @@ class LicenseInstaller:
             self.INSTALL()
             return
 
-        # 许可证文本内容
-        try:
-            with open(os.path.join(os.path.dirname(__file__), "Arnold_Magic_Node_License.txt"), "r",
-                      encoding="utf-8") as f:
-                license_text = f.read()
-        except FileNotFoundError:
-            license_text = "许可证文件未找到"
+        # 创建并显示Qt窗口
+        self.license_window = LicenseWindow(installer=self)
+        result = self.license_window.exec_()
 
-        # 创建许可证窗口
-        if cmds.window("licenseWindow", exists=True):
-            cmds.deleteUI("licenseWindow")
-
-        window = cmds.window(
-            "licenseWindow",
-            title="Arnold Magic Node - EULA",
-            widthHeight=(500, 565),
-            sizeable=False
-        )
-
-        # 主布局
-        main_layout = cmds.columnLayout(adjustableColumn=True, parent=window)
-
-        # 标题
-        cmds.text(
-            label="Arnold Magic Node | End User License Agreement",
-            font="boldLabelFont",
-            height=30,
-            backgroundColor=[0.2, 0.2, 0.2]
-        )
-
-        # 许可证文本区域
-        cmds.scrollField(
-            editable=False,
-            wordWrap=True,
-            text=license_text,
-            height=500,
-            width=480,
-            parent=main_layout
-        )
-
-        # 按钮布局
-        button_row = cmds.rowColumnLayout(
-            numberOfColumns=3,  # 增加一列用于间隔
-            columnWidth=[(1, 240), (2, 20), (3, 240)],
-            parent=main_layout
-        )
-
-        # 拒绝按钮
-        cmds.button(
-            label="Not Accept",
-            width=240,
-            command=lambda x: cmds.deleteUI(window)
-        )
-
-        # 间隔
-        cmds.separator(style='none', width=20)
-
-        # 接受按钮
-        cmds.button(
-            label="Yes, I Accept",
-            width=240,
-            command=self.accept_license
-        )
-
-        cmds.showWindow(window)
-
-    def accept_license(self, *args):
-        """
-        接受许可证
-        """
-        # 关闭窗口
-        if cmds.window("licenseWindow", exists=True):
-            cmds.deleteUI("licenseWindow")
-
-        # 标记已显示许可证
-        self.license_shown = True
-
-        # 执行安装
-        self.INSTALL()
+        # 如果用户关闭窗口而不点击按钮，我们认为用户拒绝了许可
+        if result != QtWidgets.QDialog.Accepted:
+            self.license_window = None
 
     def INSTALL(self):
         """
