@@ -50,7 +50,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.2" # 插件版本号
+SoftwareVersion = "1.1.3" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -8411,6 +8411,24 @@ class Magic_Node_Connection:
             self.nodeP.auto_set_udim(node_list)
         else:
             return
+
+
+class ConvertOldMaterialsToArnold:
+    def __init__(self, materials_list):
+        config_path  = os.path.join(script_path, 'config', 'maya_to_arnold_shader_map.json')
+
+        with open(config_path, 'r') as f:
+            self.convert_info = json.load(f)
+
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.pathD = PathDetection()  # 数据检测模块
+        self.nodeP = NodeProcessor() # 节点处理模块
+
+
+
+
 
 # 实例使用路径连接
 def path_detection_connection_button():

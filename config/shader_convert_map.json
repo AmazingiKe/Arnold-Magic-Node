@@ -1,0 +1,111 @@
+{
+  "lambert": {
+    "arnold_shader": "aiStandardSurface",
+    "attribute_map": {
+      "color": "baseColor",
+      "ambientColor": "emissionColor",
+      "incandescence": "emissionColor",
+      "matteOpacity": "opacity",
+      "diffuse": "base",
+      "normalCamera": "normalCamera",
+      "translucence": "subsurface",
+      "transparency": "opacity"
+    }
+  },
+  "blinn": {
+    "arnold_shader": "aiStandardSurface",
+    "attribute_map": {
+      "color": "baseColor",
+      "ambientColor": "emissionColor",
+      "incandescence": "emissionColor",
+      "matteOpacity": "opacity",
+      "diffuse": "base",
+      "normalCamera": "normalCamera",
+      "reflectivity": "specular",
+      "reflectedColor": "specularColor",
+      "eccentricity": "specularRoughness",
+      "specularColor": "specularColor",
+      "translucence": "subsurface",
+      "transparency": "opacity"
+    }
+  },
+  "phongE": {
+    "arnold_shader": "aiStandardSurface",
+    "attribute_map": {
+      "color": "baseColor",
+      "ambientColor": "emissionColor",
+      "incandescence": "emissionColor",
+      "matteOpacity": "opacity",
+      "diffuse": "base",
+      "normalCamera": "normalCamera",
+      "reflectivity": "specular",
+      "reflectedColor": "specularColor",
+      "highlightSize": "specularRoughness",
+      "translucence": "subsurface",
+      "transparency": "opacity"
+    }
+  },
+  "phong": {
+    "arnold_shader": "aiStandardSurface",
+    "attribute_map": {
+      "color": "baseColor",
+      "ambientColor": "emissionColor",
+      "incandescence": "emissionColor",
+      "matteOpacity": "opacity",
+      "diffuse": "base",
+      "normalCamera": "normalCamera",
+      "reflectivity": "specular",
+      "reflectedColor": "specularColor",
+      "cosinePower": "specularRoughness",
+      "specularColor": "specularColor",
+      "translucence": "subsurface",
+      "transparency": "opacity"
+    }
+  },
+  "hairPhysicalShader": {
+    "arnold_shader": "aiStandardHair",
+    "attribute_map": {
+      "ambientColor": "emissionColor",
+      "azimuthalShiftG": "azimuthalShiftG",
+      "azimuthalWidthG": "azimuthalWidthG",
+      "azimuthalWidthTT": "azimuthalWidthTT",
+      "colorG": "melaninG",
+      "colorR": "melaninR",
+      "colorTRT": "melaninTRT",
+      "colorTT": "melaninTT",
+      "incandescence": "emissionColor",
+      "intensityD": "density",
+      "intensityG": "densityG",
+      "intensityR": "densityR",
+      "intensityTRT": "densityTRT",
+      "intensityTT": "densityTT",
+      "longitudinalShiftR": "longitudinalShiftR",
+      "longitudinalShiftTRT": "longitudinalShiftTRT",
+      "longitudinalShiftTT": "longitudinalShiftTT",
+      "longitudinalWidthR": "longitudinalWidthR",
+      "longitudinalWidthTRT": "longitudinalWidthTRT",
+      "longitudinalWidthTT": "longitudinalWidthTT",
+      "rootColorD": "rootColor",
+      "tipColorD": "tipColor",
+      "transparency": "transparency"
+    }
+  },
+  "hairTubeShader": {
+    "arnold_shader": "aiStandardHair",
+    "attribute_map": {
+      "ambientColor": "emissionColor",
+      "incandescence": "emissionColor",
+      "matteOpacity": "opacity",
+      "diffuse": "base",
+      "normalCamera": "normalCamera",
+      "reflectivity": "specular",
+      "reflectedColor": "specularColor",
+      "scatter": "subsurface",
+      "scatterPower": "subsurfaceScale",
+      "shadowAttenuation": "shadowOpacity",
+      "specularColor": "specularColor",
+      "translucence": "transmission",
+      "transparency": "opacity"
+    }
+  }
+}
