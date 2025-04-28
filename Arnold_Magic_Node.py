@@ -299,11 +299,16 @@ class Arnold_Magic_Node_UI(object):
                       c=lambda *args: self.scene_name_optimization_instance())
 
         cmds.menuItem(divider=True)
-        cmds.menuItem(label='修复选择的FBX材质')
-        cmds.menuItem(label='修复所有FBX材质')
+
+        cmds.menuItem(label='修复选择的FBX材质',
+                      c = lambda *args: select_convert_old_materials_to_arnold_button())
+
+        # 修复所有FBX材质
+        cmds.menuItem(label='修复所有FBX材质',
+                      c = lambda *args: all_convert_old_materials_to_arnold_button())
 
 
-        cmds.menuItem(divider=True)
+        cmds.menuItem(divider=True,)
 
         # 设置面板选项
         cmds.menuItem(
@@ -8412,10 +8417,10 @@ class Magic_Node_Connection:
         else:
             return
 
-
+# 转换旧材质到阿诺德
 class ConvertOldMaterialsToArnold:
-    def __init__(self, materials_list):
-        config_path  = os.path.join(script_path, 'config', 'maya_to_arnold_shader_map.json')
+    def __init__(self, select_all = None):
+        config_path  = os.path.join(script_path, 'config', 'shader_convert_map.json')
 
         with open(config_path, 'r') as f:
             self.convert_info = json.load(f)
@@ -8425,6 +8430,133 @@ class ConvertOldMaterialsToArnold:
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.pathD = PathDetection()  # 数据检测模块
         self.nodeP = NodeProcessor() # 节点处理模块
+
+
+        self.materials_node = self.get_materials_node(select_all)
+
+    def get_materials_node(self, select_all=None):
+        """
+        获取场景中指定类型的材质名列表，排除默认材质 “lambert1”。
+        如果没找到任何匹配材质，则返回空字典 {}。
+        """
+        wanted_types = list(self.convert_info.keys())
+
+        # 取得场景材质原始数据；None / {} / [] 都视为“空”
+        scene_nodes = get_scene_all_data() if select_all else process_sl_data()
+        if not scene_nodes:  # == {}、[] 或 None 都会进入
+            return {}
+
+        result = {}
+
+        for mat_type in wanted_types:
+            mat_nodes = scene_nodes.get(mat_type, {})
+
+            # 1) mat_nodes 是 dict ⇒ 直接取 key
+            if isinstance(mat_nodes, dict):
+                names = list(mat_nodes.keys())
+
+            # 2) mat_nodes 是 list
+            elif isinstance(mat_nodes, list):
+                if mat_nodes and isinstance(mat_nodes[0], dict):
+                    names = [d["name"] for d in mat_nodes if "name" in d]
+                else:
+                    names = mat_nodes[:]
+
+            # 3) 其它类型 ⇒ 跳过
+            else:
+                continue
+
+            # 过滤掉默认材质 “lambert1”
+            names = [n for n in names if n != "lambert1"]
+
+            if names:
+                result[mat_type] = names
+
+
+
+        return result
+
+    def get_materials_input_data(self, mat_name):
+        """
+        收集【输入连接】：
+        返回一个字典 {目标端口(dstPlug) : 源端口(srcPlug)}
+        ──表示“有哪些上游节点驱动了材质 mat_name 的哪些属性”。
+
+        参数
+        -------
+        mat_name : str
+            需要分析的材质节点名称。
+
+        返回
+        -------
+        dict
+            形如 {'aiStd1.baseColor' : 'file1.outColor', ...}
+        """
+        # listConnections：s=True,d=False ⇒ 只列出 “上游 → mat_name” 的连线
+        # c=True,p=True   ⇒ 结果按 [dstPlug, srcPlug, dstPlug, srcPlug, …] 成对返回
+        pairs = cmds.listConnections(mat_name,
+                                     s=True, d=False,
+                                     c=True, p=True) or []
+
+        conn_dict = {}  # {dstPlug_on_mat : srcPlug_upstream}
+        for i in range(0, len(pairs), 2):
+            dst, src = pairs[i], pairs[i + 1]  # 0=dst(本节点端口) , 1=src(上游端口)
+            conn_dict[dst] = src
+
+        return conn_dict
+
+    def get_materials_output_data(self, mat_name):
+        """
+        收集【输出连接】：
+        返回一个字典 {源端口(srcPlug) : 目标端口(dstPlug)}
+        ──表示“材质 mat_name 把哪些属性输出到下游节点”。
+
+        参数
+        -------
+        mat_name : str
+            需要分析的材质节点名称。
+
+        返回
+        -------
+        dict
+            形如 {'aiStd1.outColor' : 'aiStd1SG.surfaceShader', ...}
+        """
+        # listConnections：s=False,d=True ⇒ 只列出 “mat_name → 下游” 的连线
+        # c=True,p=True   ⇒ 结果按 [srcPlug, dstPlug, srcPlug, dstPlug, …] 成对返回
+        pairs = cmds.listConnections(mat_name,
+                                     s=False, d=True,
+                                     c=True, p=True) or []
+
+        conn_dict = {}  # {srcPlug_on_mat : dstPlug_downstream}
+        for i in range(0, len(pairs), 2):
+            src, dst = pairs[i], pairs[i + 1]  # 0=src(本节点端口) , 1=dst(下游端口)
+            conn_dict[src] = dst
+
+        return conn_dict
+
+        for i in range(0, len(pairs), 2):
+            dst, src = pairs[i], pairs[i + 1]  # 先 dst 后 src
+            conn_dict[dst] = src
+
+        return conn_dict
+
+    def process(self):
+
+        # 如果没有返回有效的数据，直接退出
+        for mat_type, mat_names in self.materials_node.items():
+            for mat_name in mat_names:
+
+                # 检测材质球是否存在
+                if not cmds.objExists(mat_name):
+                    continue
+
+                # 获取材质的输入数据
+                input_data = self.get_materials_input_data(mat_name)
+                materials_out_data = self.get_materials_output_data(mat_name)
+
+                # 创建一个新的材质球
+                new_mat_name = cmds.shadingNode(
+                    self.convert_info[mat_type]['arnold_shader'], asShader=True, name=mat_name + '_ACArnold')
 
 
 
@@ -8441,6 +8573,17 @@ def magic_connection_button():
     MC.main()
 
     # 混合颜色节点
+
+def all_convert_old_materials_to_arnold_button():
+
+    COMTA = ConvertOldMaterialsToArnold(True)
+
+    COMTA.process()
+
+def select_convert_old_materials_to_arnold_button():
+    COMTA = ConvertOldMaterialsToArnold(False)
+
+    COMTA.process()
 
 # 颜色混合
 def blend_rgba_node():
