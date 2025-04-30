@@ -50,7 +50,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.3" # 插件版本号
+SoftwareVersion = "1.1.4" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -8567,9 +8567,19 @@ class ConvertOldMaterialsToArnold:
                     node_out_port= src.split('.')[1]
                     mat_iunput_port = dst.split('.')[1]
 
+                    # 将旧材质球的输入连接复制到新材质球
                     cmds.connectAttr(f"{node_name}.{node_out_port}", f"{new_mat_name}.{self.convert_info[mat_type]['attribute_map'][mat_iunput_port]}" , force=True)
 
+                for materials_port_info in materials_out_data:
+                    output_node_port = materials_port_info.split('.')[1]
+                    try:
+                        cmds.connectAttr(f"{new_mat_name}.{output_node_port}", f"{materials_out_data[materials_port_info]}", force=True)
+                    except Exception as e:
+                        self.feedback.CP(f"连接失败: {e}")
+
                 cmds.delete(mat_name)  # 删除旧材质球
+
+
 
 # 实例使用路径连接
 def path_detection_connection_button():
