@@ -1601,7 +1601,8 @@ class GetNodeData():
         # Arnold 灯光类型列表
         arnold_light_types = [
             'aiAreaLight', 'aiSkyDomeLight', 'aiPhotometricLight',
-            'aiMeshLight', 'aiLightPortal'
+            'aiMeshLight', 'aiLightPortal', 'directionalLight', 'spotLight',
+            'areaLight'
         ]
         # 遍历所有 Arnold 灯光类型
         for light_type in arnold_light_types:

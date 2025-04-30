@@ -6592,6 +6592,9 @@ class AOVLightGroupManager(QtWidgets.QDialog):
             'aiPhotometricLight': os.path.join(icon_path, 'aiPhotometricLight.svg'),
             'aiMeshLight': os.path.join(icon_path, 'aiMeshLight.svg'),
             'aiLightPortal': os.path.join(icon_path, 'aiLightPortal.svg'),
+            'directionalLight' :  os.path.join(icon_path, 'directionalLight'),
+            'spotLight' :  os.path.join(icon_path, 'spotLight'),
+            'areaLight' :  os.path.join(icon_path, 'areaLight'),
             'default': os.path.join(icon_path, 'aiAreaLight.svg')  # 如果找不到对应的图标就用这个
         }
 
@@ -6600,7 +6603,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
 
         # 创建树形结构
         for light_group, lights in light_groups.items():
-            print(light_group)
+
 
             parent_item = QtWidgets.QTreeWidgetItem(self.light_group_tree_widget, [light_group])
             parent_item.setIcon(0, parent_icon)  # 设置父级节点图标
@@ -8558,9 +8561,15 @@ class ConvertOldMaterialsToArnold:
                 new_mat_name = cmds.shadingNode(
                     self.convert_info[mat_type]['arnold_shader'], asShader=True, name=mat_name + '_ACArnold')
 
+                # 将输入连接复制到新的材质球
+                for dst, src in input_data.items():
+                    node_name = src.split('.')[0]
+                    node_out_port= src.split('.')[1]
+                    mat_iunput_port = dst.split('.')[1]
 
+                    cmds.connectAttr(f"{node_name}.{node_out_port}", f"{new_mat_name}.{self.convert_info[mat_type]['attribute_map'][mat_iunput_port]}" , force=True)
 
-
+                cmds.delete(mat_name)  # 删除旧材质球
 
 # 实例使用路径连接
 def path_detection_connection_button():
