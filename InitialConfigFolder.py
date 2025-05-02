@@ -20,7 +20,8 @@ datas_folder_list = [
     'keys',  # 密钥文件夹
     'execution_logs',  # 执行日志
     'logs',  # 普通日志
-    'aov_light_group_manager' # AOV灯光组管理器
+    'aov_light_group_manager', # AOV灯光组管理器
+    'settings_presets'  # 设置预设
 ]
 
 # 要检查或创建的文件夹列表（位于脚本根目录下）

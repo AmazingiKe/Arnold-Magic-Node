@@ -91,61 +91,75 @@ class PathDetection(object):
 
         return self.node_attr , os.path.dirname(path)
 
-    # 获取对饮节点路径下的内容并且过滤
+        # 获取指定目录下的图像文件并过滤
+
     def detection_path_content(self, target_dirname, exclude_list):
         """
-        检测指定节点路径下的图像文件，并过滤掉包含特定关键字的文件。
-
-        该函数从给定节点的目录中检索所有图像文件，排除文件名中包含 `exclude_list` 中任何关键字的文件。
-
+        返回一个字典 {文件名: 完整路径}，其中只包含：
+          • 文件名 **没有** 命中 exclude_list 中的任何关键字
+          • 并且能被 Pillow 成功 verify() 的图像文件
+        -------------
         参数:
-            node_name (str): 节点的名称。必须是文件类型节点，包含路径信息。
-            exclude_list (list of str): 要排除的关键字列表。文件名中包含任何一个关键字的文件都会被过滤掉。
+            target_dirname (str): 需要扫描的目录路径
+            exclude_list (list[str] | str): 要排除的关键字集合
+                - 可以是 list，也可以是“一串逗号分隔的字符串”
+                - 关键字不区分大小写
 
-        返回:
-            dict: 过滤后的图像文件字典，键为贴图名称，值为完整路径。
-
-        注意:
-            - 使用 `os.listdir` 获取节点路径目录下的所有文件。
-            - 使用 `imghdr.what` 检查文件是否为图像类型。
-            - 使用 Aho-Corasick 算法（通过 `ahocorapy` 库）高效地过滤文件名中包含特定关键字的文件。
-            - 如果无法访问目录或文件，函数将捕获异常，并通过 `self.feedback.CP` 输出错误信息。
+        异常处理:
+            - 无法列目录、无法访问文件、无法解析图像等情况都会
+              通过 self.feedback.CP 输出错误信息，但函数本身始终返回 dict
         """
-        lang = self.language['DPC']
-        # 获取目录中的文件列表
+        lang = self.language['DPC']  # 多语言提示字典
+
+        # 1 先拿到目录里的所有文件名（这里仅文件名，不带路径）
         try:
             file_list = os.listdir(target_dirname)
         except Exception as e:
-            self.feedback.CP(f"{lang['01']} {target_dirname}，{lang['02']}:[{e}]") # 无法访问目录 详细报错
+            # 无法访问目录时返回空字典
+            self.feedback.CP(f"{lang['01']} {target_dirname}，{lang['02']}:[{e}]")
             return {}
 
-        # 储存过滤后的文件字典
-        filtered_files  = {}
-
-        # 使用 Aho-Corasick 算法构建关键字树
+        # 2 构建 Aho-Corasick 自动机，开启 case_insensitive=True 以忽略大小写
         kwtree = KeywordTree(case_insensitive=True)
-        for exclude in exclude_list:
-            kwtree.add(exclude)
-        kwtree.finalize()
 
-        # 遍历文件列表
+        #  允许外部传入字符串或列表两种形式
+        if isinstance(exclude_list, str):
+            # 同时按英文逗号 , 及中文逗号 ， 切分
+            exclude_list = re.split(r'[,\uFF0C]', exclude_list)
+
+        # 去掉首尾空白并逐个添加到关键字树
+        for kw in exclude_list:
+            kw = kw.strip()
+            if kw:  # 跳过空字符串
+                kwtree.add(kw)  # case_insensitive=True 时内部会 lower()
+        kwtree.finalize()  # **必须** 先 finalize 才能 search
+
+        filtered_files = {}  # 用来收集最终结果
+
+        # 3 遍历目录中的文件
         for file_name in file_list:
-            # 构建完整的文件路径
+
+            # 3-a) 先按文件名关键字过滤，命中直接跳过
+            if kwtree.search(file_name):  # 已忽略大小写
+                continue
+
+            # 3-b) 没命中排除词，才构造完整路径并做图像验证
             file_path = os.path.join(target_dirname, file_name)
-
-            # 判断文件是否为图像类型
             try:
+                # verify() 只读取头信息，不解码像素 → 较快
                 with Image.open(file_path) as img:
-                    img.verify()  # 验证文件是否为有效图像
+                    img.verify()
+                # 验证成功，记录到结果
+                filtered_files[file_name] = file_path
 
-                    # 检查文件名是否包含排除关键字
-                    if not kwtree.search(file_name):
-                        filtered_files[file_name] = file_path
             except (IOError, SyntaxError):
-                self.feedback.CP(f"{file_name}: {lang['03']}") # 无法打开或验证为图像文件
+                # Pillow 抛 IO/语法错误 → 不是合法图像
+                self.feedback.CP(f"{file_name}: {lang['03']}")
             except Exception as e:
-                self.feedback.CP(f"{file_name}: {lang['04']}:[{e}]") # 此文件没有权限访问，详细报错
+                # 其他异常（权限等）
+                self.feedback.CP(f"{file_name}: {lang['04']}:[{e}]")
 
+        # 4 全部处理完毕，返回过滤后的字典
         return filtered_files
 
     # 从给定的文件名列表中删除与指定格式列表中任何格式相匹配的部分，并返回新的文件名列表
@@ -1602,7 +1616,7 @@ class GetNodeData():
         arnold_light_types = [
             'aiAreaLight', 'aiSkyDomeLight', 'aiPhotometricLight',
             'aiMeshLight', 'aiLightPortal', 'directionalLight', 'spotLight',
-            'areaLight'
+            'areaLight' ,  'pointLight'
         ]
         # 遍历所有 Arnold 灯光类型
         for light_type in arnold_light_types:
