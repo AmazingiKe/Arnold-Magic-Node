@@ -50,7 +50,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.5" # 插件版本号
+SoftwareVersion = "1.1.6" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -348,15 +348,16 @@ class Arnold_Magic_Node_UI(object):
             c=lambda *args: blend_greg_manager()
         )
 
-        # 直连按钮
-        self.direct_connection = cmds.button(
-            label="快速连接")
+        # 快速连接按钮
+        self.quick_connect = cmds.button(
+            label="快速连接",
+            c = lambda *args: quick_connect_node_button())
+
 
         # 直连按钮
         self.direct_connection = cmds.button(
             label=self.language['create_widgets']['direct_connection'],
-            c=lambda *args: direct_connection_button()
-        )
+            c=lambda *args: direct_connection_button())
 
         # 统一UV按钮
         self.unify_uv_node = cmds.button(
@@ -888,6 +889,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.create_color_space_tab()
         self.create_node_connection_tab()
         self.create_path_matching_tab()
+        self.node_connection_mixer_tab()
         self.create_optimized_scene_node_name_tab()
         self.create_configure_ui_layout_tab()
 
@@ -1477,7 +1479,101 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 添加到选项卡
         self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab'])  # 节点路径匹配选项卡
 
-    # ______________________________________________________________________________>>> 优化场景节点名称页面
+    # 节点连接混合器页面
+    def node_connection_mixer_tab(self):
+        # _______________________________________________________________>>> 设置字体
+        font = QtGui.QFont()
+        font.setPointSize(SMALL_FONT_SIZE)
+        font.setBold(True)
+
+        # _______________________________________________________________>>> 加载路径检测配置
+        config = self.dataM.bin_load_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config))
+        )['node_connection_mixer_config']
+
+        # 外层容器
+        content_widget = QtWidgets.QWidget()
+        content_lay = QtWidgets.QVBoxLayout(content_widget)
+        content_lay.setAlignment(QtCore.Qt.AlignTop)
+
+        # 计算最大行高，用于限制 QTextEdit 的高度
+        metrics = QtGui.QFontMetrics(font)
+        line_h = metrics.lineSpacing()
+        max_lines = 5
+        max_height = line_h * max_lines + 12  # 12px 额外padding
+
+        # [1] 快速连接 输入端口
+        self.add_line_with_text(content_lay, '快速连接 输入端口')
+        self.input_port_line = QtWidgets.QPlainTextEdit()
+        self.input_port_line.setPlainText(
+            str(config['quick_connect_node_parms']['input_port'])
+            .replace('[', '')
+            .replace(']', '')
+            .replace("'", "")
+            .replace(",", " , ")
+        )
+        self.input_port_line.textChanged.connect(lambda *args: self.modify_nested_config(key_path= ['node_connection_mixer_config', 'quick_connect_node_parms', 'input_port'],
+                                                                                           cont= [item.replace(' ', '') for item in self.input_port_line.toPlainText().split(",")]))
+
+        self.input_port_line.setFont(font)
+        # 限制最大高度 & 垂直固定
+        self.input_port_line.setMaximumHeight(max_height)
+        sp1 = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Fixed
+        )
+        self.input_port_line.setSizePolicy(sp1)
+        content_lay.addWidget(self.input_port_line)
+
+        # [2] 快速连接 输出端口
+        self.add_line_with_text(content_lay, '快速连接 输出端口')
+        self.output_prot_line = QtWidgets.QPlainTextEdit()
+        self.output_prot_line.setPlainText(
+            str(config['quick_connect_node_parms']['out_port'])
+            .replace('[', '')
+            .replace(']', '')
+            .replace("'", "")
+            .replace(",", " , ")
+        )
+        self.output_prot_line.textChanged.connect(lambda *args: self.modify_nested_config(key_path= ['node_connection_mixer_config', 'quick_connect_node_parms', 'out_port'],
+                                                                                           cont= [item.replace(' ', '') for item in self.output_prot_line.toPlainText().split(",")]))
+        self.output_prot_line.setFont(font)
+        # 限制最大高度 & 垂直固定
+        self.output_prot_line.setMaximumHeight(max_height)
+        sp2 = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Fixed
+        )
+        self.output_prot_line.setSizePolicy(sp2)
+        content_lay.addWidget(self.output_prot_line)
+
+        # [3] 快速连接 优先组合
+        self.add_line_with_text(content_lay, '快速连接 优先组合')
+
+
+
+        # 把 content_widget 放进滚动区域
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        # 显式设置滚动条策略
+        scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        scroll.setWidget(content_widget)
+
+        # 整个 tab
+        tab = QtWidgets.QWidget()
+        tab_lay = QtWidgets.QVBoxLayout(tab)
+        tab_lay.addWidget(scroll)
+
+        self.tab_widget.addTab(tab, '节点连接混合器')
+
+
+
+
+
+
+    # 优化场景节点名称页面
+
     def create_optimized_scene_node_name_tab(self):
 
         # __________________________________________________________________________>>> 创建配置变量
@@ -1680,7 +1776,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 将选项卡添加到主选项卡部件
         self.tab_widget.addTab(optimized_scene_node_name_tab, '优化名称')
 
-    # _______________________________>>> 创建界面与布局设置页面
+    # 建界面与布局设置页面
     def create_configure_ui_layout_tab(self):
         # 加载语言配置
         configure_ui_layout_lang = self.language['create_configure_ui_layout_tab']
@@ -8887,6 +8983,91 @@ class IntelligentMaterialRepair:
     def process(self):
         pass
 
+# 快速连接节点
+class QuickConnectNode:
+    def __init__(self):
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+
+        self.config = self.dataM.bin_load_data(os.path.join(settings_path, AMS_Config))['node_connection_mixer_config']['quick_connect_node_parms']
+
+    def get_select_node(self):
+        """
+        直接按选中顺序返回节点列表，
+        避免 process_sl_data() 分组后的乱序问题
+        """
+        return cmds.ls(selection=True) or []
+
+    def process(self):
+        """
+        节点逻辑：
+        1. 按选中顺序链式连接：nodes[0]→nodes[1]，nodes[1]→nodes[2]...
+        2. 优先使用 priority_order 字典去连接；
+        3. 如果优先级连接都失败，再遍历 out_port × input_port 列表连接；
+        4. 使用 cmds.connectAttr(..., force=True)，并输出提示或 warning。
+
+        思路：
+       节点逻辑优先使用有限级组合去尝试连接，然后在尝试使用输出端口
+        和输入端口进行连接。如果是直接使用输出和输入端口就是out_port
+        和input_port进行连接，机会使用列表的索引优先级进行测试
+        """
+        # 1. 获取并校验选中节点
+        nodes = self.get_select_node()
+
+        if len(nodes) < 2:
+            cmds.warning("至少需要两个节点来建立连接！")
+            return
+
+        # 2. 链式：第1→第2，第2→第3，依此类推
+        for src_node, dest_node in zip(nodes, nodes[1:]):
+            connected = False
+
+            # 3. 优先使用 priority_order
+            for out_attr, in_attr in self.config['priority_order'].items():
+                if not (cmds.attributeQuery(out_attr, node=src_node, exists=True)
+                        and cmds.attributeQuery(in_attr, node=dest_node, exists=True)):
+                    continue
+                try:
+                    cmds.connectAttr(f"{src_node}.{out_attr}",
+                                     f"{dest_node}.{in_attr}",
+                                     force=True)
+                    print(f"[QuickConnect] {src_node}.{out_attr} → {dest_node}.{in_attr}")
+                    connected = True
+                    break
+                except Exception:
+                    continue
+            if connected:
+                continue
+
+            # 4. 备用 out_port × input_port
+            for out_attr in self.config['out_port']:
+                if connected:
+                    break
+                for in_attr in self.config['input_port']:
+                    if not (cmds.attributeQuery(out_attr, node=src_node, exists=True)
+                            and cmds.attributeQuery(in_attr, node=dest_node, exists=True)):
+                        continue
+                    try:
+                        cmds.connectAttr(f"{src_node}.{out_attr}",
+                                         f"{dest_node}.{in_attr}",
+                                         force=True)
+                        print(f"[QuickConnect] {src_node}.{out_attr} → {dest_node}.{in_attr}")
+                        connected = True
+                        break
+                    except Exception:
+                        continue
+                if connected:
+                    break
+
+            # 5. 若无任何连接，发 warning
+            if not connected:
+                cmds.warning(f"{src_node} → {dest_node} 未找到可连接属性，已跳过。")
+
+
+
+
+
+# ---------------------------------------------------------------------->>>># 实例使用各种类
 # 实例使用路径连接
 def path_detection_connection_button():
     PDC = Path_Detection_Connection()
@@ -8912,7 +9093,9 @@ def select_convert_old_materials_to_arnold_button():
 
     COMTA.process()
 
-
+def quick_connect_node_button():
+        QCN = QuickConnectNode()
+        QCN.process()
 # 颜色混合
 def blend_rgba_node():
 
@@ -9004,10 +9187,5 @@ class SceneNameOptimization:
 
 # 主要运行程序
 def Main_program():
-
-    # 创建窗口
     indowInstance = Arnold_Magic_Node_UI()
 
-# 测试主程序
-def test_program():
-    pass

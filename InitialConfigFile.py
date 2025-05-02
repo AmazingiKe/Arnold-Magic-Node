@@ -242,6 +242,21 @@ Arnold_Magic_Settings = {
         'AOV_properties_properties_write_options': True  # 是否写入 AOV 属性选项
     },
 
+    # 快速连接混合器节点参数配置
+    "node_connection_mixer_config" : {
+        "quick_connect_node_parms" : {
+            # 输出的端口
+            "out_port" : ['outColor', 'outValue', 'outAlpha', 'outColorR',
+                                'outColorG', 'outColorB', 'outTransparency', ],
+            # 输入的端口
+            "input_port" : ['input', 'input1' , 'inputR', 'inputG', 'inputB', 'inputA',
+                                     'scale','slidemap', 'density', 'beauty', 'x', 'y', 'z' ,'A', 'B',
+                                    'C', 'bumpMap', 'temperature',  'surfaceShader'],
+            # 优先级组合
+            "priority_order" : {'outColor': 'input' , 'outColor': 'input1'}
+        }
+    },
+    # 优化场景节点名称参数配置
     "optimized_scene_node_name": {
 
         "replace_param": [
