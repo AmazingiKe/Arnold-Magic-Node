@@ -40,9 +40,6 @@ from Arnold_Magic_Node_lib import *  # 从自定义库中导入所有内容
 
 import InitialConfigFile
 
-# 这个是默认窗口的名称记录函数
-AMN_UI_WorkSpaceControl = None
-
 ##############################################################################################
 
 # --------------------初始变量开始
@@ -50,7 +47,7 @@ AMN_UI_WorkSpaceControl = None
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.6" # 插件版本号
+SoftwareVersion = "1.1.7" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -155,7 +152,7 @@ def language_loading():
 #______________________________________________________________________________>>> 插件窗口
 class Arnold_Magic_Node_UI(object):
     def __init__(self):
-        global AMN_UI_WorkSpaceControl
+
         # 初始化窗口标题，显示软件状态和版本等信息
         WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}"
 
@@ -165,8 +162,15 @@ class Arnold_Magic_Node_UI(object):
 
         # 创建主窗口
         self.window = cmds.workspaceControl(WIN_TITLE, retain=False, floating=True, w=300, h=300)
-        AMN_UI_WorkSpaceControl = self.window
 
+        # 拿到 Maya 内部的 Qt 窗口指针
+        ptr = omui.MQtUtil.findWindow(WIN_TITLE)
+        if ptr:
+            # 把指针包装成 QWidget
+            qt_win = wrapInstance(int(ptr), QtWidgets.QWidget)
+            # 设置标题栏图标
+            logo_path = os.path.join(icon_path, "Logo_B.svg")
+            qt_win.setWindowIcon(QtGui.QIcon(logo_path))
         # 初始化全局配置
         self.initial_global_config()
 
@@ -303,10 +307,12 @@ class Arnold_Magic_Node_UI(object):
         cmds.menuItem(label='修复所有FBX材质',
                       c = lambda *args: all_convert_old_materials_to_arnold_button())
 
-        cmds.menuItem(label='智能修复选择材质贴图')
+        cmds.menuItem(label='智能修复选择材质贴图',
+                      c = lambda *args: select_intelligent_material_repair_button())
 
         # 修复所有FBX材质
-        cmds.menuItem(label='智能修复全部材质贴图')
+        cmds.menuItem(label='智能修复全部材质贴图',
+                      c = lambda *args: all_intelligent_material_repair_button())
 
         cmds.menuItem(divider=True, label='其他工具')
 
@@ -430,8 +436,7 @@ class Arnold_Magic_Node_UI(object):
         cmds.iconTextButton(
             i=os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
             h=37.5 / 1.8,
-            w=155 / 1.8,
-            c=lambda *args: test_program()
+            w=155 / 1.8
         )
 
         cmds.text(label=" " * 1)
@@ -545,7 +550,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         self.setObjectName('ArnoldMagicNodeSettingsPanel')
         self.setWindowTitle(WINDOWS_NAME)
-
+        self.setWindowIcon(QtGui.QIcon(icon_path + "\\Logo_B.svg"))
 
         #...窗口长宽
         self.setMinimumHeight(800)
@@ -6812,7 +6817,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
 
         # ...窗口长宽
         self.setMinimumSize(1200, 800)  # 设置一个比较小的最小尺寸
-
+        self.setWindowIcon(QtGui.QIcon(icon_path + "\\LightManagerShelf_200.png"))
 
         # 窗口标志（隐藏放大/缩小按钮）
         self.setWindowFlags(
@@ -8604,6 +8609,7 @@ class Path_Detection_Connection:
                                                                        self.config['path_detection_params']['detection_excluded'],
                                                                        self.texture_filter_dict)
 
+
             # 删除原本选择的
             original_name = list(target_object.keys())[0]  # 获取原始名称
             del processed_dir_tex_info[original_name]
@@ -8626,7 +8632,7 @@ class Path_Detection_Connection:
 
             # 储存匹配好的数据
             matching_completed_dict[node_name] = [matching_list, target_dirname]
-
+            print(matching_completed_dict)
         return matching_completed_dict
 
     def feedback_prompt(self, similarity_dict, matching_list, original_name):
@@ -8971,17 +8977,157 @@ class ConvertOldMaterialsToArnold:
 
 # 智能材质修复
 class IntelligentMaterialRepair:
-    def __init__(self):
+    def __init__(self,  select_all=None):
         ### 实例各种模块
         self.dataM = DataManager()  # 数据管理模块
         self.feedback = FeedbackPrompt()  # 错误提示模块
         self.pathD = PathDetection()  # 数据检测模块
         self.nodeP = NodeProcessor() # 节点处理模块
+        self.GnodeD = GetNodeData() # 获取节点数据模块
 
+        self.materials_node = self.get_materials_node(select_all)
+
+    # 获取材质节点
+    def get_materials_node(self, select_all=None):
+        node_types = ['aiStandardSurface', 'standardSurface', 'aiLambert',
+                                  'aiStandardHair']
+
+        # 取得场景材质原始数据；None / {} / [] 都视为“空”
+        scene_nodes = get_scene_all_data() if select_all else process_sl_data()
+
+        # 如果没有任何数据，返回所有类型对应的空列表
+        if not scene_nodes:
+            return {nt: [] for nt in node_types}
+
+        # 否则，根据 node_types 提取对应的节点列表，缺失的也补空列表
+        return {
+            nt: scene_nodes.get(nt, [])
+            for nt in node_types
+        }
+
+    def detect_and_calculate_similarity(self, node_name,  node_path):
+        """
+        - 使用的配置数据是 AMS_Config 中的 path_detection_params，
+        因为这样子方便测试
+        """
+        # 获取配置数据
+        config = self.dataM.bin_load_data(os.path.join(
+                                                                    settings_path, AMS_Config))['path_detection_params']
+
+        texture_filter_dict = self.dataM.bin_load_data(os.path.join(
+                                                                    settings_path, AMS_Config))['texture_filter_params']
+
+
+
+        file_path_dir = os.path.dirname(node_path)
+        file_name = os.path.basename(node_path)
+
+        # 2.寻找子路径下的文件并排除不需要参加匹配的格式
+        dir_name_path = self.pathD.detection_path_content(file_path_dir,
+                                                          config['exclude'])
+
+        # 3.获取文件的元属性
+        dir_tex_info = self.pathD.get_file_info(dir_name_path)
+        target_object_info = self.pathD.get_file_info({node_name: node_path})
+
+        # 4.处理匹配名称
+        processed_dir_tex_info = self.pathD.process_dict_key_name(dir_tex_info,
+                                                                  config['detection_excluded'],
+                                                                  texture_filter_dict)
+
+        processed_target_object_info = self.pathD.process_dict_key_name(target_object_info,
+                                                                        config['detection_excluded'],
+                                                                        texture_filter_dict)
+
+        # 4, 删除原本选择的
+        del processed_dir_tex_info[file_name]
+
+        # 5，计算相似度
+        similarity_dict = self.pathD.calculate_similarity(processed_target_object_info,
+                                                          processed_dir_tex_info,
+                                                          config,
+                                                          config['creation_day_range_tolerance'])
+
+        # 6，判断数据匹配数据
+        matching_list = self.pathD.determine_connection(
+            similarity_dict,
+            config['auto_max_val'],
+            config['similarity_max'],
+            config['similarity_range'])
+
+
+        return matching_list
+
+    def auto_set_file_udim(self, node_lists):
+        if self.config['path_detection_params']['set_udim']:
+            for node_list in node_lists:
+                self.nodeP.auto_set_udim(node_list)
+        else:
+            return
+
+    def remove_original_uv(self, node_name):
+        originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
+        if originalUvName and originalUvName != 'defaultColorMgtGlobals':
+            cmds.delete(originalUvName)
+
+    def create_nodes_from_list(self, matching_completed_dict):
+        need_connect_node_lists = []
+
+        for node_name, val in matching_completed_dict.items():
+
+            tex_name_list = []
+            path = val[1]
+
+            # 获取匹配完的字典中的数据
+            for tex_name in val[0]:
+                tex_name_list.append(tex_name[0])
+
+            # 创建对应的节点
+            new_create_node_list = self.pathD.create_node(tex_name_list, path)
+
+            # 把创建好的节点名称储存下来
+            new_create_node_list.append(node_name)
+            need_connect_node_lists.append(new_create_node_list)
+
+            # 删除原始uv系欸但
+            self.remove_original_uv(node_name)
+
+        # 把uv节点统一起来
+        for node_list in need_connect_node_lists:
+            self.nodeP.unify_uv_node(node_list)
+
+        return need_connect_node_lists
 
 
     def process(self):
-        pass
+
+
+
+        # 遍历材质节点
+        for mat_type, mat_names in self.materials_node.items():
+            for mat_name in mat_names:
+                # 0，初始化一些变量
+                matching_completed_dict = {}
+
+
+                # 1，寻找到材质球的贴图路径
+                mat_info = self.GnodeD.get_file_texture_paths(mat_name)
+
+                if mat_info == {}:
+                    continue
+                else:
+                    # 提起其中一个
+                    node_name, node_path = next(iter(mat_info.items()))
+
+                # 2，检测并且计算相似度
+                similarity_data = self.detect_and_calculate_similarity(node_name, node_path)
+
+                # 3 ，合并参数
+                matching_completed_dict[node_name] = similarity_data
+
+                # 4，创建节点
+                need_connect_node_lists = self.create_nodes_from_list(matching_completed_dict)
+
 
 # 快速连接节点
 class QuickConnectNode:
@@ -9029,8 +9175,7 @@ class QuickConnectNode:
                     continue
                 try:
                     cmds.connectAttr(f"{src_node}.{out_attr}",
-                                     f"{dest_node}.{in_attr}",
-                                     force=True)
+                                     f"{dest_node}.{in_attr}")
                     print(f"[QuickConnect] {src_node}.{out_attr} → {dest_node}.{in_attr}")
                     connected = True
                     break
@@ -9049,8 +9194,7 @@ class QuickConnectNode:
                         continue
                     try:
                         cmds.connectAttr(f"{src_node}.{out_attr}",
-                                         f"{dest_node}.{in_attr}",
-                                         force=True)
+                                         f"{dest_node}.{in_attr}")
                         print(f"[QuickConnect] {src_node}.{out_attr} → {dest_node}.{in_attr}")
                         connected = True
                         break
@@ -9067,7 +9211,8 @@ class QuickConnectNode:
 
 
 
-# ---------------------------------------------------------------------->>>># 实例使用各种类
+# ----------------------------------------->>>># 实例使用各种类
+
 # 实例使用路径连接
 def path_detection_connection_button():
     PDC = Path_Detection_Connection()
@@ -9093,9 +9238,21 @@ def select_convert_old_materials_to_arnold_button():
 
     COMTA.process()
 
+# 全选智能材质修复
+def all_intelligent_material_repair_button():
+        IMR = IntelligentMaterialRepair(True)
+        IMR.process()
+
+# 选择智能材质修复
+def select_intelligent_material_repair_button():
+        IMR = IntelligentMaterialRepair(False)
+        IMR.process()
+
+# 快速连接节点
 def quick_connect_node_button():
         QCN = QuickConnectNode()
         QCN.process()
+
 # 颜色混合
 def blend_rgba_node():
 

@@ -256,6 +256,7 @@ Arnold_Magic_Settings = {
             "priority_order" : {'outColor': 'input' , 'outColor': 'input1'}
         }
     },
+
     # 优化场景节点名称参数配置
     "optimized_scene_node_name": {
 

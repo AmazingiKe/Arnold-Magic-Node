@@ -1658,6 +1658,49 @@ class GetNodeData():
 
         return light_groups
 
+    # 寻找材质的一条纹理路径
+    def get_file_texture_paths(self, material_node):
+        """
+        获取指定材质节点连接链上所有 file 文件节点的贴图路径，
+        并以字典形式返回：{file_node_name: fileTextureName}
+
+        参数:
+            material_node (str): 材质节点名称（例如 "aiStandardSurface1" 等）。
+        返回:
+            dict[str, str]: key 为 file 节点名称，value 为贴图路径 (fileTextureName)。
+                             如果未找到任何 file 节点，则返回空字典。
+        """
+        file_paths = {}  # 用来存储 {file_node: texture_path}
+        visited = set()  # 防止循环或重复遍历
+
+        def _traverse(node):
+            if node in visited:
+                return
+            visited.add(node)
+
+            # 获取所有上游连接的源节点，跳过转换节点
+            upstream_nodes = cmds.listConnections(node,
+                                                  source=True,
+                                                  destination=False,
+                                                  skipConversionNodes=True) or []
+            if not upstream_nodes:
+                return
+
+            for src_node in upstream_nodes:
+                # 找到 file 节点就读它的 fileTextureName 属性
+                if cmds.nodeType(src_node) == "file":
+                    attr_name = src_node + ".fileTextureName"
+                    if cmds.objExists(attr_name):
+                        texture_path = cmds.getAttr(attr_name)
+                        file_paths[src_node] = texture_path
+                        # 如果只关心第一个文件，可以在这里 break
+                else:
+                    # 继续递归查找
+                    _traverse(src_node)
+
+        _traverse(material_node)
+        return file_paths
+
 # 专门负责各种数据的处理
 class DataProcessor():
     def __init__(self):
