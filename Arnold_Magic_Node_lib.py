@@ -15,7 +15,7 @@ from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配�
 import Levenshtein  # 导入 Levenshtein
 from collections import defaultdict
 import numpy as np
-
+import difflib
 # 4. 字符串处理
 import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
 
@@ -93,73 +93,76 @@ class PathDetection(object):
 
         # 获取指定目录下的图像文件并过滤
 
-    def detection_path_content(self, target_dirname, exclude_list):
+    def detection_path_content(self, target_dirname, exclude_list, exclude_formats=None):
         """
         返回一个字典 {文件名: 完整路径}，其中只包含：
           • 文件名 **没有** 命中 exclude_list 中的任何关键字
-          • 并且能被 Pillow 成功 verify() 的图像文件
-        -------------
+          • 如果 exclude_formats 不为 None，则文件扩展名必须在 exclude_formats 列表中
+
         参数:
             target_dirname (str): 需要扫描的目录路径
             exclude_list (list[str] | str): 要排除的关键字集合
                 - 可以是 list，也可以是“一串逗号分隔的字符串”
                 - 关键字不区分大小写
+            exclude_formats (list[str] | str, 可选): 要保留的文件格式集合
+                - 可以是 list，也可以是“一串逗号分隔的字符串”
+                - 扩展名不区分大小写，支持带或不带 '.' 前缀
+                - 如果为 None，则不做任何格式筛选
 
         异常处理:
-            - 无法列目录、无法访问文件、无法解析图像等情况都会
-              通过 self.feedback.CP 输出错误信息，但函数本身始终返回 dict
+            - 无法列目录或访问文件等情况都会通过 self.feedback.CP 输出错误信息，但函数本身始终返回 dict
         """
         lang = self.language['DPC']  # 多语言提示字典
 
-        # 1 先拿到目录里的所有文件名（这里仅文件名，不带路径）
+        # 1. 获取文件列表
         try:
             file_list = os.listdir(target_dirname)
         except Exception as e:
-            # 无法访问目录时返回空字典
             self.feedback.CP(f"{lang['01']} {target_dirname}，{lang['02']}:[{e}]")
             return {}
 
-        # 2 构建 Aho-Corasick 自动机，开启 case_insensitive=True 以忽略大小写
+        # 2. 构建关键字过滤树（Aho-Corasick自动机）
         kwtree = KeywordTree(case_insensitive=True)
-
-        #  允许外部传入字符串或列表两种形式
         if isinstance(exclude_list, str):
-            # 同时按英文逗号 , 及中文逗号 ， 切分
             exclude_list = re.split(r'[,\uFF0C]', exclude_list)
-
-        # 去掉首尾空白并逐个添加到关键字树
         for kw in exclude_list:
             kw = kw.strip()
-            if kw:  # 跳过空字符串
-                kwtree.add(kw)  # case_insensitive=True 时内部会 lower()
-        kwtree.finalize()  # **必须** 先 finalize 才能 search
+            if kw:
+                kwtree.add(kw)
+        kwtree.finalize()
 
-        filtered_files = {}  # 用来收集最终结果
+        # 3. 处理格式筛选参数（只保留指定格式）
+        include_format_set = None
+        if exclude_formats:
+            # 支持字符串或列表
+            if isinstance(exclude_formats, str):
+                exclude_formats = re.split(r'[,\uFF0C]', exclude_formats)
+            # 标准化：去空，去点，转小写，然后加上前导点
+            include_format_set = {
+                '.' + fmt.strip().lstrip('.').lower()
+                for fmt in exclude_formats
+                if fmt.strip()
+            }
 
-        # 3 遍历目录中的文件
+        # 4. 遍历文件，过滤关键字和格式
+        filtered_files = {}
+        target_path = pathlib.Path(target_dirname)
+
         for file_name in file_list:
-
-            # 3-a) 先按文件名关键字过滤，命中直接跳过
-            if kwtree.search(file_name):  # 已忽略大小写
+            # 4.1 关键字排除
+            if kwtree.search(file_name):
                 continue
 
-            # 3-b) 没命中排除词，才构造完整路径并做图像验证
-            file_path = os.path.join(target_dirname, file_name)
-            try:
-                # verify() 只读取头信息，不解码像素 → 较快
-                with Image.open(file_path) as img:
-                    img.verify()
-                # 验证成功，记录到结果
-                filtered_files[file_name] = file_path
+            file_path = target_path / file_name
 
-            except (IOError, SyntaxError):
-                # Pillow 抛 IO/语法错误 → 不是合法图像
-                self.feedback.CP(f"{file_name}: {lang['03']}")
-            except Exception as e:
-                # 其他异常（权限等）
-                self.feedback.CP(f"{file_name}: {lang['04']}:[{e}]")
+            # 4.2 格式筛选：如果指定了格式列表，则只保留该列表中的格式
+            suffix = file_path.suffix.lower()
+            if include_format_set is not None and suffix not in include_format_set:
+                continue
 
-        # 4 全部处理完毕，返回过滤后的字典
+            # 文件通过所有检查，加入结果
+            filtered_files[file_name] = str(file_path)
+
         return filtered_files
 
     # 从给定的文件名列表中删除与指定格式列表中任何格式相匹配的部分，并返回新的文件名列表
@@ -362,19 +365,8 @@ class PathDetection(object):
         """
         if not name1 or not name2:
             return 0.0
-        set1 = set(name1.lower().split())
-        set2 = set(name2.lower().split())
-        intersection = set1.intersection(set2)
-        union = set1.union(set2)
-        return len(intersection) / len(union) if union else 0.0
+        return difflib.SequenceMatcher(None, name1.lower(), name2.lower()).ratio()
 
-        # set1 = set(name1.split())
-        # set2 = set(name2.split())
-        # if not set1 or not set2:
-        #     return 0.0
-        # intersection = set1.intersection(set2)
-        # union = set1.union(set2)
-        # return len(intersection) / len(union)
 
     # 计算分辨率相似度
     def resolution_similarity(self, res1, res2):

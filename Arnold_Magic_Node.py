@@ -47,7 +47,7 @@ import InitialConfigFile
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.7" # 插件版本号
+SoftwareVersion = "1.1.8" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -1253,7 +1253,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         path_matching_widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(path_matching_widget)
 
-        # [1] 连接时相关设置
+        # [0] 连接时相关设置
         self.add_line_with_text(layout, self.language['create_path_matching_tab']['ljsxgsz_label'])  # 连接时相关设置标签
 
         # 创建复选框并绑定配置修改函数
@@ -1280,6 +1280,30 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.path_disable_feedback_options.stateChanged.connect(lambda *args: self.modify_nested_config(key_path= ['path_detection_params', 'disable_feedback'],
                                                                                                         cont = self.path_disable_feedback_options.isChecked()))
         layout.addWidget(self.path_disable_feedback_options)
+
+        # [1] 排除格式
+        self.add_line_with_text(layout, "前期格式筛选")
+
+
+
+        self.exclude_formats_list_text = QtWidgets.QPlainTextEdit()
+
+        self.exclude_formats_list_text.setPlainText(str(config['exclude_formats']).
+                                            replace('[', '').
+                                            replace(']', '').
+                                            replace("'", "").
+                                            replace(",", " , "))
+        self.exclude_formats_list_text.setFont(font)
+        self.exclude_formats_list_text.textChanged.connect(lambda *args: self.modify_nested_config(key_path= ['path_detection_params', 'exclude_formats'],
+                                                                                           cont= [item.replace(' ', '') for item in self.exclude_formats_list_text.toPlainText().split(",")], ))
+
+
+
+        layout.addWidget(self.exclude_formats_list_text)
+
+
+
+
 
         # [2] 排除名称
         self.add_line_with_text(layout, self.language['create_path_matching_tab']['sxgczpchywzdwj_label'])  # 排除含有文字的文件标签
@@ -1552,8 +1576,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.output_prot_line.setSizePolicy(sp2)
         content_lay.addWidget(self.output_prot_line)
 
-        # [3] 快速连接 优先组合
-        self.add_line_with_text(content_lay, '快速连接 优先组合')
+        # # [3] 快速连接 优先组合
+        # self.add_line_with_text(content_lay, '快速连接 优先组合')
 
 
 
@@ -8594,7 +8618,10 @@ class Path_Detection_Connection:
             target_object, target_dirname = self.pathD.get_node_path(node_name)
 
             # 2.寻找子路径下的文件并排除不需要参加匹配的格式
-            dir_name_path = self.pathD.detection_path_content(target_dirname, self.config['path_detection_params']['exclude'])
+            dir_name_path = self.pathD.detection_path_content(
+                target_dirname = target_dirname,
+                exclude_list = self.config['path_detection_params']['exclude'],
+                exclude_formats = self.config['path_detection_params']['exclude_formats'])
 
             # 3.获取文件的元属性
             dir_tex_info = self.pathD.get_file_info(dir_name_path)
@@ -8632,7 +8659,7 @@ class Path_Detection_Connection:
 
             # 储存匹配好的数据
             matching_completed_dict[node_name] = [matching_list, target_dirname]
-            print(matching_completed_dict)
+
         return matching_completed_dict
 
     def feedback_prompt(self, similarity_dict, matching_list, original_name):
@@ -8975,6 +9002,10 @@ class ConvertOldMaterialsToArnold:
 
                 cmds.delete(mat_name)  # 删除旧材质球
 
+
+"""
+清除原本的连接贴图，并且修复材质参数 >>>但是实测发现这个问题影响很小
+"""
 # 智能材质修复
 class IntelligentMaterialRepair:
     def __init__(self,  select_all=None):
@@ -9005,6 +9036,7 @@ class IntelligentMaterialRepair:
             for nt in node_types
         }
 
+    # 计算相似度
     def detect_and_calculate_similarity(self,  node_path):
         """
         - 使用的配置数据是 AMS_Config 中的 path_detection_params，
@@ -9023,8 +9055,10 @@ class IntelligentMaterialRepair:
         file_name = os.path.basename(node_path)
 
         # 2.寻找子路径下的文件并排除不需要参加匹配的格式
-        dir_name_path = self.pathD.detection_path_content(file_path_dir,
-                                                          config['exclude'])
+        dir_name_path = self.pathD.detection_path_content(
+            target_dirname = file_path_dir,
+            exclude_list = config['exclude'],
+            exclude_formats = config['exclude_formats'])
 
         # 3.获取文件的元属性
         dir_tex_info = self.pathD.get_file_info(dir_name_path)
@@ -9059,8 +9093,7 @@ class IntelligentMaterialRepair:
 
         return matching_list
 
-
-
+    # 通过节点创建节点
     def create_nodes_from_list(self, first_node_name  , dir_path, matching_completed_dict):
         # 遍历 matching_completed_dict，提取所有贴图文件名（每个元组的第一个元素）
         for node_name, val in matching_completed_dict.items():
@@ -9081,7 +9114,7 @@ class IntelligentMaterialRepair:
         # 返回包含贴图节点和第一个节点名称的完整列表
         return new_create_node_list
 
-
+    # 主程序
     def process(self):
 
         sttings_config = self.dataM.bin_load_data(os.path.join(
@@ -9106,6 +9139,13 @@ class IntelligentMaterialRepair:
 
                 # 2，检测并且计算相似度
                 similarity_data = self.detect_and_calculate_similarity(node_path)
+
+                # 如果匹配数量异常（比如超过10个），则跳过这个节点处理
+                if not similarity_data or len(similarity_data) > 9:
+                    self.feedback.CPW(
+                        f"[{mat_name}] 的贴图 [{node_name}] 匹配结果异常，数量：{len(similarity_data)}，已跳过修复")
+                    continue
+
 
                 # 3 ，合并参数
                 matching_completed_dict[node_name] = similarity_data

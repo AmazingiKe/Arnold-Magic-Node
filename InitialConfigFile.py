@@ -218,7 +218,8 @@ Arnold_Magic_Settings = {
 
     # 路径检测参数配置
     "path_detection_params": {
-        'exclude': ['.tx', '_PREVIEW', '_preview', 'LOD1', 'LOD2', 'LOD3', 'LOD4', 'LOD5', 'LOD6', 'LOD7', 'LOD8',
+        'exclude_formats' : ['.jpg', '.jpeg', '.png', '.bmp',  '.tiff', '.tif', '.exr', '.hdr', '.tga'],
+        'exclude': ['_PREVIEW', '_preview', 'LOD1', 'LOD2', 'LOD3', 'LOD4', 'LOD5', 'LOD6', 'LOD7', 'LOD8',
                     'LOD9', 'LOD10'],  # 排除的文件后缀和名称
         'detection_excluded': ['Texture', 'sRGB', 'Raw'],  # 排除的检测类别
         'similarity_range': 0.1,  # 相似度范围
