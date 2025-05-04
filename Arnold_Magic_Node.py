@@ -9005,7 +9005,7 @@ class IntelligentMaterialRepair:
             for nt in node_types
         }
 
-    def detect_and_calculate_similarity(self, node_name,  node_path):
+    def detect_and_calculate_similarity(self,  node_path):
         """
         - 使用的配置数据是 AMS_Config 中的 path_detection_params，
         因为这样子方便测试
@@ -9028,7 +9028,8 @@ class IntelligentMaterialRepair:
 
         # 3.获取文件的元属性
         dir_tex_info = self.pathD.get_file_info(dir_name_path)
-        target_object_info = self.pathD.get_file_info({node_name: node_path})
+        target_object_info = self.pathD.get_file_info(
+            {(os.path.basename(os.path.normpath(node_path))): node_path})
 
         # 4.处理匹配名称
         processed_dir_tex_info = self.pathD.process_dict_key_name(dir_tex_info,
@@ -9058,49 +9059,33 @@ class IntelligentMaterialRepair:
 
         return matching_list
 
-    def auto_set_file_udim(self, node_lists):
-        if self.config['path_detection_params']['set_udim']:
-            for node_list in node_lists:
-                self.nodeP.auto_set_udim(node_list)
-        else:
-            return
 
-    def remove_original_uv(self, node_name):
-        originalUvName = cmds.listConnections(node_name, source=True, destination=False)[-1]
-        if originalUvName and originalUvName != 'defaultColorMgtGlobals':
-            cmds.delete(originalUvName)
 
-    def create_nodes_from_list(self, matching_completed_dict):
-        need_connect_node_lists = []
-
+    def create_nodes_from_list(self, first_node_name  , dir_path, matching_completed_dict):
+        # 遍历 matching_completed_dict，提取所有贴图文件名（每个元组的第一个元素）
         for node_name, val in matching_completed_dict.items():
+            filenames = [name for name, _ in val]
 
-            tex_name_list = []
-            path = val[1]
+        # 根据提取出的文件名列表和目录路径，创建对应的贴图节点
+        new_create_node_list = self.pathD.create_node(
+            tex_name_list=filenames,
+            path=dir_path
+        )
 
-            # 获取匹配完的字典中的数据
-            for tex_name in val[0]:
-                tex_name_list.append(tex_name[0])
+        # 将第一个节点名称 first_node_name 添加到新创建的节点列表末尾
+        new_create_node_list.append(first_node_name)
 
-            # 创建对应的节点
-            new_create_node_list = self.pathD.create_node(tex_name_list, path)
+        # 对新创建的所有节点执行 UV 统一操作，确保它们使用相同的 UV 设置
+        self.nodeP.unify_uv_node(new_create_node_list)
 
-            # 把创建好的节点名称储存下来
-            new_create_node_list.append(node_name)
-            need_connect_node_lists.append(new_create_node_list)
-
-            # 删除原始uv系欸但
-            self.remove_original_uv(node_name)
-
-        # 把uv节点统一起来
-        for node_list in need_connect_node_lists:
-            self.nodeP.unify_uv_node(node_list)
-
-        return need_connect_node_lists
+        # 返回包含贴图节点和第一个节点名称的完整列表
+        return new_create_node_list
 
 
     def process(self):
 
+        sttings_config = self.dataM.bin_load_data(os.path.join(
+                                                                    settings_path, AMS_Config))
 
 
         # 遍历材质节点
@@ -9120,14 +9105,35 @@ class IntelligentMaterialRepair:
                     node_name, node_path = next(iter(mat_info.items()))
 
                 # 2，检测并且计算相似度
-                similarity_data = self.detect_and_calculate_similarity(node_name, node_path)
+                similarity_data = self.detect_and_calculate_similarity(node_path)
 
                 # 3 ，合并参数
                 matching_completed_dict[node_name] = similarity_data
 
                 # 4，创建节点
-                need_connect_node_lists = self.create_nodes_from_list(matching_completed_dict)
+                need_connect_node_lists = self.create_nodes_from_list(
+                    first_node_name = node_name,
+                    dir_path = os.path.normpath(os.path.dirname(node_path)),
+                    matching_completed_dict  = matching_completed_dict)
 
+                # 5，修改颜色空间
+                if sttings_config['path_detection_params']['set_color_space']:
+                    self.nodeP.AutoSetTexColorSpace(
+                        auto_set_color_space_config=sttings_config['color_space_params']['params'],
+                        node_list=need_connect_node_lists,
+                        filter_data=sttings_config['texture_filter_params'])
+
+                # 6，自动UDIM
+                if sttings_config['path_detection_params']['set_udim']:
+                    self.nodeP.auto_set_udim(need_connect_node_lists)
+
+                # 7，连接上材质球
+                self.nodeP.AutoNodeConnect(need_connect_node_lists,
+                                           mat_name,
+                                           sttings_config['texture_filter_params'],  # 过滤贴图的数据
+                                           sttings_config['proc_node_config']['params'],  # 相应贴图节点的参数
+                                           sttings_config['magic_conn_config']['conn_params'],  # 相应贴图是否要连接的参数
+                                           sttings_config['proc_node_config']['conn_params'])  # 相应贴图是否要连接相应的节点
 
 # 快速连接节点
 class QuickConnectNode:

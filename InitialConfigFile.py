@@ -10,7 +10,7 @@ Arnold_Magic_Settings = {
     # 纹理过滤参数配置
     "texture_filter_params": {
         'base': ['BASE_MASK'],  # 基础遮罩纹理的别名
-        'baseColor': ["ALBEDO", "BASE_COLOR", "BASECOLOR", "DIFFUSE"],  # 基础颜色纹理的别名
+        'baseColor': ["ALBEDO", "BASE_COLOR", "BASECOLOR", "DIFFUSE", "COLOR"],  # 基础颜色纹理的别名
         'diffuseRoughness': ['DIFFUSEROUGHNESS'],  # 漫反射粗糙度纹理的别名
         'metalness': ["METALNESS", "METALLIC", "METALIC", "METAL", "DIFFUSE"],  # 金属度纹理的别名
         'specular': ["SPECULAR", "SPEC"],  # 镜面反射纹理的别名
