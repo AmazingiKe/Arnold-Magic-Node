@@ -47,7 +47,7 @@ import InitialConfigFile
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.8" # 插件版本号
+SoftwareVersion = "1.1.9" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -319,9 +319,6 @@ class Arnold_Magic_Node_UI(object):
         cmds.menuItem(label='优化场景名称',
                       c=lambda *args: self.scene_name_optimization_instance())
 
-
-
-
         cmds.menuItem(divider=True,)
 
         # 设置面板选项
@@ -343,16 +340,18 @@ class Arnold_Magic_Node_UI(object):
             label=self.language['create_widgets']['path_detection_connection'],
             c=lambda *args: path_detection_connection_button()
         )
-
-        self.color_mix = cmds.button(
-            label=self.language['create_widgets']['color_mix'],
-            c=lambda *args: blend_rgba_node()
+        cmds.text(label=" " * 2)
+        self.intelligent_mix = cmds.button(
+            label=self.language['create_widgets']['intelligent_mix'],
+            c=lambda *args: intelligent_mix()
         )
 
-        self.gray_mix = cmds.button(
-            label=self.language['create_widgets']['gray_mix'],
-            c=lambda *args: blend_greg_manager()
+        self.mask_node_mix = cmds.button(
+            label=self.language['create_widgets']['mask_node_mix'],
+            c=lambda *args: mask_node_mix()
         )
+
+        cmds.text(label=" " * 1)
 
         # 快速连接按钮
         self.quick_connect = cmds.button(
@@ -365,6 +364,8 @@ class Arnold_Magic_Node_UI(object):
             label=self.language['create_widgets']['direct_connection'],
             c=lambda *args: direct_connection_button())
 
+        cmds.text(label=" " * 1)
+
         # 统一UV按钮
         self.unify_uv_node = cmds.button(
             label=self.language['create_widgets']['unify_uv_node'],
@@ -376,7 +377,9 @@ class Arnold_Magic_Node_UI(object):
         # UV预设选项菜单
         self.uv_preset = cmds.optionMenu(
             mvi=8,
-            cc=lambda *args: uv_preset_menu(cmds.optionMenu(self.uv_preset, query=True, value=True))
+            cc=lambda *args: uv_preset_menu(
+                cmds.optionMenu(self.uv_preset, query=True, value=True)),
+            h = 27
         )
 
         # 添加UV模式选项
@@ -388,8 +391,8 @@ class Arnold_Magic_Node_UI(object):
         self.color_space_preset = cmds.optionMenu(
             mvi=16,
             cc=lambda *args: color_space_preset_menu(
-                cmds.optionMenu(self.color_space_preset, query=True, value=True)
-            )
+                cmds.optionMenu(self.color_space_preset, query=True, value=True)),
+            h=27
         )
 
         # 循环创建色彩空间菜单选项
@@ -420,7 +423,9 @@ class Arnold_Magic_Node_UI(object):
         self.rendering_preset_name = {}
         self.rendering_preset = cmds.optionMenu(
             mvi=8,
-            cc=lambda *args: rendering_preset_menu(cmds.optionMenu(self.rendering_preset, query=True, value=True))
+            cc=lambda *args: rendering_preset_menu(
+                cmds.optionMenu(self.rendering_preset, query=True, value=True)),
+            h=27
         )
 
         # 获取并添加渲染预设文件名
@@ -430,16 +435,9 @@ class Arnold_Magic_Node_UI(object):
         for renderer_data_mode_name in file_names_without_json_list:
             self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
 
-        cmds.text(label=" " * 18)
+        cmds.text(label=" " * 2)
 
-        # 添加图标按钮
-        cmds.iconTextButton(
-            i=os.path.join(icon_path, 'Autodesk_Arnold_logo.png'),
-            h=37.5 / 1.8,
-            w=155 / 1.8
-        )
 
-        cmds.text(label=" " * 1)
     #______________________________________________________________________________>>> 初始化全局数据
     def initial_global_config(self):
         # 初始化数据管理器和数据处理模块
@@ -9253,10 +9251,59 @@ class QuickConnectNode:
             if not connected:
                 cmds.warning(f"{src_node} → {dest_node} 未找到可连接属性，已跳过。")
 
+class BlendNodeManager:
+        def __init__(self):
+            ### 实例各种模块
+            self.dataM = DataManager()  # 数据管理模块
+            self.feedback = FeedbackPrompt()  # 错误提示模块
+            self.pathD = PathDetection()  # 数据检测模块
+            self.nodeP = NodeProcessor()  # 节点处理模块
+
+            # 策略映射：模式名称 -> 处理函数
+            self._handlers = {
+                'intelligent_mix': self.intelligent_mix_process,
+                'mask_mix' : self.mask_mix_process,
+            }
 
 
 
 
+
+
+
+        def intelligent_mix_process(self, select_node = None):
+            print('intelligent_mix_process')
+
+        def mask_mix_process(self, select_node = None):
+            print('mask_mix_process')
+
+
+
+
+        def process(self, mix_mod = None):
+            # 1，获取选中的节点
+            select_nodes = process_sl_data()
+
+            if not select_nodes:
+                return self.feedback.CPW('至少需要两个节点来建立连接！')
+
+            # 扁平化成列表
+            nodes = []
+            for v in select_nodes.values():
+                if isinstance(v, (list, tuple, set)):
+                    nodes.extend(v)
+                else:
+                    nodes.append(v)
+
+            if len(nodes) < 2:
+                return self.feedback.CPW('至少需要两个节点来建立连接！')
+
+            # 2. 根据 mix_mod 调用对应处理器
+            handler = self._handlers.get(mix_mod)
+            if handler:
+                handler(select_nodes)
+            else:
+                self.feedback.CPW(f'未知的混合模式：{mix_mod}')
 # ----------------------------------------->>>># 实例使用各种类
 
 # 实例使用路径连接
@@ -9269,84 +9316,40 @@ def magic_connection_button():
     MC = Magic_Node_Connection()
     MC.main()
 
-    # 混合颜色节点
-
 # 全选转换旧材质到阿诺德
 def all_convert_old_materials_to_arnold_button():
-
     COMTA = ConvertOldMaterialsToArnold(True)
-
     COMTA.process()
 
 # 选择转换旧材质到阿诺德
 def select_convert_old_materials_to_arnold_button():
     COMTA = ConvertOldMaterialsToArnold(False)
-
     COMTA.process()
 
 # 全选智能材质修复
 def all_intelligent_material_repair_button():
-        IMR = IntelligentMaterialRepair(True)
-        IMR.process()
+    IMR = IntelligentMaterialRepair(True)
+    IMR.process()
 
 # 选择智能材质修复
 def select_intelligent_material_repair_button():
-        IMR = IntelligentMaterialRepair(False)
-        IMR.process()
+    IMR = IntelligentMaterialRepair(False)
+    IMR.process()
 
 # 快速连接节点
 def quick_connect_node_button():
-        QCN = QuickConnectNode()
-        QCN.process()
+    QCN = QuickConnectNode()
+    QCN.process()
 
 # 颜色混合
-def blend_rgba_node():
+def intelligent_mix():
+    BNM = BlendNodeManager()
+    BNM.process(mix_mod='intelligent_mix')
 
-    BlendNM = BlendNodeManager() # 混合节点模块
-    feedback = FeedbackPrompt()  # 错误提示模块
-
-    select_node = process_sl_data()
-
-    if select_node is None:
-        return
-
-    for key in select_node:
-        if key == 'file':
-            BlendNM.blend_file_rgba_node()
-            return
-        elif key == 'aiLayerRgba':
-            BlendNM.blend_rgba_aiLayerRgba_node()
-            return
-        elif key == 'aiStandardSurface':
-            BlendNM.blend_aiStandardSurface_rgba()
-            return
-        else:
-            pass
-
-# 混合灰度通道
-def blend_greg_manager():
-
-    BlendNM = BlendNodeManager() # 混合节点模块
-    feedback = FeedbackPrompt()  # 错误提示模块
-
-    select_node = process_sl_data()
-
-    if select_node is None:
-        return
-
-        # 根据选择的节点类型调用对应的处理函数
-    for key in select_node():
-        if  'aiLayerRgba' in select_node and 'file' in  select_node:
-            BlendNM.blend_aiLayerRgba_mask()
-            return
-        elif 'aiLayerShader' in select_node and 'file' in  select_node:
-            BlendNM.blend_aiStandardSurface_mask()
-            return
-        elif key == 'file':
-            BlendNM.blend_aiLayerFloat_mask()
-            return
-        else:
-            pass
+# 遮罩混合
+def mask_node_mix():
+    BNM = BlendNodeManager()
+    BNM.process(mix_mod='mask_mix')
 
 # 场景名称优化
 class SceneNameOptimization:
