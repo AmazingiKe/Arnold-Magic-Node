@@ -138,7 +138,7 @@ else:
             annotation=button_name,
             imageOverlayLabel=button_name,
             sourceType='Python',
-            image='alignSurface.png',
+            image=os.path.normpath(os.path.join(script_path, "icon","Logo_B.svg")),
             parent=parent,
             label=button_name
         )

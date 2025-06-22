@@ -326,3 +326,4 @@ def Main_program():
     """
     settings_data = os.path.join(script_path, 'Datas', 'settings')
     detecting_initial_config_files(settings_data, 'Arnold_Magic_Settings', Arnold_Magic_Settings)
+    detecting_initial_config_files(os.path.normpath(os.path.join(script_path, "Datas", "settings_presets" )), 'default', Arnold_Magic_Settings)

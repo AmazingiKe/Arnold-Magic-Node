@@ -47,7 +47,7 @@ import InitialConfigFile
 # _______________________________________________________________>>> 插件状态
 SoftwareState = "Release"  # 插件状态
 # _______________________________________________________________>>> 插件版本号
-SoftwareVersion = "1.1.9" # 插件版本号
+SoftwareVersion = "1.2.02" # 插件版本号
 
 
 pluginHomeURL = r"https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69"
@@ -131,7 +131,7 @@ TextureManagerWin_config_dict = {
 # ----------------------------------------------------初始配置变量 结束
 
 # 获取Maya主窗口
-def MayaMainWindows():
+def get_maya_main_window():
     """获取Maya主窗口"""
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr),QtWidgets.QWidget)
@@ -195,12 +195,12 @@ class Arnold_Magic_Node_UI(object):
             i=icon_path + "\\TXManagerShelf_200.png"
         )
 
-        # 贴图批量导入器选项
-        cmds.menuItem(
-            label=self.language['create_widgets']['ttpldrq_menu'],
-            c=lambda *args: TextureBatchImporterWin(),
-            i=icon_path + "\\RenderToTextureShelf_200.png"
-        )
+        # # 贴图批量导入器选项
+        # cmds.menuItem(
+        #     label=self.language['create_widgets']['ttpldrq_menu'],
+        #     c=lambda *args: TextureBatchImporterWin(),
+        #     i=icon_path + "\\RenderToTextureShelf_200.png"
+        # )
 
 
         cmds.menuItem(label="AOV管理器", divider=True)  # 渲染预设设置
@@ -346,12 +346,10 @@ class Arnold_Magic_Node_UI(object):
             c=lambda *args: intelligent_mix()
         )
 
-        self.mask_node_mix = cmds.button(
-            label=self.language['create_widgets']['mask_node_mix'],
-            c=lambda *args: mask_node_mix()
-        )
-
-        cmds.text(label=" " * 1)
+        # self.mask_node_mix = cmds.button(
+        #     label=self.language['create_widgets']['mask_node_mix'],
+        #     c=lambda *args: mask_node_mix()
+        # )
 
         # 快速连接按钮
         self.quick_connect = cmds.button(
@@ -586,7 +584,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         for preset_file in preset_files:
             preset_name = preset_file.replace(".bin", "")  # 去掉文件扩展名
-            action = QtWidgets.QAction(preset_name, self)
+            action = QAction(preset_name, self)
             self.settings_presets_menu.addAction(action)
             # 把默认参数 pf 传进去，body 只用 pf
             action.triggered.connect(lambda *args, pf=preset_name: self.load_settings_preset(pf))
@@ -2151,7 +2149,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 #______________________________________________________________________________>>>贴图管理器 使用QT库写的窗口！！！
 class TextureManagerWin(QtWidgets.QDialog):
 
-    def __init__(self,parent = MayaMainWindows()):
+    def __init__(self,parent = get_maya_main_window()):
         super(TextureManagerWin, self).__init__(parent)
 
         # 初始操作
@@ -6817,7 +6815,7 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
 
 class AOVLightGroupManager(QtWidgets.QDialog):
 
-    def __init__(self, parent = MayaMainWindows()):
+    def __init__(self, parent = get_maya_main_window()):
 
         super(AOVLightGroupManager, self).__init__(parent)
 
@@ -8463,7 +8461,6 @@ class rendering_preset_settings_button():
             cmds.deleteUI(WIN_NAME)
             return
 
-
 # 删除渲染预设设置
 def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name):
     global new_rendering_preset_name
@@ -9000,10 +8997,6 @@ class ConvertOldMaterialsToArnold:
 
                 cmds.delete(mat_name)  # 删除旧材质球
 
-
-"""
-清除原本的连接贴图，并且修复材质参数 >>>但是实测发现这个问题影响很小
-"""
 # 智能材质修复
 class IntelligentMaterialRepair:
     def __init__(self,  select_all=None):
@@ -9144,7 +9137,6 @@ class IntelligentMaterialRepair:
                         f"[{mat_name}] 的贴图 [{node_name}] 匹配结果异常，数量：{len(similarity_data)}，已跳过修复")
                     continue
 
-
                 # 3 ，合并参数
                 matching_completed_dict[node_name] = similarity_data
 
@@ -9251,59 +9243,226 @@ class QuickConnectNode:
             if not connected:
                 cmds.warning(f"{src_node} → {dest_node} 未找到可连接属性，已跳过。")
 
+# 混合节点管理器
 class BlendNodeManager:
-        def __init__(self):
-            ### 实例各种模块
-            self.dataM = DataManager()  # 数据管理模块
-            self.feedback = FeedbackPrompt()  # 错误提示模块
-            self.pathD = PathDetection()  # 数据检测模块
-            self.nodeP = NodeProcessor()  # 节点处理模块
+    def __init__(self):
+        ### 实例各种模块
+        self.dataM = DataManager()  # 数据管理模块
+        self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.pathD = PathDetection()  # 数据检测模块
+        self.nodeP = NodeProcessor()  # 节点处理模块
 
-            # 策略映射：模式名称 -> 处理函数
-            self._handlers = {
-                'intelligent_mix': self.intelligent_mix_process,
-                'mask_mix' : self.mask_mix_process,
-            }
+        # 策略映射：模式名称 -> 处理函数
+        self._handlers = {
+            'intelligent_mix': self.intelligent_mix_process,
+            'mask_mix' : self.mask_mix_process,
+        }
+
+        # 类型列表
+        self.aiUtilityShader = ['file', 'aiBlackbody', 'aiBump2d', 'aiBump3d',
+                                             'aiCameraProjection', 'aiClamp', 'aiColorConvert',
+                                             'aiColorCorrect', 'aiColorJitter', 'aiComplexIor', 'aiComposite',
+                                             'aiDistance', 'aiFacingRatio',  'aiMotionVector','aiNormalMap',
+                                            'aiOslShader', 'aiRampFloat', 'aiRampRgb', 'aiRange','aiRoundCorners',
+                                            'aiShuffle', 'aiSpaceTransform', 'aiStateFloat', 'aiStateInt','aiStateVector',
+                                            'aiTraceSet', 'aiUvProjection', 'aiUvTransform', 'aiVectorMap']
+
+        self.aiMath = ['aiAbs', 'aiAdd', 'aiAtan', 'aiCompare',
+                                   'aiComplement', 'aiCross', 'aiDivide', 'aiDot', 'aiExp',
+                                   'aiFraction', 'aiIsFinite', 'aiLength', 'aiLog', 'aiMatrixInterpolate',
+                                   'aiMatrixMultiplyVector', 'aiMatrixTransform', 'aiMax', 'aiMin',
+                                   'aiModulo', 'aiMultiply', 'aiNegate', 'aiNormalize', 'aiPow', 'aiRandom',
+                                   'aiReciprocal', 'aiSign', 'aiSqrt', 'aiSubtract', 'aiTrigo']
+
+        self.aiShader  = ['aiStandardSurface', 'standardSurface', 'aiLambert', 'aiStandardHair', 'aiToon']
+
+
+        self.aiMix = ['aiLayerFloat', 'aiLayerRgba', 'aiLayerShader']
+
+        # 颜色输出端口
+        self.color_output_prot = ['outColor', 'outValue']
+
+        # 灰度输出端口
+        self.gray_output_prot = ['outColorR',  'outColorG', 'outColorB', 'outAlpha', 'outValueX', 'outValueY', 'outValueZ']
+
+
+        self.type_to_category = {}
+        for category, types in {
+            'aiUtilityShader': self.aiUtilityShader,
+            'aiMath': self.aiMath,
+            'aiShader': self.aiShader,
+            'aiMix': self.aiMix,
+        }.items():
+            for node_type in types:
+                self.type_to_category[node_type] = category
 
 
 
 
+    def intelligent_mix_process(self, select_node = None):
 
+        for node_type, node_names in select_node.items():
+            category = self.type_to_category.get(node_type)
 
-
-        def intelligent_mix_process(self, select_node = None):
-            print('intelligent_mix_process')
-
-        def mask_mix_process(self, select_node = None):
-            print('mask_mix_process')
-
-
-
-
-        def process(self, mix_mod = None):
-            # 1，获取选中的节点
-            select_nodes = process_sl_data()
-
-            if not select_nodes:
-                return self.feedback.CPW('至少需要两个节点来建立连接！')
-
-            # 扁平化成列表
-            nodes = []
-            for v in select_nodes.values():
-                if isinstance(v, (list, tuple, set)):
-                    nodes.extend(v)
-                else:
-                    nodes.append(v)
-
-            if len(nodes) < 2:
-                return self.feedback.CPW('至少需要两个节点来建立连接！')
-
-            # 2. 根据 mix_mod 调用对应处理器
-            handler = self._handlers.get(mix_mod)
-            if handler:
-                handler(select_nodes)
+            if category in ('aiUtilityShader', 'aiMath'):
+                self.handle_utility_shader(node_names)
+            elif category == 'aiShader':
+                self.handle_shader(node_names)
+            elif category == 'aiMix':
+                self.handle_mix(node_type, node_names)
             else:
-                self.feedback.CPW(f'未知的混合模式：{mix_mod}')
+                self.feedback.CPW(f'未知的节点类型：{node_type}')
+
+
+    # 分别定义不同处理方法
+    def handle_utility_shader(self, nodes):
+        modifiers = cmds.getModifiers()
+
+        if modifiers == 1:  # shift
+            self._handle_shader_mix(nodes)
+        elif modifiers == 8:  # ctrl
+            self._handle_grays_shader_mix(nodes)
+        else:
+            self._handle_shader_mix(nodes)
+
+    def _handle_shader_mix(self, nodes):
+        # 创建节点
+        mix_node_name = cmds.createNode('aiLayerRgba', name='shader_mix')
+        # 连接节点
+        for index, node_name in enumerate(nodes):
+            index += 1
+            for output_prot in self.color_output_prot:
+                try:
+                    cmds.connectAttr(f"{node_name}.{output_prot}", f"{mix_node_name}.input{index}", force=True)
+                    continue
+                except:
+                    pass
+
+    def _handle_grays_shader_mix(self, nodes):
+        # 创建节点
+        mix_node_name = cmds.createNode('aiLayerFloat', name='grays_shader_mix')
+        # 连接节点
+        for index, node_name in enumerate(nodes):
+            index += 1
+            for gray_output in self.gray_output_prot:
+                print(gray_output)
+                try:
+                    cmds.connectAttr(f"{node_name}.{gray_output}", f"{mix_node_name}.input{index}", force=True)
+                    continue
+                except:
+                    pass
+
+    def handle_shader(self, nodes):
+        # 创建节点
+        shader_mix_name = cmds.createNode('aiLayerShader', name='shader_mix')
+        # 连接节点
+        for index, node_name in enumerate(nodes):
+            index += 1
+            cmds.connectAttr(f"{node_name}.outColor", f"{shader_mix_name}.input{index}", force=True)
+
+    def handle_mix(self,node_type,  nodes):
+
+        if node_type == 'aiLayerFloat':
+
+            shader_mix_name = self._create_node('aiLayerFloat', 'LayerFloat')
+
+            for index, node_name in enumerate(nodes):
+                index += 1
+                cmds.connectAttr(f"{node_name}.outValue", f"{shader_mix_name}.input{index}", force=True)
+
+        elif node_type == 'aiLayerRgba':
+
+            shader_mix_name = self._create_node('aiLayerRgba', 'LayerRgba')
+            for index, node_name in enumerate(nodes):
+                index += 1
+                cmds.connectAttr(f"{node_name}.outColor", f"{shader_mix_name}.input{index}", force=True)
+
+        elif node_type == 'aiLayerShader':
+            shader_mix_name = self._create_node('aiLayerShader', 'LayerShader')
+
+            for index, node_name in enumerate(nodes):
+                index += 1
+                cmds.connectAttr(f"{node_name}.outColor", f"{shader_mix_name}.input{index}", force=True)
+
+    def mask_mix_process(self, select_node = None):
+        print('mask_mix_process')
+
+
+    def _create_node(self, node_type, name):
+        """
+        创建节点
+        """
+        node_name = cmds.createNode(node_type, name=name)
+        return node_name
+
+
+
+
+    def process(self, mix_mod = None):
+        # 1，获取选中的节点
+        select_nodes = process_sl_data()
+
+        if not select_nodes:
+            return self.feedback.CPW('至少需要两个节点来建立连接！')
+
+        # 扁平化成列表
+        nodes = []
+        for v in select_nodes.values():
+            if isinstance(v, (list, tuple, set)):
+                nodes.extend(v)
+            else:
+                nodes.append(v)
+
+        if len(nodes) < 2:
+            return self.feedback.CPW('至少需要两个节点来建立连接！')
+
+        # 2. 根据 mix_mod 调用对应处理器
+        handler = self._handlers.get(mix_mod)
+        if handler:
+            handler(select_nodes)
+        else:
+            self.feedback.CPW(f'未知的混合模式：{mix_mod}')
+
+# 场景名称优化
+class SceneNameOptimization:
+    def __init__(self):
+        self.dataM = DataManager() # 数据管理模块
+        self.feedback = FeedbackPrompt() # 错误提示模块
+        self.pathD = PathDetection() # 数据检测模块
+        self.nodeP = NodeProcessor() # 节点处理模块
+
+        self.scene_nodes = get_scene_all_data()
+
+        self.config = self.dataM.bin_load_data(
+            os.path.normpath(os.path.join(settings_path, AMS_Config)))
+
+    # ______________________________________________________________________________>>> 主函数入口
+    def main(self):
+        # 从配置中获取节点名称替换参数
+        config = self.config['optimized_scene_node_name']['replace_param']
+
+        # 遍历场景节点的所有类型
+        for node_type in self.scene_nodes:
+            # 遍历当前类型下的所有节点名称
+            for node_name in self.scene_nodes[node_type]:
+                # 如果节点名称包含'|'，则按'|'拆分为多个部分，否则直接使用节点名称
+                node_names_to_process = node_name.split('|') if '|' in node_name else [node_name]
+                # 移除分割后产生的空字符串
+                node_names_to_process = [part for part in node_names_to_process if part]
+
+                # 逐个处理拆分后的节点名称
+                for part_name in node_names_to_process:
+                    # 遍历替换配置参数
+                    for replace_param in config:
+                        # 使用替换工具根据参数替换节点名称
+                        self.nodeP.replace_node_name(
+                            enabled=replace_param['switch_checkbox'],  # 是否启用替换
+                            ignore_case=replace_param['case_sensitive'],  # 是否忽略大小写
+                            target=replace_param['target_cont'],  # 替换目标内容
+                            replacement=replace_param['replace_cont'],  # 替换为的内容
+                            node_name=part_name  # 当前处理的节点名称
+                        )
+
 # ----------------------------------------->>>># 实例使用各种类
 
 # 实例使用路径连接
@@ -9350,46 +9509,6 @@ def intelligent_mix():
 def mask_node_mix():
     BNM = BlendNodeManager()
     BNM.process(mix_mod='mask_mix')
-
-# 场景名称优化
-class SceneNameOptimization:
-    def __init__(self):
-        self.dataM = DataManager() # 数据管理模块
-        self.feedback = FeedbackPrompt() # 错误提示模块
-        self.pathD = PathDetection() # 数据检测模块
-        self.nodeP = NodeProcessor() # 节点处理模块
-
-        self.scene_nodes = get_scene_all_data()
-
-        self.config = self.dataM.bin_load_data(
-            os.path.normpath(os.path.join(settings_path, AMS_Config)))
-
-    # ______________________________________________________________________________>>> 主函数入口
-    def main(self):
-        # 从配置中获取节点名称替换参数
-        config = self.config['optimized_scene_node_name']['replace_param']
-
-        # 遍历场景节点的所有类型
-        for node_type in self.scene_nodes:
-            # 遍历当前类型下的所有节点名称
-            for node_name in self.scene_nodes[node_type]:
-                # 如果节点名称包含'|'，则按'|'拆分为多个部分，否则直接使用节点名称
-                node_names_to_process = node_name.split('|') if '|' in node_name else [node_name]
-                # 移除分割后产生的空字符串
-                node_names_to_process = [part for part in node_names_to_process if part]
-
-                # 逐个处理拆分后的节点名称
-                for part_name in node_names_to_process:
-                    # 遍历替换配置参数
-                    for replace_param in config:
-                        # 使用替换工具根据参数替换节点名称
-                        self.nodeP.replace_node_name(
-                            enabled=replace_param['switch_checkbox'],  # 是否启用替换
-                            ignore_case=replace_param['case_sensitive'],  # 是否忽略大小写
-                            target=replace_param['target_cont'],  # 替换目标内容
-                            replacement=replace_param['replace_cont'],  # 替换为的内容
-                            node_name=part_name  # 当前处理的节点名称
-                        )
 
 # 主要运行程序
 def Main_program():

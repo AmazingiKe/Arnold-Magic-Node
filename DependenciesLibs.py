@@ -34,7 +34,7 @@ LibsFilesDict = {
     'Imath.py': 'Imath',  # Imath 是一个独立的数学库
     'OpenEXR.pyd': 'OpenEXR',  # OpenEXR 是一个单独的图像文件处理库
     'ahocorapy' : 'ahocorapy',  # Aho-Corasick 算法库
-    'Levenshtein' : 'python-Levenshtein',  # Levenshtein 距离计算库
+    'Levenshtein' : 'python-Levenshtein', # Levenshtein 距离计算库
 }
 
 def ascii_load_data(file_path):
