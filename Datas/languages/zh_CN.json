@@ -1,107 +1,464 @@
 {
-  "language" : "zh_CN",
-  "version" : "Beta",
+  "language_type" : "简体中文",
 
+  "ArnoldMagicNode": {
 
-
-
-
-  "ArnoldMagicNode" : {
-
-
-
-
-    "TM_WIN" : {
-
-      "WIDGETS": {
-          "TexturelList_Unselect_All_Button": "取消全选",
-          "TexturelList_Find_Missing_Textures_Button": "选出缺失",
-          "TexturelList_Intelligent_Find_Max_Size_Button": "智能选出最大贴图",
-          "TexturelList_Search_And_Replace_Date_Button": "修改数据",
-          "TexturelList_Replace_Data_Button": "找回路径",
-          "TexturelList_Processed_Image_Button": "处理图像",
-          "TexturelList_Headers": ["贴图节点名称 (Map Node Name)", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"]
+    "AMDUI_WIN": {
+      "create_widgets" : {
+        "ttclgj_menu": "贴图处理工具",
+        "ttglq_menu": "贴图管理器",
+        "ttpldrq_menu": "贴图批量导入器",
+        "xryssz_menu": "渲染预设设置",
+        "tjxrys_menu": "添加渲染预设",
+        "xgxrys_menu": "修改渲染预设",
+        "scxrys_menu": "删除渲染预设",
+        "dkxryswjj_menu": "打开渲染预设文件夹",
+        "default_rendering_properties_options": "输出 默认参数",
+        "rendering_properties_options": "输出 阿诺德参数",
+        "aov_properties_properties_options": "输出 AOV参数",
+        "sz_menu": "设置",
+        "magic_connection": "魔法连接",
+        "intelligent_mix" : "智能混合",
+        "mask_node_mix" : "遮罩混合",
+        "path_detection_connection": "路径拾取连接",
+        "direct_connection": "直连",
+        "unify_uv_node": "统一UV",
+        "uv_preset": ["禁用","0型(ZBrush)","1型(Mudbox)","UDIM(Mari)","显示平铺"],
+        "zdsckj_button": "自动色彩空间",
+        "zdudim_button": "自动UDIM",
+        "ai_aov_switch": "AOV开关"
       }
+    },
 
+    "AMNSP_WIN" : {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "Arnold_Magic_Node 插件设置"
+      },
+        "create_menu" : {
+          "settings_menu" : "设置",
+          "reset_data_action" : "重置设置数据",
+          "license_menu" : "许可证",
+          "change_license_action" : "更换许可证",
+          "about_menu" : "关于",
+          "contact_feedback_action" : "联系/反馈",
+          "help_document_action" : "帮助文档",
+          "plugin_update_download_action" : "插件更新下载",
+          "plugin_home" : "插件主页"
+        },
+      "create_magic_connection_tab" : {
+        "mfljsz_label" : "魔法连接设置",
+        "auto_color_space_connection" : "连接时智能修改色彩空间",
+        "magic_change_material_name_options" : "连接时修改材质名称",
+        "zdyljdtt_label" : "自定义连接的贴图",
+        "zdyglmz_label" : "自定义匹配权重名称",
+        "mflj_tab" : "魔法连接",
+        "magic_change_udim_options" : "连接时智能开启UDIM"
+      },
+      "create_color_space_tab": {
+        "zdysckj_label": "自定义色彩空间",
+        "zdszsckj_label": "自动设置色彩空间",
+        "sckj_label": "颜色空间"
+      },
+      "create_node_connection_tab": {
+        "zdljcljdsz_label": "自动连接处理节点设置",
+        "cljdsz_list": "处理节点设置",
+        "jdlj_tab": "节点连接"
+      },
+      "create_path_matching_tab": {
+        "ljsxgsz_label": "连接时相关设置",
+        "path_matching_checkbox": "连接时智能修改色彩空间",
+        "path_matching_change_udim_checkbox" :"连接时智能开启UDIM",
+        "path_matching_change_material_name_options": "连接时修改材质名称",
+        "path_disable_feedback_options": "关闭反馈",
+        "sxgczpchywzdwj_label": "筛选过程中排除含有文字的文件",
+        "zjxxsdjcsyczfczdtdnc_label": "在进行相似度检测时移除字符串中的特定内容",
+        "ppsxgsz_label": "匹配时相关设置",
+        "auto_max_val_checkbox": "自动选择最佳匹配",
+        "auto_max_val_checkbox_tip" : "如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。",
+        "ppysqz_label": "匹配元素权重",
+        "mzqz_label": "名字权重",
+        "fblqz_label": "分辨率权重",
+        "gsqz_label": "格式权重",
+        "cjsjqz_label": "创建时间权重",
+        "xsdjs_label" : "相似度的计算",
+        "similarity_max_slider_label": "自定义相似度阈值:",
+        "similarity_max_slider_tip" : "请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。",
+        "similarity_range_slider_label": "相似度容差范围",
+        "similarity_range_slider_tip" : "设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。",
+        "day_range_slider_label": "计算创建天数范围容差值:",
+        "jdljpp_tab": "节点路径匹配"
+      },
+      "create_configure_ui_layout_tab": {
+        "yyszd_label": "语言设置等",
+        "yy_label": "语言:",
+        "jmybjsz_tab": "界面与布局设置"
+      }
+    },
 
+    "TM_WIN": {
+      "__init__": {
+        "WINDOWS_NAME": "贴图管理器",
+        "remaining_time": "许可证剩余时间",
+        "day": "天"
+      },
+      "create_widgets": {
+        "MaterialListSearch_placeholder": "输入要搜索的材质球名称....",
+        "TexturelListSearch_placeholder": "输入要搜索的贴图球名称....",
+        "MaterialList_SelectAll_Button" : "全选",
+        "TexturelList_Unselect_All_Button": "取消全选",
+        "TexturelList_reverse_selection": "反选",
+        "TexturelList_Find_Missing_Textures_Button": "选出缺失",
+        "TexturelList_Intelligent_Find_Max_Size_Button": "选出大贴图",
+        "TexturelList_Search_And_Replace_Date_Button": "寻找替换",
+        "TexturelList_Replace_Data_Button": "自动修复路径",
+        "TexturelList_Processed_Image_Button": "处理图像",
+        "TexturelList_Refresh_Button_ToolTip": "根据缓存进行重新刷新",
+        "TexturelList_Headers": ["贴图节点名称", "材质球", "大小", "像素大小", "格式", "引用次数", "状态", "路径"]
+      },
+      "state" : {
+        "normal" : "正常",
+        "lack": "缺失"
+      }
     },
 
     "TM_FAR_WIN": {
-      "INIT" : {
-        "WINDOWS_NAME" : "搜索并替换-"
+      "__init__": {
+        "WINDOWS_NAME": "搜索并替换-"
       },
-      "WIDGETS": {
-          "label_data_to_edit_options": "修改内容的范围",
-          "label_data_to_edit_options_02": "请选择需要修改的内容范围",
-          "sl_material": "材质",
-          "sl_texture": "贴图",
-          "sl_texture_path": "贴图路径",
-          "radio_all": "全部",
-          "radio_table": "表格内",
-          "radio_selection": "表格选择",
-          "label_find": "查找内容",
-          "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
-          "checkbox_case_sensitive": "大小写忽略",
-          "checkbox_regex": "使用正则表达式",
-          "button_replace": "替换"
+      "create_widgets": {
+        "label_data_to_edit_options": "修改内容",
+        "label_data_to_edit_options_02": "你需要根据你要修改的内容选择",
+        "sl_material": "材质",
+        "sl_texture": "贴图",
+        "sl_texture_path": "贴图路径",
+        "label_modify_options": "修改内容的范围",
+        "radio_all": "全部",
+        "radio_table": "表格内",
+        "radio_selection": "选择中",
+        "label_find": "查找内容",
+        "line_edit_find_placeholder": "请输入查找内容...",
+        "label_replace": "↓ ↓ ↓ ↓ ↓ ↓",
+        "line_edit_replace_placeholder": "请输入替换内容...",
+        "checkbox_case_sensitive": "大小写忽略",
+        "checkbox_regex": "使用正则表达式",
+        "button_replace": "替换"
+      }
+    },
+
+    "TM_RF_WIN": {
+      "initialize_window_config": {
+        "WINDOWS_NAME": "自动修复路径-"
+      },
+      "create_widgets": {
+        "memory_search_mode_checkbox" : "智能搜索模式",
+        "search_subfolders_checkbox": "搜索子文件夹",
+        "multiple_subfolder_search_checkbox": "多个子文件夹搜索",
+        "ignore_case_checkbox": "忽略大小写",
+        "fix_path_button": "开始修复路径"
+      }
+    },
+
+    "TM_IP_WIN": {
+      "initialize_window_config": {
+        "WINDOWS_NAME" : "图像处理-"
+      },
+
+      "menu_widgets": {
+        "edit_menu": "编辑",
+        "clear_cache": "清除缓存  ！谨慎删除！",
+        "redo_action": "还原图像",
+        "help_menu": "帮助",
+        "instructions_action": "使用说明"
+
+      },
+
+      "create_widgets": {
+        "format_combo_box_label": "格式：",
+        "zoom_ratios_combo_box_label": "缩放：",
+        "resampling_mode_combo_box_label": "重新取样：",
+        "resampling_mode_list": ["最近邻插值", "均值插值", "双线性插值", "锐化插值", "三次插值", "高精度插值"],
+        "jpg_label": "JPG的品质: ",
+        "png_label": "PNG的品质: ",
+        "convert_format_check_box": "转换格式",
+        "scale_texture_check_box": "缩放贴图",
+        "conversion_button": "开始转换"
+      },
+
+      "update_quality_display_label": {
+        "01" : "级"
+      },
+
+      "get_selected_rows_data" : {
+        "01" : "没有选中任何行"
+      },
+
+      "copy_file_with_suffix": {
+        "01" : "复制备份文件时出错"
+      },
+
+      "image_conversion" : {
+        "01" : "你的这张图片路径连接失败: ",
+        "02" : "不支持的格式:",
+        "03" : "更新节点",
+        "04" : "失败"
+      }
+    },
+
+    "TM_TP_WIN" : {
+      "initialize_window_config" : {
+        "WINDOWS_NAME" : "贴图打包器"
+      },
+      "create_widgets" : {
+        "output_path_input" : "请选择输出文件夹路径...",
+        "radio_all" : "全部",
+        "radio_table" : "表格内",
+        "radio_selection" : "选择中",
+        "delete_source_checkbox" : "删除源文件",
+        "change_path_checkbox" : "修改路径",
+        "pack_button" : "打包"
+      },
+      "select_output_path" : {
+        "folder" : "请选择输出文件夹路径"
+      },
+      "start_pack": {
+        "01" : "请选择正常的输出路径",
+        "02" : "没有选中任何行",
+        "03" : "文件路径不存在",
+        "04" : "文件已经存在目标文件夹中",
+        "05" : "成功把",
+        "06" : "文件复制到",
+        "07" : "路径",
+        "08" : "程序化路径无法访问，生产错误，无法访问:",
+        "09" : "源文件",
+        "10" : "已成功删除",
+        "11" : "删除文件时出错",
+        "12" : "文件",
+        "13" : "不存在"
+      }
+    },
+
+    "UVPM" : {
+      "01": "已经把",
+      "02": "节点的uv平铺模式设置成:",
+      "03": "设置时错误：",
+      "04" : "请选择纹理节点"
+    },
+
+    "CSPM" : {
+      "01": "请选纹理贴图节点!",
+      "02": "已经把",
+      "03": "设置成"
+    },
+
+    "ASTCS": {
+      "01" : "请选纹理贴图节点!"
+    },
+
+    "DC_Button" : {
+      "__init__" : {
+        "01": "节点设置成功",
+        "02": "请先选择输出节点"
+      },
+      "connection_node": {
+        "01": "你的",
+        "02": "节点无法连接到",
+        "03": "节点上"
+      }
+    },
+
+    "ASFNU" : {
+      "01" : "请选择纹理贴图"
+    },
+
+    "RenderPM" : {
+      "__init__": {
+        "01" : "| 默认渲染属性成功写入",
+        "02" : "| 设置默认渲染属性时出错:",
+        "03" : "没检测到默认阿诺德渲染器节点，无法写入阿诺德的内容请切换渲染器先",
+        "04" : "| 阿诺德渲染属性成功写入",
+        "05" : "| 设置渲染属性时出错:",
+        "06" : "| 删除原有AOV属性时出错:",
+        "07" : "| 阿诺德AOV属性成功写入",
+        "08" : "| 配置里没有AOV，将不会写入AOV参数",
+        "09" : "| 处理AOV属性时出错:"
+      }
+    },
+
+    "RenderPSB": {
+      "import_name_win": {
+        "01" : "输入你的预设名字",
+        "02" : "确定",
+        "03" : "取消"
+
+      }
+    },
+
+    "PDC" : {
+      "main" : {
+        "01" : "请选择贴图节点哦"
+      },
+      "feedback_prompt": {
+        "01": "===================================匹配相似度=================================",
+        "02": "匹配源:",
+        "03": "匹配目标：",
+        "04": "相似度:",
+        "05": "===================================完成匹配列表================================",
+        "06": "匹配的对象|",
+        "07": "完成匹配|",
+        "08": "相似度:"
+
+      }
+    },
+
+    "licenses_name" : {
+        "free_license": "免费版",
+        "standard_license": "标准版",
+        "premium_license": "高级版",
+        "developer_license": "开发者许可证",
+        "educational_license": "教育许可证",
+        "permanent_standard_license": "永久标准版",
+        "permanent_premium_license": "永久高级版",
+        "expiry_date_01" : "永久"
     }
-
-
-
-    }
-
 
 
   },
 
-  "ArnoldMagicNodeLibs" : {
+  "ArnoldMagicNodeLibs": {
 
+    "PathD" : {
+      "DPC" : {
+        "01": "无法访问目录",
+        "02": "详细报错",
+        "03": "无法打开或验证为图像文件",
+        "04": "此文件没有权限访问，详细报错"
+      },
+      "CN" : {
+        "01" : "此路径无法连接:"
+      },
+      "GFI" : {
+        "01" : "在查询贴图元属性的时候报错，报错原因: "
+      }
+    },
+
+    "NodeP": {
+      "CTFNTPN" : {
+        "01": "位置的材质通道："
+      },
+      "ASTCS": {
+        "01" : "节点设置为",
+        "02" : "色彩空间"
+      },
+      "ASU" : {
+        "01": "UV平铺模式设置成<UDIM>模式",
+        "02": "UV平铺模式设置成<禁用>模式"
+      }
+    },
 
     "DataP": {
-      "SSARD" : {
-        "01"  : "你传入数据不是字符串类型",
-        "02"  : "正则表达式错误 :"
+      "SSARD": {
+        "01": "你传入数据不是字符串类型",
+        "02": "正则表达式错误 :"
       }
-    }
+    },
 
+    "ImageP": {
+      "RI" : {
+        "01": "缩放比例无效",
+        "02": "请设置0到100之间的有效值",
+        "03": "读取图片失败",
+        "04": "文件写入权限错误",
+        "05": "保存图片失败",
+        "06": "图片处理失败"
+      },
+      "CIF": {
+        "01": "转换格式-读取图片失败",
+        "02": "转换格式-读取图片缓存失败",
+        "03": "已转换为",
+        "04": "格式 新路径",
+        "05": "转换格式-保存图片失败 错误原因"
+      }
+    },
+
+    "FeedbackPrompt" : {
+      "01": "@Arnold Tool 插件提醒",
+      "02": "错误警告，报错问题在下面",
+      "03": "严重错误，触发请联系开发者去修复，联系方式"
+    },
+
+    "process_sl_data": {
+      "01": "请你先选择相应的节点哦！"
+    }
 
   },
 
-  "LicenseV" : {
-    "GMI" : {
-      "01" : "无法获取到主板ID 请检查一下权限"
+  "LicenseV": {
+    "GMI": {
+      "01": "Windows系统 无法找到主板序列号",
+      "02": "Windows系统 获取主板序列号时出:",
+      "03": "Linux/Unix系统 无法找到主板序列号",
+      "04": "Linux/Unix系统 获取主板序列号时出错:"
     },
-
-    "GWTS" : {
-      "01" : "无法获取淘宝时间戳",
-      "02" : "获取link时间失败:"
+    "GWTS": {
+      "01": "无法获取淘宝时间戳",
+      "02": "获取link时间失败:"
     },
-
-    "GNTS" : {
-      "01" : "获取 NTP 时间失败:"
+    "GNTS": {
+      "01": "获取 NTP 时间失败:"
     },
-
-     "VL"  : {
-       "01" : "许可证格式无效",
-       "02" : "设备识别码不匹配",
-       "03" : "许可证已过期！",
-       "04" : "签名验证失败，许可证可能被篡改",
-       "05" : "许可证格式错误",
-       "06" : "验证过程中发生未知错误，请联系开发者"
-
+    "VL": {
+      "01": "许可证格式无效",
+      "02": "设备识别码不匹配",
+      "03": "许可证已过期！",
+      "04": "签名验证失败，许可证可能被篡改",
+      "05": "许可证格式错误",
+      "06": "验证过程中发生未知错误，请联系开发者"
     },
+    "LW": {
+      "DIL": "设备识别码（需要提供给开发者）",
+      "SUL": "输入序列号",
+      "SNT": "请输入序列号",
+      "VB": "验证许可",
+      "01" : "请输入序列号"
+    },
+    "MP": {
+      "01": "无法获取在线时间",
+      "02": "无法获取时间",
+      "03": "无法获取设备码"
+    }
+  },
 
-    "LW" : {
-      "DIL" : "设备识别码（需要提供给开发者）",
-      "SUL" : "输入序列号",
-      "SNT" : "请输入序列号",
-      "VB" : "验证许可"
-      },
+  "DLibs" : {
+    "FP" : "@Arnold Tool 插件提醒 {} | ",
+    "CVF" : "很好配置库文件夹存在 ╭(●｀∀´●)╯ 鼓掌鼓掌",
+    "DL" : {
+      "01" : "发现",
+      "02" : "库不存在 ◔ ‸◔？   正在下载≖‿≖✧耐心等待",
+      "03" : "好棒！！！！环境配置没有任何问题♪（＾∀＾●）ﾉｼ "
+    },
     "MP" : {
-      "01" : "无法获取在线时间"
+      "01" : "检索库时间: ",
+      "02" : " 秒"
+    },
+
+    "upgrade_pip": {
+      "01" : "正在升级 pip库...",
+      "02" : "pip库 已成功升级!",
+      "03" : "升级 pip 失败原因: "
+    },
+
+    "check_and_install_pywin32" : {
+      "01" : "检测到pywin32无法找到",
+      "02" : "正在尝试重新安装 pywin32...",
+      "03" : "pywin32 安装完成，请重启 Maya"
+    },
+
+    "show_restart_popup" : {
+      "01" : "Arnold_Magic_Node提醒~~",
+      "02" : "更新了您 Maya 的 pywin32 库\n现在得重启才可以正常使用插件",
+      "03" : "退出 Maya",
+      "04" : "稍后再退出 Maya"
+
     }
   }
-
-
-
 }
