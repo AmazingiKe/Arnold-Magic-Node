@@ -1,471 +1,404 @@
 # Arnold Magic Node Tool
-!
+
 ![Maya Version](https://img.shields.io/badge/Maya-2022%20|%202023%20|%202024%20|%202025-orange)
 ![Arnold Version](https://img.shields.io/badge/Arnold-5.0+-blueviolet)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Python](https://img.shields.io/badge/Python-3.7+-blue)
+
 ## 🌟 项目亮点
-- **一键式PBR工作流**：自动构建符合行业标准的材质网络
-- **批量处理**：支持同时处理多个材质球和对象
-- **智能AOV管理**：自动化AOV通道配置与验证
-- **节点优化**：自动清理冗余节点，提升场景性能
+
+### 核心优势
+
+- **🎯 智能贴图匹配引擎**：基于多维度相似度算法（文件名、分辨率、格式、创建时间），自动识别并匹配贴图到正确的材质通道
+- **⚡ 一键式PBR工作流**：自动构建符合行业标准的材质网络，支持金属/非金属工作流
+- **🔧 强大的贴图管理器**：可视化界面批量管理场景中的所有贴图，实时显示状态、大小、分辨率等信息
+- **🤖 智能UDIM检测**：自动识别UDIM格式贴图并正确设置UV平铺模式
+- **🎨 自动色彩空间管理**：根据贴图类型智能设置色彩空间，确保渲染准确性
+- **📦 批量图像处理**：支持批量转换格式、缩放贴图，多种重采样算法可选
+- **🌍 多语言支持**：内置中英文双语界面，可扩展更多语言
+- **🔗 灵活的节点连接**：自动创建处理节点（aiMultiply、aiNormalMap等），智能连接材质通道
+- **💾 渲染预设系统**：保存、加载、管理渲染设置，快速切换不同渲染配置
+- **🔄 路径智能修复**：批量修复缺失的贴图路径，支持子文件夹搜索和智能匹配
+
+### 技术特色
+
+- **高性能算法**：使用Aho-Corasick自动机进行高效的多模式匹配
+- **模糊匹配技术**：集成Levenshtein距离算法，支持拼写容错
+- **模块化架构**：清晰的代码结构，易于扩展和维护
 - **跨版本兼容**：全面支持Maya 2022至2025最新版本
+
 ## 📦 快速安装
+
 ### 自动安装（推荐）
+
 ```python
 # 将下方脚本拖入Maya视窗即可启动安装向导
 from arnold_magic import installer
 installer.auto_setup()
 ```
+
 ### 手动安装
+
 1. 下载[最新发行包](https://example.com/download)
 2. 解压到Maya模块目录：
    - **Windows**: `C:\Users\<用户>\Documents\maya\modules`
    - **macOS**: `~/Library/Preferences/Autodesk/maya/modules`
 3. 创建模块描述文件 `arnoldMagic.mod`：
+
 ```
 + ArnoldMagic 1.0 <模块路径>
 PATH += <模块路径>/bin
 PYTHONPATH += <模块路径>/scripts
 ```
+
 ## 🛠️ 核心功能
-### 材质工作流
-- 自动创建PBR材质网络（金属/非金属工作流）
-- 智能贴图连接（支持UDIM纹理识别）
-- 一键材质转换（Standard Surface ↔ aiSurface）
-- 批量重命名与材质替换
-### AOV管理
-- 自动配置Cryptomatte通道
-- AOV预设管理系统
-- 通道验证与错误检查
-- 深度合成模板生成
-### 渲染优化
-- 自动代理生成器
-- 灯光组管理系统
-- 渲染统计报告
-- 内存优化工具
+
+### 1. 贴图管理器（Texture Manager）
+
+**功能强大的贴图管理工具，让场景资产管理变得前所未有的简单**
+
+- **📊 可视化管理界面**
+  - 表格化展示所有贴图节点信息：节点名称、材质球、文件大小、像素分辨率、格式、引用次数、加载状态、完整路径
+  - 支持搜索过滤材质球和贴图节点
+  - 全选/取消全选/反选操作
+  - 一键筛选缺失贴图、大尺寸贴图
+
+- **🔍 智能路径修复**
+  - 自动搜索并修复缺失的贴图路径
+  - 支持子文件夹递归搜索
+  - 智能匹配算法，基于文件名、分辨率、格式、创建时间多维度匹配
+  - 支持缓存机制，提升搜索效率
+
+- **🖼️ 批量图像处理**
+  - 格式转换：支持JPG、PNG等主流格式互转
+  - 贴图缩放：按百分比调整分辨率
+  - 多种重采样算法：最近邻、双线性、三次插值、Lanczos等
+  - 可配置JPG质量、PNG压缩等级
+  - 自动备份原图，安全可靠
+
+- **📦 贴图打包工具**
+  - 一键打包场景中使用的所有贴图
+  - 自动修改节点路径指向新位置
+  - 可选删除源文件或复制TX文件
+  - 支持选择性打包（全部/表格内/选中项）
+
+### 2. 魔法连接系统（Magic Connection）
+
+**革命性的自动连接系统，让材质搭建变得轻松高效**
+
+- **🎯 智能贴图识别**
+  - 基于关键词库自动识别贴图类型（baseColor、normal、roughness等）
+  - 支持模糊匹配，容错能力强
+  - 可自定义关键词映射规则
+
+- **🔗 自动节点连接**
+  - 自动创建并连接处理节点（aiMultiply、aiNormalMap、aiBump2d等）
+  - 智能处理AO通道与baseColor的混合
+  - 自动处理normalCamera通道的转换
+  - 支持bump和displacement的智能连接
+
+- **🤖 智能UDIM管理**
+  - 自动检测UDIM格式贴图（1001-1999范围）
+  - 一键设置UV平铺模式
+  - 支持多种UDIM类型（ZBrush、Mudbox、Mari）
+
+- **🎨 自动色彩空间设置**
+  - 根据贴图类型自动设置正确的色彩空间
+  - 支持自定义色彩空间映射规则
+  - 自动设置alphaIsLuminance和ignoreColorSpaceFileRules
+
+- **📝 智能材质命名**
+  - 自动清理材质名称，移除专业术语和数字前缀
+  - 保持材质命名规范统一
+
+### 3. 渲染预设系统（Render Presets）
+
+**专业的渲染配置管理工具**
+
+- **💾 预设保存与加载**
+  - 保存默认渲染属性
+  - 保存Arnold渲染器参数
+  - 保存AOV通道配置
+  - 支持自定义预设名称
+
+- **📋 预设管理**
+  - 添加、修改、删除渲染预设
+  - 快速切换不同渲染配置
+  - 直接打开预设文件夹进行管理
+
+- **⚙️ AOV管理**
+  - 自动配置Cryptomatte通道
+  - AOV预设管理系统
+  - 通道验证与错误检查
+
+### 4. 路径匹配与替换（Path Matching）
+
+**强大的路径处理工具**
+
+- **🔍 智能搜索与替换**
+  - 支持材质、贴图、贴图路径的批量修改
+  - 支持正则表达式和大小写忽略
+  - 可选择修改范围（全部/表格内/选中项）
+
+- **📊 批量路径修复**
+  - 智能搜索模式：基于相似度算法自动匹配
+  - 支持子文件夹递归搜索
+  - 支持多层子文件夹搜索
+  - 强制路径覆盖选项
+
+### 5. 灯光管理（Light Manager）
+
+**专业的灯光组织工具**
+
+- **💡 灯光分类**
+  - 自动识别场景中所有Arnold灯光
+  - 按light group分类管理
+  - 支持多种灯光类型（aiAreaLight、aiSkyDomeLight、aiPhotometricLight等）
+
+- **🎯 AOV集成**
+  - 自动设置灯光的AOV light group属性
+  - 便于后期合成和灯光分层渲染
+
 ## 📖 使用指南
-### 基础工作流
+
+### 快速开始
+
+#### 1. 启动插件
+
 ```python
-# 示例：批量创建金属材质
-from arnold_magic import material_builder
-builder = material_builder.MaterialFactory()
-builder.create_batch(
-    preset='metallic',
-    textures={
-        'base_color': 'textures/*_albedo.exr',
-        'roughness': 'textures/*_roughness.exr'
-    },
-    assignment=['pSphere1', 'pCube1']
+# 在Maya脚本编辑器中运行
+import Arnold_Magic_Node
+Arnold_Magic_Node.Arnold_Magic_Node_UI()
+```
+
+#### 2. 使用贴图管理器
+
+1. 打开插件后，右键点击窗口选择"贴图管理器"
+2. 在表格中查看所有贴图信息
+3. 使用搜索框快速定位材质或贴图
+4. 选择需要处理的贴图，点击相应功能按钮
+
+#### 3. 魔法连接贴图
+
+1. 选择材质球和贴图节点
+2. 右键菜单选择"魔法连接"
+3. 插件会自动识别贴图类型并连接到正确通道
+4. 可在设置中调整连接参数
+
+#### 4. 修复缺失贴图
+
+1. 在贴图管理器中点击"选出缺失"
+2. 点击"自动修复路径"
+3. 选择贴图所在的文件夹
+4. 等待智能匹配完成
+
+### 高级功能示例
+
+#### 批量处理贴图
+
+```python
+# 示例：批量转换贴图格式
+from Arnold_Magic_Node_lib import ImageProcessor
+
+processor = ImageProcessor()
+processor.convert_image_format(
+    input_path='D:/textures/old_format.exr',
+    output_path='D:/textures/new_format.jpg',
+    output_format='jpg',
+    jpg_quality=95
 )
 ```
+
+#### 自定义贴图匹配规则
+
+插件支持自定义关键词映射，可在设置中修改：
+
+- baseColor: base, diffuse, albedo, color
+- normal: normal, nrm, nor
+- roughness: rough, rgh, roughness
+- metallic: metal, mtl, metallic
+- 等等...
+
+#### 智能路径匹配算法
+
+插件使用多维度相似度算法进行贴图匹配：
+
+```python
+# 相似度计算权重（可调整）
+weights = {
+    'name_weight': 0.4,        # 文件名相似度权重
+    'resolution_weight': 0.3,  # 分辨率相似度权重
+    'format_weight': 0.1,       # 格式相似度权重
+    'creation_time_weight': 0.2   # 创建时间相似度权重
+}
+```
+
 ### 快捷键配置
-| 功能                | 快捷键   |
-|---------------------|----------|
-| 材质创建            | Ctrl+M   |
-| AOV管理面板         | Ctrl+A   |
-| 节点优化            | Ctrl+O   |
-| 渲染诊断            | Ctrl+D   |
+
+| 功能        | 快捷键 |
+| ----------- | ------ |
+| 材质创建    | Ctrl+M |
+| AOV管理面板 | Ctrl+A |
+| 节点优化    | Ctrl+O |
+| 渲染诊断    | Ctrl+D |
+
 ## 🌐 支持与社区
+
 ### 系统要求
-| 组件            | 最低要求               |
-|-----------------|------------------------|
-| Maya            | 2022.5+               |
-| Arnold          | 5.3.1+                |
-| Python          | 3.7+                  |
-| 操作系统         | Windows 10/11, macOS 12+ |
+
+| 组件     | 最低要求                 |
+| -------- | ------------------------ |
+| Maya     | 2022.5+                  |
+| Arnold   | 5.3.1+                   |
+| Python   | 3.7+                     |
+| 操作系统 | Windows 10/11, macOS 12+ |
+
+### 依赖库
+
+插件会自动安装以下依赖：
+
+- PySide2/PySide6：Qt界面框架
+- Pillow：图像处理
+- pyexr：EXR格式支持
+- msgpack：高效数据序列化
+- ahocorapy：Aho-Corasick自动机算法
+- python-Levenshtein：模糊匹配算法
+- numpy：数值计算
+
 ### 常见问题
+
 ❓ **安装失败怎么办？**
+
 - 确保Maya模块目录有写入权限
 - 检查路径是否包含中文或特殊字符
 - 验证Python环境是否配置正确
+- 插件会自动检测并安装缺失的依赖库
+
 💡 **材质显示异常？**
+
 - 检查文件纹理的color space设置
 - 验证Arnold渲染器版本兼容性
-- 使用`Render Diagnostics`工具进行自动检测
+- 使用贴图管理器检查贴图加载状态
+- 尝试使用"自动色彩空间"功能
+
+🔍 **贴图路径丢失？**
+
+- 使用贴图管理器的"选出缺失"功能
+- 点击"自动修复路径"进行智能匹配
+- 支持子文件夹搜索和缓存机制
+- 可手动指定搜索范围
+
+📦 **如何打包贴图？**
+
+- 在贴图管理器中选择需要打包的贴图
+- 点击"贴图打包器"
+- 选择输出路径
+- 可选是否删除源文件或复制TX文件
+
+⚙️ **如何自定义设置？**
+
+- 右键菜单选择"设置"
+- 可调整语言、连接参数、色彩空间等
+- 支持自定义贴图匹配关键词
+- 可调整相似度计算权重
+
 ## 📜 许可证协议
-本工具采用**模块化授权**：
-- 基础功能：MIT License
-- 高级功能：需购买商业授权
-- 教育用户：免费学术许可
-[查看完整EULA](https://example.com/eula)
+
+本项目采用 **MIT License** 开源许可证，允许自由使用、修改和分发。
+
+### 许可证条款
+
+```
+MIT License
+
+Copyright (c) 2025 Arnold Magic Node Tools
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in Software without restriction, including without limitation rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of Software, and to permit persons to whom Software is
+furnished to do so, subject to following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### 使用须知
+
+✅ **您可以：**
+
+- 自由使用本插件用于个人或商业项目
+- 修改源代码以适应您的需求
+- 分发本插件（需保留版权声明）
+- 将本插件集成到其他项目中
+
+❌ **您需要：**
+
+- 在所有副本或实质性部分中保留版权声明
+- 在分发时包含完整的许可证文本
+
+⚠️ **免责声明：**
+
+- 本软件按"原样"提供，不提供任何明示或暗示的担保
+- 作者不对使用本软件造成的任何损失负责
+- 使用本软件即表示您同意上述条款
+
 ## 🤝 参与贡献
+
 欢迎通过以下方式参与项目：
-1. 提交Issue报告问题
-2. 发起Pull Request改进代码
-3. 参与文档翻译
-4. 分享使用案例
-贡献指南请见 [CONTRIBUTING.md](https://example.com/contributing)
+
+### 贡献代码
+
+1. Fork 本仓库
+2. 创建您的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启一个 Pull Request
+
+### 报告问题
+
+- 在 Issues 中提交 Bug 报告
+- 详细描述问题复现步骤
+- 附上截图或错误日志
+
+### 功能建议
+
+- 在 Issues 中提出新功能建议
+- 说明使用场景和预期效果
+- 与社区讨论实现方案
+
+### 文档改进
+
+- 完善使用文档
+- 翻译多语言版本
+- 分享使用案例和教程
+
 ## 📞 联系我们
-- 技术支持：support@arnoldmagic.com
-- 商务合作：biz@arnoldmagic.com
-- 社区论坛：[forum.arnoldmagic.com](https://forum.arnoldmagic.com)
-- Twitter: [@ArnoldMagicTool](https://twitter.com/ArnoldMagicTool)
+
+- **技术支持**：1925250542@qq.com
+- **项目主页**：https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69
+- **问题反馈**：https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a91909?code=LZVF69
+- **帮助文档**：https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69
+
 ---
-[【立即下载】](https://example.com/download) | [【观看演示视频】](https://youtube.com/demo) | [【查看完整文档】](https://docs.arnoldmagic.com)
 
-**Last Updated: March 24, 2025**
+<div align="center">
 
-Before downloading, installing, or using the Arnold Magic Node Tools, please read this End User License Agreement carefully.
+**⭐ 如果这个项目对你有帮助，请给个 Star！⭐**
 
-**1. Interpretation and Definitions**
+Made with ❤️ by AmazingIke
 
-**1.1 Interpretation**
-Capitalized terms have the meanings defined under the following conditions. These definitions shall have the same meaning regardless of whether they appear in singular or plural form.
+[【立即下载】](https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69) | [【查看完整文档】](https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69)
 
-**1.2 Definitions**
-For the purposes of this End User License Agreement:
+</div>
 
-- **Agreement** refers to this End User License Agreement, which constitutes the complete agreement between you and the company regarding the use of the application.
-- **Application** refers to the software program named Arnold Magic Node Tools provided by the company, which you download via a compatible Autodesk Maya environment.
-- **Company** (referred to as "Company", "we", or "our" in this Agreement) refers to the creator and owner of Arnold Magic Node Tools.
-- **Content** refers to assets, textures, data, configurations, or other information processed, created, exported, or otherwise provided through the application, regardless of its form.
-- **Device** refers to any computer system capable of running Autodesk Maya on which the application relies.
-- **License Key** refers to the digital authorization code provided after purchase to enable the application's features.
-- **Maya** refers to the Autodesk Maya software in which the application runs as a plugin.
-- **Third-Party Services** refers to any services or content (including data, information, applications, and other product services) provided by third parties that may be displayed, included, or provided by the application.
-- **You** refers to the individual accessing or using the application, or the company or other legal entity on behalf of which such individual is accessing or using the application.
-
-**2. Acceptance of Terms**
-
-**2.1 Agreement Confirmation**
-By downloading, installing, or using this plugin (hereinafter referred to as the "application"), you signify that you have read, understood, and unconditionally accepted all terms and conditions of this Agreement. If you do not agree with any part of this Agreement, please cease downloading, installing, or using the application immediately.
-This Agreement serves as a legal contract between you and the plugin developer (hereinafter referred to as the "Company"), clearly defining your rights and restrictions regarding the use of the application.
-
-**2.2 Important Declaration:**
-
-- The Company grants you a non-exclusive license to use the application; ownership and intellectual property rights remain with the Company.
-- You agree to use the application legally according to the terms of this Agreement, prohibiting any form of reverse engineering, commercial resale, or unauthorized modification.
-
-**2.3 User Responsibilities:**
-
-If you continue to use the application, you confirm:
-
-- You possess full legal capacity or have obtained consent from a legal guardian;
-- Understanding that violating the Agreement may result in legal liability and service termination.
-
-**3. License**
-
-**3.1 License Scope**
-The Company grants you a revocable, non-exclusive, non-transferable, limited license to download, install, and use the application strictly according to the terms of this Agreement.
-
-Based on the purchased license level, the Company grants you one of the following license types:
-
-- **Single-User License:** Allows one designated user to install and use the application on up to two (2) devices owned or controlled by that user.
-- **Multi-User License:** Allows a specified number of concurrent users within a single organization to use the application.
-- **Enterprise License:** Allows unlimited users within a single organization at a specific site location to use the application.
-- **Educational License:** Allows the application to be used for non-commercial educational purposes only.
-
-The Company may provide a time-limited trial version ("Trial Version") that allows users to use part or all of the application's features for free. The trial version may contain feature limitations, watermarks, or automatic termination mechanisms. After the trial period ends, a formal license purchase is required to continue using the application.
-
-**3.2 License Restrictions**
-You agree not to, and will not permit others to:
-
-- License, sell, rent, lease, assign, distribute, transmit, host, outsource, disclose, or otherwise commercially exploit the application, or make the application available to any third party, unless your specific license type allows.
-- Use an educational license for any commercial purposes or economic gain.
-- Copy, reproduce, or replicate the application or any part of it, except for backup purposes or if your license type explicitly allows.
-- Modify, create derivative works, disassemble, decrypt, reverse compile, or reverse engineer any part of the application.
-- Remove, alter, or obscure any proprietary notices (including copyright or trademark notices) of the Company or its affiliates, partners, suppliers, or application licensors.
-- Use the application in any manner that violates any applicable local, state, national, or international law or regulation.
-- Share, transfer, or distribute your license key with any other person or entity.
-- Use the application to develop competitive software products similar to the application.
-
-You shall not use the application in high-risk scenarios such as military, nuclear facilities, or life-sustaining equipment, or for any use that violates humanitarian principles.
-
-**4. Technical Protective Measures**
-
-The application may contain technical measures designed to prevent unauthorized or illegal use of the application. You acknowledge that the application may automatically connect to the internet for license verification and agree not to attempt to disable or circumvent these license verification processes.
-You are responsible for the confidentiality of the license key. In the event of a key leak or device loss, you should immediately apply for a license freeze through the Company's designated channel. The Company reserves the right to charge a management fee not exceeding 20% of the original price for key resets.
-
-**5. Intellectual Property**
-
-The application, including its content, features, and functionality, is and will always remain the proprietary property of the Company and its licensors. The application is protected by copyright, trademark, and other intellectual property laws. You acknowledge that all intellectual property rights in the application belong to the Company.
-Feedback you submit through any channel, including improvement suggestions, feature requests, or bug reports (collectively "feedback"), is considered a grant of a non-exclusive, perpetual, worldwide, royalty-free license to the Company, allowing the Company to freely use, modify, or commercialize such feedback.
-
-**6. User-Generated Content**
-
-You retain all ownership rights to any assets or content created using the application. However, by creating content using the application, you grant the Company non-exclusive rights to use descriptions of such content for the Company's marketing purposes, such as displaying sample renderings on the Company's website.
-After termination of use, content generated by you through the application will remain on your local device and cannot be accessed or deleted by the Company. Regular backups are recommended to prevent data loss.
-
-**7. Third-Party Services and Dependencies**
-
-**7.1 Autodesk Maya Dependency**
-The application operates exclusively within Autodesk Maya software. You acknowledge:
-
-- The Company is not affiliated with Autodesk, Inc.
-- You must independently obtain and license Autodesk Maya.
-- The Company is not responsible for any issues arising from your Autodesk Maya installation.
-
-**7.2 Arnold Renderer Integration**
-The application is designed to work in conjunction with the Arnold renderer. You acknowledge:
-
-- Full functionality may require appropriate licensing or subscription for the Arnold renderer.
-- The Company is not responsible for issues arising from the Arnold renderer.
-
-**7.3 Other Third-Party Services**
-The application may display, include, or provide third-party content or link to third-party websites or services.
-
-You acknowledge and agree that the Company is not responsible for any third-party services, including their accuracy, completeness, timeliness, validity, copyright compliance, legality, appropriateness, quality, or any other aspect. The Company shall not be liable for any third-party services and shall not bear responsibility for you or any other person or entity.
-
-**7.4 Version Compatibility Declaration**
-The application guarantees support only for Autodesk Maya 2025 and the following two major versions. Previous versions of Maya may experience functionality issues due to API changes, and the Company does not provide compatibility support.
-
-**8. Updates and Maintenance**
-
-**8.1 Updates**
-The Company may occasionally provide updates, enhancements, or new versions of the application. The Company reserves the right to discontinue support for prior versions of the application upon release of updates.
-
-**8.2 Maintenance Period**
-Based on your license type, you may be entitled to updates and technical support for a limited time ("maintenance period"). After the maintenance period expires, you can continue using the current version of the application, but unless you purchase an extension of the maintenance period, you will not be entitled to updates or technical support.
-
-**9. Term and Termination**
-
-**9.1 Term**
-This Agreement remains in effect until terminated by you or the Company.
-
-**9.2 Company Termination**
-The Company may, at its sole discretion, suspend or terminate this Agreement and the license granted at any time for any reason without prior notice.
-
-If you fail to comply with any provision of this Agreement, this Agreement will terminate immediately without prior notice from the Company.
-
-**9.3 Your Termination**
-You may also terminate this Agreement by deleting the application and all its copies from your device.
-
-**9.4 Termination Effects**
-Upon termination of this Agreement, you must cease using the application and delete all copies of the application from your device.
-
-Termination of the Agreement does not limit any of the Company's rights or remedies at law or in equity against you for any breach of your obligations under the Agreement during the term.
-
-**10. Indemnification**
-
-You agree to indemnify and hold the Company and its parent, subsidiaries, affiliates, officers, employees, agents, partners, and licensors (if any) harmless from any claim or demand (including reasonable attorneys' fees) due to or arising out of your: (a) use of the application; (b) violation of this Agreement or any law or regulation; or (c) violation of any rights of a third party.
-
-**11. No Warranty**
-
-The application is provided to you "AS IS" and "AS AVAILABLE" with all faults and defects without warranty of any kind. To the maximum extent permitted under applicable law, the Company, on its own behalf and on behalf of its affiliates, licensors, and service providers, expressly disclaims all warranties of any kind, whether express, implied, statutory, or otherwise, with respect to the application, including all implied warranties of merchantability, fitness for a particular purpose, title, and non-infringement, and warranties that may arise from course of dealing, course of performance, usage, or trade practice. Without limiting the foregoing, the Company provides no warranty or undertaking, and makes no representation of any kind that the application will meet your requirements, achieve any intended results, be compatible or work with any other software, applications, systems, or services, operate without interruption, meet any performance or reliability standards, or be error-free, or that any errors or defects can or will be corrected.
-
-Without limiting the foregoing, neither the Company nor any company provider makes any representation or warranty of any kind, express or implied: (I) as to the operation or availability of the application, or the information, content, and materials or products included thereon; (II) that the application will be uninterrupted or error-free; (III) as to the accuracy, reliability, or currency of any information or content provided through the application; or (IV) that the application, its servers, the content, or emails sent from or on behalf of the Company are free of viruses, scripts, trojan horses, worms, malware, time bombs, or other harmful components.
-
-Some jurisdictions do not allow the exclusion of certain types of warranties or limitations on applicable statutory rights of a consumer, so some or all of the above exclusions and limitations may not apply to you. But in such a case, the exclusions and limitations set forth in this section shall be applied to the greatest extent enforceable under applicable law.
-
-**12. Limitation of Liability**
-
-Notwithstanding any damages that you might incur, the Company's and any of its suppliers’ entire liability under any provision of this Agreement and your exclusive remedy for all of the foregoing shall be limited to the amount actually paid by you for the application.
-
-To the maximum extent permitted by applicable law, in no event shall the Company or its suppliers be liable for any special, incidental, indirect, or consequential damages whatsoever (including, but not limited to, damages for loss of profits, loss of data or other information, for business interruption, for personal injury, for loss of privacy arising out of or in any way related to the use of or inability to use the application, third-party software and/or third-party hardware used with the application, or otherwise in connection with any provision of this Agreement), even if the Company or any supplier has been advised of the possibility of such damages and even if the remedy fails of its essential purpose.
-
-Some states/jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so the above limitation or exclusion may not apply to you.
-
-**13. Severability and Waiver**
-
-**13.1 Severability**
-If any provision of this Agreement is held to be unenforceable or invalid, such provision will be changed and interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable law and the remaining provisions will continue in full force and effect.
-
-**13.2 Waiver**
-Except as provided herein, the failure to exercise a right or require performance of an obligation will not affect a party's ability to exercise such right or require such performance at any time thereafter, nor shall the waiver of a breach constitute waiver of any subsequent breach.
-
-**14. Product Claims**
-
-The Company makes no warranties regarding the application.
-
-**15. Compliance with Laws**
-
-This Agreement is governed by the laws of [Your Country/Region], excluding its conflict of law rules. Your use of the application may also be subject to other local, state, national, or international laws.
-
-Archived versions of the Agreement are stored at [Company’s designated webpage] for compliance audit purposes. Major changes in terms will be highlighted and version comparison documents provided.
-
-**16. Amendments to the Agreement**
-
-The Company reserves the right, at its sole discretion, to modify or replace this Agreement at any time. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at the Company's sole discretion.
-
-By continuing to access or use the application after any revisions become effective, you agree to be bound by the revised terms. If you do not agree to the new terms, you are no longer authorized to use the application.
-
-**17. Entire Agreement**
-
-This Agreement constitutes the entire agreement between you and the Company regarding your use of the application and supersedes all prior and contemporaneous written or oral agreements.
-
-When you use or purchase other services from the Company, you may be subject to additional terms and conditions, which the Company will provide to you at the time of use or purchase.
-
-**18. Contact Us**
-
-If you have any questions about this Agreement, you can contact us:
-
-By email: 1925250542@qq.com
-Via website: https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69
-
-**最后更新日期：2025年3月24日**
-
-在点击下载、安装或使用Arnold Magic Node Tools之前，请仔细阅读本最终用户许可协议。
-
-**1. 释义与定义**
-
-**1.1 释义**
-首字母大写的词语具有以下条件下定义的含义。不论这些定义出现在单数或复数形式，其含义应保持一致。
-
-**1.2 定义**
-就本最终用户许可协议而言：
-
-- **协议** 指本最终用户许可协议，构成您与公司之间关于应用程序使用的完整协议。
-- **应用程序** 指由公司提供、您通过兼容的Autodesk Maya环境下载的名为Arnold Magic Node Tools的软件程序。
-- **公司** (在本协议中称为"公司"、"我们"或"我们的")指Arnold Magic Node Tools的创建者和所有者。
-- **内容** 指通过应用程序可处理、创建、导出或以其他方式提供的资产、纹理、数据、配置或其他信息，无论其形式如何。
-- **设备** 指能够运行应用程序所依赖的Autodesk Maya的任何计算机系统。
-- **许可密钥** 指购买后提供给您的数字授权码，用于启用应用程序的功能。
-- **Maya** 指应用程序作为插件运行的Autodesk Maya软件。
-- **第三方服务** 指可能由应用程序显示、包含或提供的由第三方提供的任何服务或内容(包括数据、信息、应用程序和其他产品服务)。
-- **您** 指访问或使用应用程序的个人，或代表其访问或使用应用程序的公司或其他法律实体。
-
-**2. 使用协议确认条款**
-
-**2.1 协议确认**
-通过下载、安装或使用本插件（以下简称"应用程序"），即表示您已充分阅读、理解并无条件接受本协议所有条款与条件的约束。若您不同意本协议的任何内容，请立即终止下载、安装及使用行为。
-本协议作为您与插件开发者（以下简称"公司"）之间的法律约定，明确规范您对应用程序的所有使用权限及限制。
-
-**2.2 重要声明：**
-
-- 公司仅授予您应用程序的非独占性使用许可，所有权及知识产权均归公司所有。
-- 您承诺仅依据本协议条款合法使用应用程序，禁止任何形式的反向工程、商业转售或未授权修改。
-
-**2.3 用户责任：**
-
-若您继续使用应用程序，视为您已确认：
-
-- 具备完全民事行为能力或已获法定监护人同意；
-- 理解违反协议可能导致法律责任及服务终止。
-
-**3. 许可**
-
-**3.1 许可范围**
-公司授予您一个可撤销的、非独占的、不可转让的、有限的许可，允许您严格按照本协议的条款下载、安装和使用应用程序。
-
-根据您购买的许可级别，公司授予您以下许可类型之一：
-
-- **单用户许可**：允许一个指定用户在该用户拥有或控制的最多两(2)台设备上安装和使用应用程序。
-- **多用户许可**：允许单个组织内的特定数量的并发用户使用应用程序。
-- **企业许可**：允许单个组织在特定站点位置的无限用户使用应用程序。
-- **教育许可**：仅允许将应用程序用于非商业教育目的。
-
-公司可能提供限时试用版（"Trial Version"），允许用户免费使用部分或全部功能。试用版可能包含功能限制、水印或自动终止机制。试用期结束后，需购买正式许可方可继续使用。
-
-**3.2 许可限制**
-您同意不会且不会允许他人：
-
-- 许可、出售、出租、租赁、分配、传输、托管、外包、披露或以其他方式商业利用应用程序，或使应用程序可供任何第三方使用，除非您的特定许可类型允许。
-- 将教育许可用于任何商业目的或经济利益。
-- 复制、复制或复制应用程序或其任何部分，除非为备份目的或您的许可类型明确允许。
-- 修改、制作衍生作品、反汇编、解密、反向编译或反向工程应用程序的任何部分。
-- 移除、更改或遮掩公司或其关联方、合作伙伴、供应商或应用程序许可方的任何专有声明(包括任何版权或商标声明)。
-- 以违反任何适用的地方、州、国家或国际法律或法规的方式使用应用程序。
-- 与任何其他人或实体共享、转让或分发您的许可密钥。
-- 使用应用程序开发与应用程序类似的竞争软件产品。
-
-您不得将应用程序用于军事、核设施、生命维持设备等高风险场景，或任何违反人道主义原则的用途。
-
-**4. 技术保护措施**
-应用程序可能包含旨在防止未经授权或非法使用应用程序的技术措施。您确认应用程序可能会自动连接到互联网进行许可验证，且您不会尝试禁用或规避这些许可验证流程。
-您应对许可密钥的保密性负责。如发生密钥泄露或设备丢失，应立即通过公司指定渠道申请冻结许可。公司有权对密钥重置收取不超过原价20%的管理费。
-
-**5. 知识产权**
-应用程序，包括其内容、功能和特性，是且将始终是公司及其许可方的专有财产。应用程序受版权、商标和其他知识产权法律保护。您确认应用程序中的所有知识产权均属于公司。
-您通过任何渠道提交的改进建议、功能请求或漏洞报告（统称"反馈"），均视为向公司授予非独占、永久、全球范围内的免版税许可，允许公司自由使用、修改或商业化该反馈。
-
-**6. 用户生成内容**
-您保留对使用应用程序创建的任何资产或内容的所有所有权。但是，通过使用应用程序创建内容，您授予公司非独占权利，可将此类内容的描述用于公司的营销目的，例如在公司网站上显示示例渲染。
-终止使用后，您通过应用程序生成的内容将保留在本地设备中，公司无权访问或删除。建议定期备份以防数据丢失。
-
-**7. 第三方服务和依赖项**
-
-**7.1 Autodesk Maya依赖**
-应用程序仅在Autodesk Maya软件中运行。您确认：
-
-- 公司与Autodesk, Inc.没有关联。
-- 您必须独立获取和许可Autodesk Maya。
-- 公司不对您的Autodesk Maya安装引起的任何问题负责。
-
-**7.2 Arnold渲染器集成**
-应用程序设计为与Arnold渲染器配合使用。您确认：
-
-- 完整功能可能需要Arnold渲染器的适当许可或订阅。
-- 公司不对Arnold渲染器引起的问题负责。
-
-**7.3 其他第三方服务**
-应用程序可能显示、包含或提供第三方内容或提供第三方网站或服务的链接。
-
-您确认并同意公司不对任何第三方服务负责，包括其准确性、完整性、及时性、有效性、版权合规性、合法性、适当性、质量或任何其他方面。公司不承担且不对您或任何其他人或实体承担任何第三方服务的责任。
-
-**7.4 版本兼容性声明**
-应用程序仅保证支持Autodesk Maya 2025及之后两个主要版本。旧版本Maya可能因API变更导致功能异常，公司不提供兼容性支持。
-
-**8. 更新和维护**
-
-**8.1 更新**
-公司可能不时提供应用程序的更新、增强或新版本。公司保留在发布更新后停止支持应用程序先前版本的权利。
-
-**8.2 维护期**
-根据您的许可类型，您可能有权在有限时间内("维护期")获得更新和技术支持。维护期到期后，您可以继续使用应用程序的当前版本，但除非您购买维护期延长，否则无权获得更新或技术支持。
-
-**9. 期限和终止**
-
-**9.1 期限**
-本协议将持续有效，直至您或公司终止。
-
-**9.2 公司终止**
-公司可自行决定，随时以任何理由暂停或终止本协议和授予的许可，无需事先通知。
-
-如果您未能遵守本协议的任何规定，本协议将立即终止，无需公司事先通知。
-
-**9.3 您终止**
-您也可以通过从您的设备中删除应用程序及其所有副本来终止本协议。
-
-**9.4 终止效力**
-本协议终止后，您应停止使用应用程序，并从您的设备中删除应用程序的所有副本。
-
-协议终止不会限制公司在法律或衡平法上的任何权利或补救措施，以应对您在协议期限内违反本协议规定的任何义务的情况。
-
-**10. 赔偿**
-您同意赔偿并使公司及其母公司、子公司、关联公司、高管、员工、代理、合作伙伴和许可方(如有)免受因您的以下行为引起的任何索赔或要求(包括合理的律师费)：(a)使用应用程序；(b)违反本协议或任何法律或法规；或(c)侵犯第三方的任何权利。
-
-**11. 无担保**
-应用程序"按原样"和"按可用性"提供给您，包含所有缺陷，没有任何形式的保证。在适用法律允许的最大范围内，公司代表自身及其关联公司、许可方和服务提供商，明确否认关于应用程序的所有保证，无论是明示、暗示、法定或其他形式，包括所有关于适销性、特定用途适用性、所有权和不侵权的暗示保证，以及可能由交易过程、履约过程、使用或贸易惯例产生的保证。在不限制前述内容的情况下，公司不提供任何保证或承诺，也不作出任何种类的陈述，即应用程序将满足您的要求、实现任何预期结果、与任何其他软件、应用程序、系统或服务兼容或协同工作、不间断运行、满足任何性能或可靠性标准，或无错误，或任何错误或缺陷可以或将会被纠正。
-
-在不限制前述内容的情况下，公司或任何公司的提供商均不作出任何种类的明示或暗示陈述：(I)关于应用程序的操作或可用性，或其中包含的信息、内容和材料或产品；(II)应用程序将不间断或无错误；(III)关于通过应用程序提供的任何信息或内容的准确性、可靠性或时效性；或(IV)应用程序、其服务器、内容或代表公司发送的电子邮件不含病毒、脚本、特洛伊木马、蠕虫、恶意软件、定时炸弹或其他有害组件。
-
-某些司法管辖区不允许排除某些类型的保证或限制消费者适用的法定权利，因此上述某些或全部排除和限制可能不适用于您。但在这种情况下，本节中规定的排除和限制应在适用法律允许的最大范围内适用。
-
-**12. 责任限制**
-尽管您可能遭受任何损害，公司及其任何供应商在本协议任何条款下的全部责任以及您对上述所有事项的唯一补救措施仅限于您为应用程序实际支付的金额。
-
-在适用法律允许的最大范围内，在任何情况下，公司或其供应商均不对任何特殊的、偶然的、间接的或后果性的损害负责(包括但不限于因利润损失、数据或其他信息损失、业务中断、个人伤害、隐私损失而产生的损害，这些损害源自使用或无法使用应用程序、与应用程序一起使用的第三方软件和/或第三方硬件，或与本协议任何条款相关的其他方面)，即使公司或任何供应商已被告知此类损害的可能性，且即使补救措施未能达到其基本目的。
-
-某些州/司法管辖区不允许排除或限制偶然或后果性损害，因此上述限制或排除可能不适用于您。
-
-**13. 可分割性和弃权**
-
-**13.1 可分割性**
-如果本协议的任何条款被认为不可执行或无效，该条款将被更改和解释，以在适用法律允许的最大范围内实现该条款的目标，且其余条款将继续完全有效。
-
-**13.2 弃权**
-除非本协议另有规定，未能行使权利或要求履行义务不会影响一方在之后行使该权利或要求该履行的能力，且对一次违约的弃权不构成对后续违约的弃权。
-
-**14. 产品索赔**
-公司不对应用程序做出任何保证。
-
-**15. 适用法律合规**
-本协议受[您所在国家/地区]法律管辖，不适用其冲突法规则。您使用应用程序还可能受其他地方、州、国家或国际法律的约束。
-
-协议旧版本存档于[公司官网指定页面]，供合规审计使用。重大条款变更将高亮标注并提供版本对比文档。
-
-**16. 协议变更**
-公司保留自行决定随时修改或替换本协议的权利。如果修订是重大的，我们将在任何新条款生效前提供至少30天的通知。什么构成重大变更将由公司自行决定。
-
-在任何修订生效后，如果您继续访问或使用应用程序，即表示您同意受修订后的条款约束。如果您不同意新条款，您将不再被授权使用应用程序。
-
-**17. 完整协议**
-本协议构成您与公司之间关于您使用应用程序的完整协议，并取代所有先前和同时存在的书面或口头协议。
-
-当您使用或购买公司的其他服务时，您可能受到额外条款和条件的约束，公司将在使用或购买时向您提供这些条款和条件。
-
-**18. 联系我们**
-如果您对本协议有任何疑问，您可以通过以下方式联系我们：
-
-- 通过电子邮件：1925250542@qq.com
-- 通过网站：https://flowus.cn/amazingike/share/93cfb135-4ab3-4536-8a5b-9b3e53042b51?code=LZVF69
-
+**Last Updated: January 19, 2026**
