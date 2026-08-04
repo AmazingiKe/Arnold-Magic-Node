@@ -70,6 +70,16 @@ LARGE_FONT_SIZE = 18
 EXTRA_LARGE_FONT_SIZE = 24
 # --------------------初始变量结束
 
+MAYA_SHIFT_MODIFIER = 1
+MAYA_ALT_MODIFIER = 8
+
+
+def is_modifier_pressed(modifier, modifiers=None):
+    """检测 Maya 当前的修饰键状态。"""
+    if modifiers is None:
+        modifiers = cmds.getModifiers()
+    return bool(modifiers & modifier)
+
 
 
 # --------------------初始变量结束
@@ -2018,7 +2028,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         # 按住alt键可以清除全部的输入
-        if keyboard.is_pressed('alt'):
+        if is_modifier_pressed(MAYA_ALT_MODIFIER):
             output_list = self.config["proc_node_config"]["params"][channel]["NodeList"]
             output_list.pop()
         else:
@@ -3954,10 +3964,14 @@ class Path_Detection_Connection:
         if 'file' not in self.select_node_data:
             return self.feedback.CPW(self.lang['main']['01'])# 请选择贴图节点哦
 
+        modifiers = cmds.getModifiers()
         matching_completed_dict = self.detect_and_calculate_similarity()
 
         # alt 只会创建贴图
-        if keyboard.is_pressed('alt') or keyboard.is_pressed('shift'):
+        if (
+            is_modifier_pressed(MAYA_ALT_MODIFIER, modifiers)
+            or is_modifier_pressed(MAYA_SHIFT_MODIFIER, modifiers)
+        ):
 
             need_connect_node_lists = self.create_nodes_from_list(matching_completed_dict)
 
@@ -3973,7 +3987,7 @@ class Path_Detection_Connection:
             self.auto_set_file_udim(need_connect_node_lists)
 
             # shift 会创建材质并连接
-            if keyboard.is_pressed('shift'):
+            if is_modifier_pressed(MAYA_SHIFT_MODIFIER, modifiers):
                 for need_connect_node_list in need_connect_node_lists:
 
                     # 判断是否要修改材质的名称
@@ -4144,10 +4158,6 @@ class Magic_Node_Connection:
         if self.select_node is None:
             return
 
-
-        # if keyboard.is_pressed('alt'):
-        #     self.auto_connect_node()
-        # else:
         self.magic_processing_node_connection()
 
     # 魔法连接处理节点
@@ -4196,7 +4206,7 @@ class Magic_Node_Connection:
                 mat_name = self.select_node[mat_type][0]
                 break  # 找到匹配的材质类型后就退出循环
         else:
-            if keyboard.is_pressed('shift'):
+            if is_modifier_pressed(MAYA_SHIFT_MODIFIER):
                 mat_name = cmds.shadingNode('aiStandardSurface', asShader=True)
 
         return mat_name

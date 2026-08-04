@@ -24,9 +24,6 @@ import re  # 提供正则表达式操作，用于模式匹配、搜索和替换�
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
-# 6. 输入操作
-import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
-
 from storage import ensure_parent_directory
 
 Script_path = os.path.dirname(os.path.abspath(__file__))

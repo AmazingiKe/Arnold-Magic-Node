@@ -28,7 +28,6 @@ LibsPath =  os.path.normpath(os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVer
 MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe')) # maya maypy文件位置
 
 LibsFilesDict = {
-    'keyboard': 'keyboard',  # 键盘事件处理库
     'msgpack': 'msgpack',  # 消息打包库
     'ahocorapy' : 'ahocorapy',  # Aho-Corasick 算法库
     'Levenshtein' : 'python-Levenshtein', # Levenshtein 距离计算库
