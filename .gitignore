@@ -1,0 +1,45 @@
+# 本地 Codex 配置
+/.codex/
+
+# Python 字节码与缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python 工具缓存
+/.pytest_cache/
+/.ruff_cache/
+/.mypy_cache/
+/.coverage
+/htmlcov/
+
+# 本地虚拟环境
+/.venv/
+/venv/
+/env/
+
+# 插件下载的第三方依赖与临时文件
+/Libs/
+/Temp/
+
+# 插件运行时生成的数据
+/Datas/aov_light_group_manager/
+/Datas/execution_logs/
+/Datas/keys/
+/Datas/logs/
+/Datas/render_presets/
+/Datas/settings/
+/Datas/settings_presets/
+/Datas/texture_manager/
+
+# 通用日志与临时文件
+*.log
+*.tmp
+*.bak
+
+# 编辑器与操作系统文件
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
