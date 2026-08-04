@@ -29,8 +29,6 @@ MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe'))
 
 LibsFilesDict = {
     'msgpack': 'msgpack',  # 消息打包库
-    'ahocorapy' : 'ahocorapy',  # Aho-Corasick 算法库
-    'Levenshtein' : 'python-Levenshtein', # Levenshtein 距离计算库
 }
 
 def ascii_load_data(file_path):

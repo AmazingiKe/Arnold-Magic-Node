@@ -12,8 +12,7 @@ import pathlib  # 提供面向对象的文件系统路径操作，增强对路�
 # 3. 数据处理
 import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
 import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
-from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
-import Levenshtein  # 导入 Levenshtein
+import arnold_magic_matching as _matching
 from collections import defaultdict
 import difflib
 # 4. 字符串处理
@@ -124,15 +123,14 @@ class PathDetection(object):
             self.feedback.CP(f"{lang['01']} {target_dirname}，{lang['02']}:[{e}]")
             return {}
 
-        # 2. 构建关键字过滤树（Aho-Corasick自动机）
-        kwtree = KeywordTree(case_insensitive=True)
+        # 2. 标准化要排除的关键字
         if isinstance(exclude_list, str):
             exclude_list = re.split(r'[,\uFF0C]', exclude_list)
-        for kw in exclude_list:
-            kw = kw.strip()
-            if kw:
-                kwtree.add(kw)
-        kwtree.finalize()
+        exclude_keywords = [
+            keyword.strip()
+            for keyword in exclude_list
+            if keyword.strip()
+        ]
 
         # 3. 处理格式筛选参数（只保留指定格式）
         include_format_set = None
@@ -153,7 +151,7 @@ class PathDetection(object):
 
         for file_name in file_list:
             # 4.1 关键字排除
-            if kwtree.search(file_name):
+            if _matching.contains_any_substring(file_name, exclude_keywords):
                 continue
 
             file_path = target_path / file_name
@@ -616,16 +614,12 @@ class NodeProcessor(object):
 
         # 如果未找到精确匹配，进行模糊匹配
         if not channel_scores:
-            LEVENSHTEIN_THRESHOLD = 1  # 可根据需要调整阈值
             for word in tex_name_words:
                 for keyword in keywords_set:
-                    dist = Levenshtein.distance(word, keyword)
-                    if dist <= LEVENSHTEIN_THRESHOLD:
+                    if _matching.is_edit_distance_at_most_one(word, keyword):
                         channels = keyword_to_channels[keyword]
                         for channel in channels:
-                            # 根据距离设置权重（距离越小，权重越高）
-                            weight = LEVENSHTEIN_THRESHOLD - dist + 1
-                            channel_scores[channel] += weight
+                            channel_scores[channel] += 1
 
         # 选择得分最高的通道
         if channel_scores:
