@@ -43,7 +43,7 @@ def detecting_language():
 #______________________________________________________________________________>>> 主函数入口
 def main():
     """
-    主函数，负责调用项目初始化的各个子模块，包括文件夹配置、依赖检查、文件初始化及许可证校验。
+    主函数，负责调用项目初始化的各个子模块，包括文件夹配置、依赖检查、文件初始化及主界面加载。
     """
     # 加载并执行初始配置模块
     import InitialConfigFolder
@@ -63,7 +63,7 @@ def main():
     importlib.reload(InitialConfigFile)
     InitialConfigFile.Main_program()
 
-    # 加载并执行许可证校验模块
+    # 加载并执行主程序模块
     import Arnold_Magic_Node
     importlib.reload(Arnold_Magic_Node)
     Arnold_Magic_Node.Main_program()

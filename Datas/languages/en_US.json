@@ -37,8 +37,6 @@
       "create_menu": {
         "settings_menu": "Settings",
         "reset_data_action": "Reset Settings Data",
-        "license_menu": "License",
-        "change_license_action": "Change License",
         "about_menu": "About",
         "contact_feedback_action": "Contact / Feedback",
         "help_document_action": "Help Documentation",
@@ -98,7 +96,6 @@
     "TM_WIN": {
       "__init__": {
         "WINDOWS_NAME": "Texture Manager",
-        "remaining_time": "License Remaining Time",
         "day": "days"
       },
       "create_widgets": {
@@ -299,17 +296,6 @@
         "07": "Completed Match |",
         "08": "Score:"
       }
-    },
-
-    "licenses_name": {
-      "free_license": "Free Edition",
-      "standard_license": "Standard Edition",
-      "premium_license": "Premium Edition",
-      "developer_license": "Developer License",
-      "educational_license": "Educational License",
-      "permanent_standard_license": "Permanent Standard",
-      "permanent_premium_license": "Permanent Premium",
-      "expiry_date_01": "Perpetual"
     }
 
   },
@@ -380,42 +366,6 @@
       "01": "Please select the corresponding node first!"
     }
 
-  },
-
-  "LicenseV": {
-    "GMI": {
-      "01": "Cannot find motherboard serial number on Windows",
-      "02": "Error getting motherboard serial on Windows:",
-      "03": "Cannot find motherboard serial on Linux/Unix",
-      "04": "Error getting motherboard serial on Linux/Unix:"
-    },
-    "GWTS": {
-      "01": "Failed to get Taobao timestamp",
-      "02": "Failed to get link time:"
-    },
-    "GNTS": {
-      "01": "Failed to get NTP time:"
-    },
-    "VL": {
-      "01": "Invalid license format",
-      "02": "Device ID mismatch",
-      "03": "License has expired!",
-      "04": "Signature verification failed; license may be tampered",
-      "05": "License format error",
-      "06": "Unknown error during verification; contact developer"
-    },
-    "LW": {
-      "DIL": "Device ID (provide to developer)",
-      "SUL": "Enter Serial Number",
-      "SNT": "Please enter serial number",
-      "VB": "Validate License",
-      "01": "Please enter serial number"
-    },
-    "MP": {
-      "01": "Failed to get online time",
-      "02": "Failed to get time",
-      "03": "Failed to get device code"
-    }
   },
 
   "DLibs": {

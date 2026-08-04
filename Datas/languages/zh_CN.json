@@ -37,8 +37,6 @@
         "create_menu" : {
           "settings_menu" : "设置",
           "reset_data_action" : "重置设置数据",
-          "license_menu" : "许可证",
-          "change_license_action" : "更换许可证",
           "about_menu" : "关于",
           "contact_feedback_action" : "联系/反馈",
           "help_document_action" : "帮助文档",
@@ -98,7 +96,6 @@
     "TM_WIN": {
       "__init__": {
         "WINDOWS_NAME": "贴图管理器",
-        "remaining_time": "许可证剩余时间",
         "day": "天"
       },
       "create_widgets": {
@@ -308,19 +305,7 @@
         "08": "相似度:"
 
       }
-    },
-
-    "licenses_name" : {
-        "free_license": "免费版",
-        "standard_license": "标准版",
-        "premium_license": "高级版",
-        "developer_license": "开发者许可证",
-        "educational_license": "教育许可证",
-        "permanent_standard_license": "永久标准版",
-        "permanent_premium_license": "永久高级版",
-        "expiry_date_01" : "永久"
     }
-
 
   },
 
@@ -390,42 +375,6 @@
       "01": "请你先选择相应的节点哦！"
     }
 
-  },
-
-  "LicenseV": {
-    "GMI": {
-      "01": "Windows系统 无法找到主板序列号",
-      "02": "Windows系统 获取主板序列号时出:",
-      "03": "Linux/Unix系统 无法找到主板序列号",
-      "04": "Linux/Unix系统 获取主板序列号时出错:"
-    },
-    "GWTS": {
-      "01": "无法获取淘宝时间戳",
-      "02": "获取link时间失败:"
-    },
-    "GNTS": {
-      "01": "获取 NTP 时间失败:"
-    },
-    "VL": {
-      "01": "许可证格式无效",
-      "02": "设备识别码不匹配",
-      "03": "许可证已过期！",
-      "04": "签名验证失败，许可证可能被篡改",
-      "05": "许可证格式错误",
-      "06": "验证过程中发生未知错误，请联系开发者"
-    },
-    "LW": {
-      "DIL": "设备识别码（需要提供给开发者）",
-      "SUL": "输入序列号",
-      "SNT": "请输入序列号",
-      "VB": "验证许可",
-      "01" : "请输入序列号"
-    },
-    "MP": {
-      "01": "无法获取在线时间",
-      "02": "无法获取时间",
-      "03": "无法获取设备码"
-    }
   },
 
   "DLibs" : {
