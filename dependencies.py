@@ -1,5 +1,5 @@
 """
-    DependenciesLibs的作用是为了统一Maya版本然后导入必要运行库
+    依赖管理模块用于匹配 Maya 版本并导入必要运行库。
 """
 
 import os
@@ -158,7 +158,7 @@ def show_restart_popup():
 
     # 创建窗口，并设置窗口标题和大小
     window = cmds.window("restartPopup",
-                         title=language["show_restart_popup"]["01"],  # 窗口标题，如 "Arnold_Magic_Node提醒"
+                         title=language["show_restart_popup"]["01"],  # 窗口标题，如 "Arnold Magic Node 提醒"
                          width=350,
                          height=150)
 

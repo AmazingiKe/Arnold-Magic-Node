@@ -34,11 +34,11 @@ script_path = os.path.normpath(os.path.join(os.path.dirname(__file__))) # 获取
 # ------------------------------------------
 
 # 9. 自定义库导入与依赖管理
-import Arnold_Magic_Node_lib  # 导入自定义的 Arnold 魔法节点库
-importlib.reload(Arnold_Magic_Node_lib)  # 在开发阶段，重新加载模块以反映对库的更改
-from Arnold_Magic_Node_lib import *  # 从自定义库中导入所有内容
+import core  # 导入核心功能模块
+importlib.reload(core)  # 在开发阶段，重新加载模块以反映对库的更改
+from core import *  # 从核心功能模块中导入现有公共内容
 
-import InitialConfigFile
+import default_config
 
 ##############################################################################################
 
@@ -150,11 +150,11 @@ def language_loading():
     return language
 
 #______________________________________________________________________________>>> 插件窗口
-class Arnold_Magic_Node_UI(object):
+class MainWindow(object):
     def __init__(self):
 
         # 初始化窗口标题，显示软件状态和版本等信息
-        WIN_TITLE = f"Arnold_Magic_Node  {SoftwareState} : {SoftwareVersion}"
+        WIN_TITLE = f"Arnold Magic Node  {SoftwareState} : {SoftwareVersion}"
 
         # 检查窗口是否已存在，如果存在则删除
         if cmds.window(WIN_TITLE, exists=True):
@@ -563,7 +563,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.reset_data_action = QAction(self.language['create_menu']['reset_data_action'], self) # 重置设置数据
         # 连接“重置数据”动作的触发信号到对应的槽函数
         self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, AMS_Config)),
-                                                          InitialConfigFile.Main_program()))
+                                                          default_config.Main_program()))
 
 
         self.settings_menu.addAction(self.reset_data_action)
@@ -9512,5 +9512,5 @@ def mask_node_mix():
 
 # 主要运行程序
 def Main_program():
-    indowInstance = Arnold_Magic_Node_UI()
+    window_instance = MainWindow()
 

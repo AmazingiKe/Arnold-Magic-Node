@@ -32,7 +32,7 @@
 
     "AMNSP_WIN": {
       "initialize_window_config": {
-        "WINDOWS_NAME": "Arnold_Magic_Node Plugin Settings"
+        "WINDOWS_NAME": "Arnold Magic Node Plugin Settings"
       },
       "create_menu": {
         "settings_menu": "Settings",
@@ -391,7 +391,7 @@
       "03": "pywin32 installed; please restart Maya"
     },
     "show_restart_popup": {
-      "01": "Arnold_Magic_Node Notice~~",
+      "01": "Arnold Magic Node Notice~~",
       "02": "pywin32 updated in Maya; restart to use plugin",
       "03": "Exit Maya",
       "04": "Restart Later"

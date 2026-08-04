@@ -46,24 +46,24 @@ def main():
     主函数，负责调用项目初始化的各个子模块，包括文件夹配置、依赖检查、文件初始化及主界面加载。
     """
     # 加载并执行初始配置模块
-    import InitialConfigFolder
-    importlib.reload(InitialConfigFolder)
-    InitialConfigFolder.Main_program()
+    import runtime_directories
+    importlib.reload(runtime_directories)
+    runtime_directories.Main_program()
 
     # 检测语言配置
     detecting_language()
 
     # 加载并执行依赖库配置模块
-    import DependenciesLibs
-    importlib.reload(DependenciesLibs)
-    DependenciesLibs.Main_program()
+    import dependencies
+    importlib.reload(dependencies)
+    dependencies.Main_program()
 
     # 加载并执行文件初始化模块
-    import InitialConfigFile
-    importlib.reload(InitialConfigFile)
-    InitialConfigFile.Main_program()
+    import default_config
+    importlib.reload(default_config)
+    default_config.Main_program()
 
     # 加载并执行主程序模块
-    import Arnold_Magic_Node
-    importlib.reload(Arnold_Magic_Node)
-    Arnold_Magic_Node.Main_program()
+    import application
+    importlib.reload(application)
+    application.Main_program()

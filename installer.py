@@ -30,15 +30,15 @@ else:
     if file_path not in sys.path:
         sys.path.insert(0, file_path)
 
-    import Arnold_Magic_Node_Start
+    import startup
 
-    importlib.reload(Arnold_Magic_Node_Start)
-    Arnold_Magic_Node_Start.main()
+    importlib.reload(startup)
+    startup.main()
 '''
 
         shelf = maya.mel.eval('$gShelfTopLevel=$gShelfTopLevel')
         parent = cmds.tabLayout(shelf, query=True, selectTab=True)
-        button_name = "Arnold_Magic_Node"
+        button_name = "arnold_magic_node"
 
         cmds.shelfButton(
             command=command,

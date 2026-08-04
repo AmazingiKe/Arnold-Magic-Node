@@ -11,7 +11,7 @@
 ## 📦 快速安装
 ### 自动安装（推荐）
 
-将 `Arnold_Magic_Node_Install.py` 拖入 Maya 视窗，在当前 Shelf 创建启动按钮。
+将 `installer.py` 拖入 Maya 视窗，在当前 Shelf 创建启动按钮。
 ### 手动安装
 1. 下载[最新发行包](https://example.com/download)
 2. 解压到Maya模块目录：

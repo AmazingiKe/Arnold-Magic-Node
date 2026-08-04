@@ -32,7 +32,7 @@
 
     "AMNSP_WIN" : {
       "initialize_window_config": {
-        "WINDOWS_NAME" : "Arnold_Magic_Node 插件设置"
+        "WINDOWS_NAME" : "Arnold Magic Node 插件设置"
       },
         "create_menu" : {
           "settings_menu" : "设置",
@@ -403,7 +403,7 @@
     },
 
     "show_restart_popup" : {
-      "01" : "Arnold_Magic_Node提醒~~",
+      "01" : "Arnold Magic Node 提醒~~",
       "02" : "更新了您 Maya 的 pywin32 库\n现在得重启才可以正常使用插件",
       "03" : "退出 Maya",
       "04" : "稍后再退出 Maya"
