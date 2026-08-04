@@ -28,13 +28,8 @@ LibsPath =  os.path.normpath(os.path.join(ScriptPath, 'Libs', f'maya{str(MayaVer
 MayapyPath = os.path.normpath(os.path.join(MayaInstallDir, 'bin', 'Mayapy.exe')) # maya maypy文件位置
 
 LibsFilesDict = {
-    'imagesize': 'imagesize',  # 获取图像尺寸的库
     'keyboard': 'keyboard',  # 键盘事件处理库
     'msgpack': 'msgpack',  # 消息打包库
-    'PIL': 'Pillow',  # 图像处理库，PIL 实际上是 Pillow 库
-    'pyexr': 'pyexr',  # OpenEXR 图像文件处理库
-    'Imath.py': 'Imath',  # Imath 是一个独立的数学库
-    'OpenEXR.pyd': 'OpenEXR',  # OpenEXR 是一个单独的图像文件处理库
     'ahocorapy' : 'ahocorapy',  # Aho-Corasick 算法库
     'Levenshtein' : 'python-Levenshtein', # Levenshtein 距离计算库
 }

@@ -3,6 +3,7 @@
 
 # 1. Maya 库
 import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命令和操作场景
+import maya.api.OpenMaya as om  # 使用 Maya 自带的图像读取能力获取贴图尺寸
 
 # 2. 文件与系统操作
 import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
@@ -14,23 +15,16 @@ import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON �
 from ahocorapy.keywordtree import KeywordTree  # 用于高效的多模式匹配，适合文本搜索和过滤
 import Levenshtein  # 导入 Levenshtein
 from collections import defaultdict
-import numpy as np
 import difflib
 # 4. 字符串处理
 import re  # 提供正则表达式操作，用于模式匹配、搜索和替换字符串
 
 
-# 5. 图像处理
-from PIL import Image # 导入 Pillow 库，用于图像打开、编辑和保存，支持多种图像格式和高级图像处理功能
-from PIL import UnidentifiedImageError
-import pyexr
-
-
-# 6. 时间管理
+# 5. 时间管理
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
-# 7. 网络操作
+# 6. 输入操作
 import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
 
 from storage import ensure_parent_directory
@@ -38,6 +32,16 @@ from storage import ensure_parent_directory
 Script_path = os.path.dirname(os.path.abspath(__file__))
 
 # ##############################################################################################
+
+def get_image_dimensions(file_path):
+    """使用 Maya 原生图像读取器获取尺寸，读取失败时返回零值。"""
+    try:
+        image = om.MImage()
+        image.readFromFile(os.path.normpath(str(file_path)), om.MImage.kUnknown)
+        width, height = image.getSize()
+        return [int(width), int(height)]
+    except Exception:
+        return [0, 0]
 
 # 语言加载
 def language_loading():
@@ -275,7 +279,6 @@ class PathDetection(object):
     # 获取图像的元属性，有创建时间、分辨率和文件类型
     def get_file_info(self, tex_dict):
         info_dict = {}
-        temp_resolution = []
         for filename, filepath in tex_dict.items():
             file_info = {}
 
@@ -289,17 +292,7 @@ class PathDetection(object):
             file_extension = os.path.splitext(filepath)[1]
             file_info['file_type'] = file_extension
 
-            # 获取分辨率
-            try:
-                with Image.open(filepath) as img:
-                    width, height = img.size
-                file_info['resolution'] = [width, height]
-                temp_resolution = file_info['resolution']
-            except UnidentifiedImageError:
-                file_info['resolution'] = temp_resolution
-            except Exception as e:
-                self.feedback.CP(self.language['GFI"']['01'] + e)
-
+            file_info['resolution'] = get_image_dimensions(filepath)
 
             info_dict[filename] = file_info
 
@@ -372,6 +365,18 @@ class PathDetection(object):
 
     # 计算分辨率相似度
     def resolution_similarity(self, res1, res2):
+        if (
+            not res1
+            or not res2
+            or len(res1) != 2
+            or len(res2) != 2
+            or res1[0] <= 0
+            or res1[1] <= 0
+            or res2[0] <= 0
+            or res2[1] <= 0
+        ):
+            return 0.0
+
         if res1 == res2:
             return 1.0
         else:
@@ -1174,429 +1179,6 @@ class NodeProcessor(object):
 # 获取节点数据的库
 class GetNodeData():
     
-    def __init__(self):
-
-        self.feedback = FeedbackPrompt() # 错误提示模块
-    
-    # 获取指定类型的所有节点名称。
-    def GetAllNodeData(self, NodeTypes):
-        """
-        获取指定类型的所有节点名称。
-
-        参数:
-        NodeTypes (list): 包含节点类型的列表，例如 ['lambert', 'phong', 'blinn']。
-
-        返回:
-        list: 包含所有符合条件的节点名称的列表。
-        """
-        #   创建一个空列表来存储过滤后的节点
-        NodeNameList = []
-
-        #   遍历所有的材质类型并获取对应的节点
-        for NodeType in NodeTypes:
-            nodes = cmds.ls(type=NodeType)
-            if nodes:
-                NodeNameList.extend(nodes)
-
-        return NodeNameList
-    
-    # 上游节点查找器
-    def UpStreamNodeFinder(self, Node, NodeTypes):
-        """查找当前选择的材质球连接的所有特定类型（如file类型）节点。
-
-        参数:
-            Node: 要查找的起始节点的名称（字符串）。
-            NodeTypes: 要查找的节点类型列表（字符串列表），例如["file"]。
-
-        返回:
-            finder_list: 包含所有找到的特定类型节点的列表（无重复）。
-        """
-        finder_list = []
-        visited = set()  # 用于记录已访问节点，避免循环和重复处理
-
-        def find_nodes(node, node_types, visited_nodes):
-            """递归查找节点及其上游的所有特定类型节点。
-
-            参数:
-                node: 当前检查的节点。
-                node_types: 目标节点类型列表。
-                visited_nodes: 已访问节点的集合。
-
-            返回:
-                包含所有找到的目标节点的列表。
-            """
-            if node in visited_nodes:
-                return []
-            visited_nodes.add(node)
-            found = []
-            # 检查当前节点是否为目标类型
-            if cmds.nodeType(node) in node_types:
-                found.append(node)
-            # 递归处理所有上游节点
-            upstream = cmds.listConnections(node, s=True, d=False) or []
-            for up_node in upstream:
-                found.extend(find_nodes(up_node, node_types, visited_nodes))
-            return found
-
-        # 获取起始节点的所有上游节点
-        upstream_connections = cmds.listConnections(Node, s=True, d=False) or []
-
-        # 遍历每个上游节点并收集结果
-        for conn in upstream_connections:
-            finder_list.extend(find_nodes(conn, NodeTypes, visited))
-
-        # 去重后返回
-        return list(set(finder_list))
-
-    # 批量获取file节点的路径
-    def GetFileNodePath(self, NodeList):
-        """
-        批量获取file节点的路径。
-
-        参数:
-            NodeList (list): 包含节点名称的列表，这些节点应为 'file' 类型。
-
-        返回:
-            dict: 一个字典，键为节点名称，值为对应的文件路径。
-        """
-        
-        NodePathDict = {}  # 创建一个空字典，用于存储节点及其对应的文件路径
-        
-        # 遍历提供的节点列表
-        for node in NodeList:
-            # 获取当前 file 节点的 fileTextureName 属性的值，即文件路径
-            file_path = cmds.getAttr(node + '.fileTextureName')
-            
-            # 将节点名称和对应的文件路径添加到字典中
-            NodePathDict[node] = file_path
-
-        # 返回包含所有节点及其文件路径的字典
-        return NodePathDict
-
-    # 获取所有材质节点的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率
-    def GetMterialNodeAllInfo(self , __material_node_tyoes_list = None):
-
-        """
-        获取所有材质节点的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率。
-
-        参数:
-        - __material_node_tyoes_list: 列表，包含要查找的材质节点类型。如果未提供，将使用默认的材质节点类型列表。
-
-        返回:
-        - MterialNodeAllInfoDict: 字典，包含每个材质节点及其相关的详细信息。
-        """
-
-        if __material_node_tyoes_list == None:
-            __material_node_tyoes_list = ['aiStandardSurface', 'aiStandardVolume', 'aiStandardHair' ,
-                                          'blinn' ,'phongE', 'phong', 'blinn', 'lambert', 'standardSurface']
-
-        #   获取所有的材质节点名称
-        MaterialNodeNameList = self.GetAllNodeData(__material_node_tyoes_list)
-
-        MterialNodeAllInfoDict = {}
-
-        for matName in MaterialNodeNameList:
-            #   使用材质名称创建一个口字典
-            MterialNodeAllInfoDict[matName] = {}
-
-            UpStreamNodeList = self.UpStreamNodeFinder(matName, 'file')
-
-            for nodeNmae in UpStreamNodeList:
-                #   使用节点名称创建一个口字典
-                MterialNodeAllInfoDict[matName][nodeNmae] = {}
-
-                #   获取路径
-                nodePath = cmds.getAttr(nodeNmae + '.fileTextureName')
-                MterialNodeAllInfoDict[matName][nodeNmae]["Path"] = nodePath
-
-                #   获取连接状态
-                MterialNodeAllInfoDict[matName][nodeNmae]["isLoaded"] = os.path.exists(nodePath)
-
-                #   获取文件名
-                fileName = os.path.basename(nodePath)
-                MterialNodeAllInfoDict[matName][nodeNmae]["fileName"] = fileName
-
-                #   获取格式名称
-                Format = pathlib.Path(nodePath).suffix.replace('.', '')
-                MterialNodeAllInfoDict[matName][nodeNmae]["Format"] = Format
-
-                #   获取贴图引用次数
-                usageCountList = cmds.listConnections(nodeNmae, source=False, destination=True)
-                MterialNodeAllInfoDict[matName][nodeNmae]["usageCount"] = len(usageCountList)
-
-                #   获取文件大小
-                try:
-                    Size = os.path.getsize(nodePath)  # 通过 os 获取文件大小
-                    Size = Size / (1024 * 1024)  # 字节换算为MB
-                except IOError as e:
-                    # self.feedback.CP(f'因{nodeNmae}无法连接，所以无法读取大小')
-                    Size = False
-
-                MterialNodeAllInfoDict[matName][nodeNmae]["Size"] = Size
-
-                #   初始化分辨率
-                width, height = 0, 0
-                #   获取分辨率
-                try:
-                    #   使用 Pillow 读取图像
-                    with Image.open(nodePath) as image:
-                        #   获取像素大小
-                        width, height = image.size
-                except :
-
-                    #   如果无法获取分辨率大小，尝试用其他库去获取
-                    try:
-                        if Format == 'exr':
-                            exr_file = pyexr.open(nodePath)
-                            # 获取图像的宽度和高度
-                            width = exr_file.width
-                            height = exr_file.height
-                    except:
-                        # self.feedback.CP(f'因{nodeNmae}无法读取，所以无法读取像素大小')
-                        width, height = 0, 0
-
-                MterialNodeAllInfoDict[matName][nodeNmae]["Dimensions"] = [width, height]
-
-                MterialNodeAllInfoDict[matName][nodeNmae]["Dimensions"]
-
-
-
-
-        # indent = 0
-        # def print_dict(d, indent=0):
-        #     for key, value in d.items():
-        #         print(' ' * indent + str(key) + ':', end=' ')
-        #         if isinstance(value, dict):
-        #             print()  # 打印键后换行
-        #             print_dict(value, indent + 4)  # 递归调用增加缩进
-        #         else:
-        #             print(value)  # 打印值
-        #
-        # # 调用打印函数
-        # print_dict(MterialNodeAllInfoDict)
-
-        return MterialNodeAllInfoDict
-
-    # 查找未列出的纹理文件
-    def FindUnlistedTextures(self, TexturesList):
-        """
-        查找未列出的纹理文件。
-
-        参数:
-        - TexturesList: 列表，包含当前节点使用的所有纹理文件的文件名。
-
-        返回:
-        - missing_elements: 集合，包含all_file_list中存在但TexturesList中缺少的文件名。
-        """
-
-        # 获取所有节点中的文件名列表，参数 ['file'] 指定从节点中提取文件类型的数据
-        all_file_list = self.GetAllNodeData(['file'])
-        # 转换为集合，便于集合操作
-        textures_set = set(TexturesList)
-        all_files_set = set(all_file_list)
-
-        # 找出all_file_list中有，但TexturesList中没有的元素
-        missing_elements = all_files_set - textures_set
-
-        return missing_elements
-
-    # 获取贴图的详细信息，包括路径、加载状态、文件名、格式、引用次数、文件大小和分辨率
-    def GetTexturesNodeAllInfo(self, TexturesList):
-
-        TexturesNodeAllInfoDict = {}
-
-        TexturesNodeAllInfoDict['Unlisted Textures'] = {}
-
-        for texName in TexturesList:
-            #   使用节点名称创建一个口字典
-
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName] = {}
-
-            #   获取路径
-            nodePath = cmds.getAttr(texName + '.fileTextureName')
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["Path"] = nodePath
-
-            #   获取连接状态
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["isLoaded"] = os.path.exists(nodePath)
-
-            #   获取文件名
-            fileName = os.path.basename(nodePath)
-            fileName_Pro = fileName.rsplit('.', 1)[0]  # 去掉扩展名
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["fileName"] = fileName_Pro
-
-
-            #   获取格式名称
-            Format = pathlib.Path(nodePath).suffix.replace('.', '')
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["Format"] = Format
-
-            #   获取贴图引用次数
-            usageCountList = cmds.listConnections(texName, source=False, destination=True)
-
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["usageCount"] = len(usageCountList)
-
-            #   获取文件大小
-            try:
-                Size = os.path.getsize(nodePath)  # 通过 os 获取文件大小
-                Size = Size / (1024 * 1024)  # 字节换算为MB
-            except IOError as e:
-                # self.feedback.CP(f'因{nodeNmae}无法连接，所以无法读取大小')
-                Size = False
-
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["Size"] = Size
-
-            #   初始化分辨率
-            width, height = 0, 0
-            #   获取分辨率
-            try:
-                #   使用 Pillow 读取图像
-                with Image.open(nodePath) as image:
-                    #   获取像素大小
-                    width, height = image.size
-            except:
-
-                #   如果无法获取分辨率大小，尝试用其他库去获取
-                try:
-                    if Format == 'exr':
-                        exr_file = pyexr.open(nodePath)
-                        # 获取图像的宽度和高度
-                        width = exr_file.width
-                        height = exr_file.height
-                except:
-                    # self.feedback.CP(f'因{nodeNmae}无法读取，所以无法读取像素大小')
-                    width, height = 0, 0
-
-            TexturesNodeAllInfoDict['Unlisted Textures'][texName]["Dimensions"] = [width, height]
-
-        return TexturesNodeAllInfoDict
-
-    # 更新数据列表中的分辨率等的数据
-    def TM_StickerUpdateStatusDict(self, target_diact, update_dict):
-
-        # 使用前一定要先更改一次路径先
-        for nodeName, matName in target_diact.items():
-
-            nodePath = update_dict[matName][nodeName]['Path']
-
-            #   获取连接状态
-            update_dict[matName][nodeName]["isLoaded"] = os.path.exists(nodePath)
-
-            #   获取格式名称
-            Format = pathlib.Path(nodePath).suffix.replace('.', '')
-            update_dict[matName][nodeName]["Format"] = Format
-
-            #   获取文件大小
-            try:
-                Size = os.path.getsize(nodePath)  # 通过 os 获取文件大小
-                Size = Size / (1024 * 1024)  # 字节换算为MB
-            except IOError as e:
-                # self.feedback.CP(f'因{nodeNmae}无法连接，所以无法读取大小')
-                Size = False
-
-            update_dict[matName][nodeName]["Size"] = Size
-
-            #   初始化分辨率
-            width, height = 0, 0
-            #   获取分辨率
-            try:
-                #   使用 Pillow 读取图像
-                with Image.open(nodePath) as image:
-                    #   获取像素大小
-                    width, height = image.size
-            except:
-
-                #   如果无法获取分辨率大小，尝试用其他库去获取
-                try:
-                    if Format == 'exr':
-                        exr_file = pyexr.open(nodePath)
-                        # 获取图像的宽度和高度
-                        width = exr_file.width
-                        height = exr_file.height
-                except:
-                    # self.feedback.CP(f'因{nodeNmae}无法读取，所以无法读取像素大小')
-                    width, height = 0, 0
-
-            update_dict[matName][nodeName]["Dimensions"] = [width, height]
-
-
-        return update_dict
-
-    def GetDirectoryContentsWithOptions(self, Path, SearchSubfolders=True, MultipleSubfolderSearch=True,
-                                        Extensions=None):
-        """
-        获取指定路径下的内容，并根据选项决定是否搜索子文件夹。
-
-        参数：
-        - Path (str): 要搜索的目录路径。传入的路径会被标准化处理（例如去除尾部斜杠）。
-        - SearchSubfolders (bool): 是否搜索子文件夹，默认值为True。设置为True时，会遍历子文件夹的内容；设置为False时，只遍历指定目录下的文件。
-        - MultipleSubfolderSearch (bool): 是否搜索多层子文件夹，默认值为True。只有当SearchSubfolders为True时，此参数才有效。
-            - 如果为True，表示递归搜索所有子目录；如果为False，则只会搜索第一层子目录。
-        - Extensions (list of str, optional): 要包含的文件扩展名列表，例如 ['.txt', '.jpg']。默认值为None，表示不进行扩展名过滤。如果传入该参数，只会返回匹配指定扩展名的文件。
-
-        返回：
-        - ContentsDict (dict): 包含文件内容的字典。键为文件的名称，值为文件的完整路径。字典中只包含符合条件的文件，不包含目录路径。
-
-        详细说明：
-        - 此函数会递归地扫描指定路径及其子目录中的所有文件。
-        - 如果指定了扩展名（Extensions），则只有扩展名符合条件的文件会被包含在结果中。
-        - 返回的字典中，键是文件的名称，值是文件的完整路径。
-        - 权限不足的目录会被忽略，错误不会抛出。
-        """
-
-        # 用于存储文件名称和路径的字典
-        ContentsDict = {}
-
-        # 如果提供了扩展名列表，将其转换为小写集合，便于快速查找
-        if Extensions:
-            Extensions = set(ext.lower() for ext in Extensions)
-        else:
-            Extensions = None  # 如果没有提供扩展名过滤，默认为None
-
-        # 如果开启了多层子目录搜索，但未开启子目录搜索，禁止多层子目录搜索
-        if MultipleSubfolderSearch and not SearchSubfolders:
-            MultipleSubfolderSearch = False
-
-        # 内部递归函数，用于扫描指定路径及其子目录
-        def scan_directory(path, level):
-            """
-            扫描指定路径的目录内容，如果是文件则添加到ContentsDict字典中，
-            如果是目录且满足搜索条件，则递归扫描子目录。
-
-            参数：
-            - path (str): 当前扫描的目录路径。
-            - level (int): 当前扫描的目录深度。用来控制是否递归到子目录。
-            """
-            try:
-                # 使用os.scandir()迭代目录内容
-                with os.scandir(path) as it:
-                    for entry in it:
-                        if entry.is_file():
-                            # 如果是文件，检查其扩展名是否符合要求
-                            if Extensions:
-                                # 获取文件的扩展名并转换为小写
-                                ext = os.path.splitext(entry.name)[1].lower()
-                                if ext not in Extensions:
-                                    continue  # 跳过不符合扩展名的文件
-                            # 将文件名作为键，文件路径作为值，添加到字典中
-                            ContentsDict[entry.name] = entry.path
-                        elif entry.is_dir() and SearchSubfolders:
-                            # 如果是目录并且启用了子目录搜索，且需要多层递归
-                            if MultipleSubfolderSearch or level == 0:
-                                # 递归扫描子目录
-                                scan_directory(entry.path, level + 1)
-            except PermissionError:
-                # 如果没有权限访问该目录，忽略并继续
-                pass
-
-        # 标准化传入的路径，确保路径格式一致（例如去除尾部斜杠）
-        Path = os.path.normpath(Path)
-
-        # 调用递归函数，开始从指定路径扫描
-        scan_directory(Path, level=0)
-
-        # 返回包含文件名和路径的字典
-        return ContentsDict
-
-
     # 获取场景灯光节点和类
     def get_scene_arnold_lights_and_type(self):
         """
@@ -1694,285 +1276,6 @@ class GetNodeData():
 
         _traverse(material_node)
         return file_paths
-
-# 专门负责各种数据的处理
-class DataProcessor():
-    def __init__(self):
-        self.feedback = FeedbackPrompt() # 错误提示模块
-
-        # 插件路径
-        Script_path = os.path.join(os.path.dirname(__file__))
-
-        # 实例化数据管理类
-        dataM = DataManager()
-
-
-
-        # 获取语言设置
-        language_config = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
-        # 获取语言
-        self.language = dataM.ascii_load_data(os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))['ArnoldMagicNodeLibs']['DataP']
-
-
-    def SimpleSearchAndReplaceData(self, OriginalContent, SearchContent, ReplaceContent, case_sensitive=True, use_regex=False):
-        # 检查是否输入为字符串类型
-        if not isinstance(OriginalContent, str) or not isinstance(SearchContent, str) or not isinstance(ReplaceContent,
-                                                                                                        str):
-            self.feedback.CP(self.language['SSARD']['01'])
-            return False
-
-        # 如果使用正则表达式
-        if use_regex:
-            # 根据是否区分大小写进行匹配
-            if case_sensitive:
-                flags = re.IGNORECASE
-            else:
-                flags = 0
-
-            try:
-                result = re.sub(SearchContent, ReplaceContent, OriginalContent, flags=flags)
-                return result
-            except re.error as e:
-                self.feedback.CP(f"{self.language['SSARD']['02']}{e}")
-                return False
-        else:
-            # 普通字符串替换，根据是否区分大小写处理
-            if case_sensitive:
-                # 如果不区分大小写
-                result = re.sub(re.escape(SearchContent), ReplaceContent, OriginalContent, flags=re.IGNORECASE)
-                return result
-            else:
-                # 普通的字符串替换（区分大小写）
-                result = OriginalContent.replace(SearchContent, ReplaceContent)
-                return result
-
-    def filter_material_textures(self, filtered_textures, data):
-        """
-        过滤 self.MterialNodeAllInfoDict 中的纹理数据，并返回包含符合条件的纹理信息的字典。
-
-        参数:
-        - filtered_textures: 包含需要保留的纹理的集合或列表。
-
-        返回:
-        - filtered_data: 一个字典，其中包含所有符合条件的纹理数据，以材质为键，过滤后的纹理信息为值。
-        """
-        filtered_data = {}
-        for material, textures in data.items():
-            # 使用传入的 filtered_textures 而不是 target_list
-            filtered_texture_data = {texture: details for texture, details in textures.items() if
-                                     texture in filtered_textures}
-            if filtered_texture_data:
-                filtered_data[material] = filtered_texture_data
-        return filtered_data
-
-    def remove_duplicate_keys(self, data):
-        """
-        移除给定字典中所有子字典里重复的键。
-
-        参数:
-        data (dict): 包含多个子字典的父字典，其中每个子字典可能包含相同的键。
-
-        返回:
-        dict: 处理后的字典，其中重复的键已被删除。
-        """
-
-        # 用于跟踪已经遇到的子字典键的集合
-        keys_to_check = set()
-
-        # 遍历父字典中的每个键，即每个子字典的名字
-        for parent_key in list(data.keys()):
-            sub_dict = data[parent_key]  # 获取当前子字典
-
-            # 遍历子字典中的每个键
-            for key in list(sub_dict.keys()):
-                if key in keys_to_check:
-                    # 如果当前键已经在 keys_to_check 集合中存在
-                    # 删除该子字典中的此键，因为它是重复的
-                    del sub_dict[key]
-                else:
-                    # 如果当前键不在 keys_to_check 集合中
-                    # 将此键加入集合，表示该键已经出现过
-                    keys_to_check.add(key)
-
-        # 返回处理后的字典，重复键已被移除
-        return data
-
-    def build_ahocorapy_tree(self, target_dict):
-        """
-        根据 target_dict 构建 Aho-Corasick 自动机树。
-
-        :param target_dict: 目标字典，包含待匹配的键值对
-        :return: 已构建的 Aho-Corasick 树
-        """
-        # 创建 Aho-Corasick 自动机树
-        tree = KeywordTree()
-
-        # 将目标字典的键添加到树中
-        for key in target_dict.keys():
-            tree.add(key)
-
-        # 完成树的构建
-        tree.finalize()
-
-        # 返回构建好的树
-        return tree
-
-    def search_keys_in_dict_using_ahocorapy(self, target_dict, search_content, tree):
-        """
-        在给定的 target_dict 中查找并替换匹配的项。
-
-        :param target_dict: 目标字典，包含键值对进行匹配
-        :param search_content: 包含查找键和新路径的字典
-        :param tree: 已构建的 Aho-Corasick 自动机树
-        :return: 包含匹配键和替换路径的字典
-        """
-        # 创建一个空字典来存储匹配结果
-        matched_dict = {}
-
-        # 遍历 search_content 字典进行匹配
-        for search_key, search_path in search_content.items():
-            # 使用 Aho-Corasick 树进行搜索，查找是否有匹配的 target_dict 键
-            matches = tree.search(search_key)
-
-            # 如果找到了匹配项
-            if matches:
-                # 遍历所有匹配的项
-                for match in matches:
-                    # 检查匹配的项是否存在于 target_dict 中
-                    if match in target_dict:
-                        # 如果存在，则替换目标字典中的路径（只更新路径部分）
-                        matched_dict[match] = target_dict[match][:2] + [os.path.normpath(search_path)]
-
-        # 返回匹配后的字典
-        return matched_dict
-
-# 专门用来处理图像
-class ImageProcessor():
-    def __init__(self):
-        self.feedback = FeedbackPrompt() # 错误提示模块
-
-        # 插件路径
-        Script_path = os.path.join(os.path.dirname(__file__))
-
-        # 实例化数据管理类
-        dataM = DataManager()
-
-        self.language = language_loading()['ArnoldMagicNodeLibs']['ImageP']  # 加载相关语言模块
-
-
-    def resize_image(self, input_path, output_path, scale_percent=100, resample_mode='1'):
-        """
-        缩放图片
-        参数：
-            input_path (str): 输入图片的路径
-            output_path (str): 输出图片的路径
-            scale_percent (int): 缩放比例（默认100%，不缩放）
-            resample_mode (str): 重采样模式，默认使用cv2.INTER_LINEAR
-        返回：
-            None
-        """
-
-        lang = self.language['RI']
-
-        # 检查缩放比例是否合法
-        if scale_percent <= 0 or scale_percent > 100:
-            self.feedback.CP(f"{lang['01']}: {scale_percent}，{lang['02']}") # 缩放比例无效 # 请设置0到100之间的有效值
-            return False
-
-        # 合法的重采样模式
-        interpolation_methods = {
-            '0': Image.NEAREST,
-            '1': Image.BOX,
-            '2': Image.BILINEAR,
-            '3': Image.HAMMING,
-            '4': Image.BICUBIC,
-            '5': Image.LANCZOS
-        }
-
-        # 尝试读取图片信息
-        try:
-            image = Image.open(input_path)
-        except Exception as e:
-            self.feedback.CP(f"{lang['03']}: {e}") # 读取图片失败
-            return False
-
-        # 如果缩放比例为100%，不做任何的缩放
-        if scale_percent == 100:
-            return False
-
-        # 计算缩放后的尺寸
-        width = int(image.size[1] * scale_percent / 100)
-        height = int(image.size[0] * scale_percent / 100)
-        new_size = (width, height)
-
-        # 使用不同的重采样模式调整图像大小
-        try:
-            resized_image = image.resize(new_size, interpolation_methods[resample_mode])
-        except Exception as e:
-            self.feedback.CP(f"{lang['06']}: {e}")
-
-        # 导出图片
-        try:
-            output_path = ensure_parent_directory(output_path)
-            resized_image.save(str(output_path))
-        except PermissionError as e:
-            self.feedback.CP(f"{lang['04']}: {e}") # 文件写入权限错误
-        except Exception as e:
-            self.feedback.CP(f"{lang['05']}: {e}") # 保存图片失败
-
-    def convert_image_format(self, input_path, output_path, output_format=None, jpg_quality=95, png_compression=3):
-        """
-         转换图片格式
-         参数：
-             input_path (str): 输入图片的路径
-             output_path (str): 输出图片的路径
-             output_format (str): 转换后的格式（如'jpg', 'png'），如果为None，保持原格式
-             jpg_quality (int): jpg质量（1-100，默认95）
-             png_compression (int): png压缩等级（0-9，默认3）
-         返回：
-             None
-         """
-
-        lang = self.language['CIF']
-
-        # 尝试读取图片
-        try:
-            image = Image.open(input_path)
-        except Exception as e:
-            self.feedback.CP(f"{lang['01']}: {e}") # 转换格式-读取图片失败
-            return False
-
-        # 转换图片格式
-        try:
-            output_path = ensure_parent_directory(output_path)
-
-            # 处理 JPEG 格式
-            if output_format.lower() in ['jpg', 'jpeg']:
-                # 如果图片带有透明通道，填充白色背景
-                if image.mode in ('RGBA', 'LA'):
-                    background = Image.new('RGB', image.size, (255, 255, 255))
-                    background.paste(image, (0, 0), image if image.mode == 'RGBA' else None)
-                    image = background
-                else:
-                    image = image.convert('RGB')
-                # 保存为 JPEG 格式
-                image.save(str(output_path), 'JPEG', quality=jpg_quality)
-
-            # 处理 PNG 格式
-            elif output_format.lower() == 'png':
-                # 保存为 PNG 格式，指定压缩等级
-                image.save(str(output_path), 'PNG', compress_level=png_compression)
-
-            # 处理其他格式
-            else:
-                # 使用指定的格式进行保存
-                image.save(str(output_path), output_format.upper())
-
-            self.feedback.CP(f"{os.path.basename(input_path)} {lang['03']}{output_format}{lang['04']}: {output_path}") # 已转换为 # 格式 新路径
-
-            return True
-        except Exception as e:
-            self.feedback.CP(f"{lang['05']}: {e}") # 转换格式-保存图片失败 错误原因
 
 # 专门处理节点混合
 class BlendNodeManager():

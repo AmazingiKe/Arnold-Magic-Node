@@ -5,8 +5,6 @@
 
     "AMDUI_WIN": {
       "create_widgets": {
-        "ttclgj_menu": "Texture Processing Tool",
-        "ttglq_menu": "Texture Manager",
         "ttpldrq_menu": "Batch Texture Importer",
         "xryssz_menu": "Render Preset Settings",
         "tjxrys_menu": "Add Render Preset",
@@ -90,140 +88,6 @@
         "yyszd_label": "Language & More",
         "yy_label": "Language:",
         "jmybjsz_tab": "UI & Layout Settings"
-      }
-    },
-
-    "TM_WIN": {
-      "__init__": {
-        "WINDOWS_NAME": "Texture Manager",
-        "day": "days"
-      },
-      "create_widgets": {
-        "MaterialListSearch_placeholder": "Enter material name to search...",
-        "TexturelListSearch_placeholder": "Enter texture name to search...",
-        "MaterialList_SelectAll_Button": "Select All",
-        "TexturelList_Unselect_All_Button": "Deselect All",
-        "TexturelList_reverse_selection": "Invert Selection",
-        "TexturelList_Find_Missing_Textures_Button": "Find Missing",
-        "TexturelList_Intelligent_Find_Max_Size_Button": "Find Large Textures",
-        "TexturelList_Search_And_Replace_Date_Button": "Search & Replace",
-        "TexturelList_Replace_Data_Button": "Auto-Fix Paths",
-        "TexturelList_Processed_Image_Button": "Process Images",
-        "TexturelList_Refresh_Button_ToolTip": "Refresh from Cache",
-        "TexturelList_Headers": ["Texture Node Name", "Material", "Size", "Pixel Dimensions", "Format", "References", "Status", "Path"]
-      },
-      "state": {
-        "normal": "Normal",
-        "lack": "Missing"
-      }
-    },
-
-    "TM_FAR_WIN": {
-      "__init__": {
-        "WINDOWS_NAME": "Search & Replace -"
-      },
-      "create_widgets": {
-        "label_data_to_edit_options": "Modify:",
-        "label_data_to_edit_options_02": "Select what to modify",
-        "sl_material": "Material",
-        "sl_texture": "Texture",
-        "sl_texture_path": "Texture Path",
-        "label_modify_options": "Modification Scope",
-        "radio_all": "All",
-        "radio_table": "In Table",
-        "radio_selection": "Selected",
-        "label_find": "Find",
-        "line_edit_find_placeholder": "Enter text to find...",
-        "label_replace": "Replace ↓",
-        "line_edit_replace_placeholder": "Enter replacement text...",
-        "checkbox_case_sensitive": "Case Sensitive",
-        "checkbox_regex": "Use Regular Expression",
-        "button_replace": "Replace"
-      }
-    },
-
-    "TM_RF_WIN": {
-      "initialize_window_config": {
-        "WINDOWS_NAME": "Auto-Fix Paths -"
-      },
-      "create_widgets": {
-        "memory_search_mode_checkbox": "Smart Search Mode",
-        "search_subfolders_checkbox": "Search Subfolders",
-        "multiple_subfolder_search_checkbox": "Search Multiple Subfolders",
-        "ignore_case_checkbox": "Ignore Case",
-        "fix_path_button": "Start Fixing Paths"
-      }
-    },
-
-    "TM_IP_WIN": {
-      "initialize_window_config": {
-        "WINDOWS_NAME": "Image Processing -"
-      },
-      "menu_widgets": {
-        "edit_menu": "Edit",
-        "clear_cache": "Clear Cache (Use Caution!)",
-        "redo_action": "Revert Image",
-        "help_menu": "Help",
-        "instructions_action": "Instructions"
-      },
-      "create_widgets": {
-        "format_combo_box_label": "Format:",
-        "zoom_ratios_combo_box_label": "Zoom:",
-        "resampling_mode_combo_box_label": "Resampling:",
-        "resampling_mode_list": ["Nearest Neighbor", "Average", "Bilinear", "Sharpen", "Cubic", "High Precision"],
-        "jpg_label": "JPG Quality:",
-        "png_label": "PNG Quality:",
-        "convert_format_check_box": "Convert Format",
-        "scale_texture_check_box": "Scale Texture",
-        "conversion_button": "Start Conversion"
-      },
-      "update_quality_display_label": {
-        "01": "Level"
-      },
-      "get_selected_rows_data": {
-        "01": "No rows selected"
-      },
-      "copy_file_with_suffix": {
-        "01": "Error copying backup file"
-      },
-      "image_conversion": {
-        "01": "Failed to load image at path: ",
-        "02": "Unsupported format: ",
-        "03": "Updating node",
-        "04": "Failed"
-      }
-    },
-
-    "TM_TP_WIN": {
-      "initialize_window_config": {
-        "WINDOWS_NAME": "Texture Packer"
-      },
-      "create_widgets": {
-        "output_path_input": "Select output folder path...",
-        "radio_all": "All",
-        "radio_table": "In Table",
-        "radio_selection": "Selected",
-        "delete_source_checkbox": "Delete Source Files",
-        "change_path_checkbox": "Update Paths",
-        "pack_button": "Pack"
-      },
-      "select_output_path": {
-        "folder": "Select output folder path"
-      },
-      "start_pack": {
-        "01": "Please select a valid output path",
-        "02": "No rows selected",
-        "03": "File path does not exist",
-        "04": "File already in target folder",
-        "05": "Successfully copied",
-        "06": "file(s) to",
-        "07": "path",
-        "08": "Programmatic path inaccessible: ",
-        "09": "Source file",
-        "10": "deleted successfully",
-        "11": "Error deleting file",
-        "12": "File",
-        "13": "does not exist"
       }
     },
 
@@ -328,31 +192,6 @@
       "ASU": {
         "01": "UV tiling mode set to <UDIM>",
         "02": "UV tiling mode set to <Disabled>"
-      }
-    },
-
-    "DataP": {
-      "SSARD": {
-        "01": "Input data is not a string",
-        "02": "Regex error:"
-      }
-    },
-
-    "ImageP": {
-      "RI": {
-        "01": "Invalid scale ratio",
-        "02": "Please set a value between 0 and 100",
-        "03": "Failed to read image",
-        "04": "File write permission error",
-        "05": "Failed to save image",
-        "06": "Image processing failed"
-      },
-      "CIF": {
-        "01": "Convert format – failed to read image",
-        "02": "Convert format – failed to read cache",
-        "03": "Converted to",
-        "04": "format; new path:",
-        "05": "Convert format – failed to save; error:"
       }
     },
 
