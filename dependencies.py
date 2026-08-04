@@ -12,6 +12,8 @@ import json
 from datetime import datetime
 import maya.cmds as cmds
 
+from storage import ensure_directory, ensure_parent_directory
+
 PythonVersion = sys.version.split()[0]
 MayaVersion = cmds.about(version=True) # Maya版本
 MinorVersion = cmds.about(minorVersion=True) # 次要版本号
@@ -43,7 +45,8 @@ def ascii_load_data(file_path):
     return data
 
 def ascii_save_data(file_path, data):
-    with open(file_path, 'w') as file:
+    file_path = ensure_parent_directory(file_path)
+    with file_path.open('w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
 
 # 加载语言配置文件，将其解析为Python字典并获取其中的 'language_config' 键的值
@@ -68,8 +71,7 @@ class FeedbackPrompt:
 feedback = FeedbackPrompt() # 导入报错模块
 
 def create_version_folder():
-    if not os.path.exists(LibsPath):
-        os.makedirs(LibsPath)
+    ensure_directory(LibsPath)
 
     feedback.cp(language["CVF"]) # 很好配置库文件夹存在 ╭(●｀∀´●)╯ 鼓掌鼓掌
 

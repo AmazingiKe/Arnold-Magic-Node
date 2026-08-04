@@ -33,6 +33,8 @@ from datetime import datetime  # 提供日期和时间的对象和操作方法�
 # 7. 网络操作
 import keyboard  # 用于监听和发送键盘事件，适合自动化任务和快捷键实现
 
+from storage import ensure_parent_directory
+
 Script_path = os.path.dirname(os.path.abspath(__file__))
 
 # ##############################################################################################
@@ -1911,7 +1913,8 @@ class ImageProcessor():
 
         # 导出图片
         try:
-         resized_image.save(output_path)
+            output_path = ensure_parent_directory(output_path)
+            resized_image.save(str(output_path))
         except PermissionError as e:
             self.feedback.CP(f"{lang['04']}: {e}") # 文件写入权限错误
         except Exception as e:
@@ -1941,6 +1944,8 @@ class ImageProcessor():
 
         # 转换图片格式
         try:
+            output_path = ensure_parent_directory(output_path)
+
             # 处理 JPEG 格式
             if output_format.lower() in ['jpg', 'jpeg']:
                 # 如果图片带有透明通道，填充白色背景
@@ -1951,17 +1956,17 @@ class ImageProcessor():
                 else:
                     image = image.convert('RGB')
                 # 保存为 JPEG 格式
-                image.save(output_path, 'JPEG', quality=jpg_quality)
+                image.save(str(output_path), 'JPEG', quality=jpg_quality)
 
             # 处理 PNG 格式
             elif output_format.lower() == 'png':
                 # 保存为 PNG 格式，指定压缩等级
-                image.save(output_path, 'PNG', compress_level=png_compression)
+                image.save(str(output_path), 'PNG', compress_level=png_compression)
 
             # 处理其他格式
             else:
                 # 使用指定的格式进行保存
-                image.save(output_path, output_format.upper())
+                image.save(str(output_path), output_format.upper())
 
             self.feedback.CP(f"{os.path.basename(input_path)} {lang['03']}{output_format}{lang['04']}: {output_path}") # 已转换为 # 格式 新路径
 
@@ -2118,7 +2123,8 @@ class DataManager:
 
     # 保存数据为二进制格式
     def bin_save_data(self, file_path, data):
-        with open(file_path, 'wb') as file:  # 'wb' 表示写入二进制文件
+        file_path = ensure_parent_directory(file_path)
+        with file_path.open('wb') as file:  # 'wb' 表示写入二进制文件
             packed_data = msgpack.packb(data)  # 将数据序列化为 MessagePack 格式
             file.write(packed_data)
 
@@ -2137,7 +2143,8 @@ class DataManager:
         return data
 
     def ascii_save_data(self, file_path, data):
-        with open(file_path, 'w') as file:
+        file_path = ensure_parent_directory(file_path)
+        with file_path.open('w', encoding='utf-8') as file:
             json.dump(data, file, indent=4)
 
 

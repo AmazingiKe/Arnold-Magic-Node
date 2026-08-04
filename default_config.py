@@ -2,6 +2,8 @@
 import os # 操作系统文件路径相关操作
 import msgpack # 高效二进制序列化工具
 
+from storage import ensure_parent_directory
+
 
 
 
@@ -301,7 +303,8 @@ def bin_save_data(file_path, data):
     :param file_path: 文件保存路径
     :param data: 要保存的数据
     """
-    with open(file_path, 'wb') as file:
+    file_path = ensure_parent_directory(file_path)
+    with file_path.open('wb') as file:
         packed_data = msgpack.packb(data)
         file.write(packed_data)
 

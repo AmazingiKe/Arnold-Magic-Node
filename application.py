@@ -39,6 +39,7 @@ importlib.reload(core)  # 在开发阶段，重新加载模块以反映对库的
 from core import *  # 从核心功能模块中导入现有公共内容
 
 import default_config
+from storage import ensure_directory, ensure_parent_directory
 
 ##############################################################################################
 
@@ -427,6 +428,7 @@ class MainWindow(object):
         )
 
         # 获取并添加渲染预设文件名
+        ensure_directory(render_preset_path)
         file_names = os.listdir(render_preset_path)
         file_names_without_json_list = [file_name.replace(".bin", "") for file_name in file_names]
 
@@ -577,6 +579,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.main_menu_bar.addMenu(self.settings_presets_menu)
 
         settings_presets_path  = os.path.join(datas_path, "settings_presets")  # 预设文件夹路径
+        ensure_directory(settings_presets_path)
 
         # 遍历预设文件夹，获取所有预设文件名
         preset_files = os.listdir(settings_presets_path)
@@ -690,6 +693,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 构造当前配置文件的目标路径（将要替换的旧配置）
         old_target = os.path.join(settings_path, AMS_Config)
+        ensure_directory(settings_path)
         # 如果旧配置文件存在，则先删除
         if os.path.exists(old_target):
             os.remove(old_target)
@@ -745,7 +749,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 3. 准备路径
         presets_dir = os.path.join(datas_path, "settings_presets")
-        os.makedirs(presets_dir, exist_ok=True)
+        ensure_directory(presets_dir)
         src = os.path.join(settings_path, AMS_Config)
         if not os.path.isfile(src):
             QtWidgets.QMessageBox.critical(self, '错误', '当前配置文件不存在，无法创建预设！')
@@ -5620,6 +5624,7 @@ class TM_ImageProcessing(QtWidgets.QDialog):
         else:
             try:
                 # 如果不存在，复制原始文件并命名为带后缀的文件，不复制权限
+                ensure_parent_directory(new_file_path)
                 shutil.copyfile(old_info_path, new_file_path)
 
                 return

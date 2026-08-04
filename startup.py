@@ -4,6 +4,8 @@ import importlib  # 动态加载模块
 import maya.cmds as cmds  # Maya命令接口
 import json  # JSON 文件操作
 
+from storage import ensure_parent_directory
+
 # 获取脚本的根路径
 script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
 
@@ -37,7 +39,8 @@ def detecting_language():
 
     # 如果语言配置文件不存在，则创建
     if not os.path.exists(language_config_file_path):
-        with open(language_config_file_path, 'w') as file:
+        language_config_file_path = ensure_parent_directory(language_config_file_path)
+        with language_config_file_path.open('w', encoding='utf-8') as file:
             json.dump(language, file, indent=4)
 
 #______________________________________________________________________________>>> 主函数入口
@@ -45,11 +48,6 @@ def main():
     """
     主函数，负责调用项目初始化的各个子模块，包括文件夹配置、依赖检查、文件初始化及主界面加载。
     """
-    # 加载并执行初始配置模块
-    import runtime_directories
-    importlib.reload(runtime_directories)
-    runtime_directories.Main_program()
-
     # 检测语言配置
     detecting_language()
 
