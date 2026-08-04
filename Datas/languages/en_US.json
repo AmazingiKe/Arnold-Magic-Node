@@ -205,35 +205,5 @@
       "01": "Please select the corresponding node first!"
     }
 
-  },
-
-  "DLibs": {
-    "FP": "@Arnold Tool Plugin Alert {} | ",
-    "CVF": "Configuration folder exists – great! (╯°□°)╯ ",
-    "DL": {
-      "01": "Found",
-      "02": "Library missing; downloading… please wait",
-      "03": "All set! Environment is configured correctly♪"
-    },
-    "MP": {
-      "01": "Retrieving library time: ",
-      "02": " seconds"
-    },
-    "upgrade_pip": {
-      "01": "Upgrading pip...",
-      "02": "pip upgraded successfully!",
-      "03": "pip upgrade failed; reason:"
-    },
-    "check_and_install_pywin32": {
-      "01": "pywin32 not found",
-      "02": "Attempting to reinstall pywin32...",
-      "03": "pywin32 installed; please restart Maya"
-    },
-    "show_restart_popup": {
-      "01": "Arnold Magic Node Notice~~",
-      "02": "pywin32 updated in Maya; restart to use plugin",
-      "03": "Exit Maya",
-      "04": "Restart Later"
-    }
   }
 }

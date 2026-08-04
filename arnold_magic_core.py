@@ -10,8 +10,6 @@ import os  # 提供与操作系统交互的功能，如文件路径操作、目�
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 
 # 3. 数据处理
-import json  # 用于序列化和反序列化 JSON 数据，方便与外部数据进行交换
-import msgpack  # 用于高效的二进制序列化和反序列化，比 JSON 更节省空间和更快
 import arnold_magic_matching as _matching
 from collections import defaultdict
 import difflib
@@ -23,7 +21,8 @@ import re  # 提供正则表达式操作，用于模式匹配、搜索和替换�
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
-from storage import ensure_parent_directory
+from storage import load_json as load_json_file
+from storage import save_json as save_json_file
 
 Script_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -44,11 +43,11 @@ def language_loading():
     dataM = DataManager()
 
     # 加载语言配置文件并获取 'language_config' 键的值
-    language_config = dataM.ascii_load_data(
+    language_config = dataM.load_json(
         os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
 
     # 动态加载相应语言的JSON文件
-    language = dataM.ascii_load_data(
+    language = dataM.load_json(
         os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))
 
     return language
@@ -1405,175 +1404,11 @@ def get_scene_all_data():
 
 # 数据管理器
 class DataManager:
-    def __init__(self):
-        pass
+    def load_json(self, file_path):
+        return load_json_file(file_path)
 
-    # 读取二进制数据并转换回 Python 对象
-    def bin_load_data(self, file_path):
-        with open(file_path, 'rb') as file:  # 'rb' 表示读取二进制文件
-            packed_data = file.read()  # 读取整个二进制文件内容
-            data = msgpack.unpackb(packed_data)  # 将 MessagePack 格式的数据反序列化回 Python 对象
-        return data
-
-    # 保存数据为二进制格式
-    def bin_save_data(self, file_path, data):
-        file_path = ensure_parent_directory(file_path)
-        with file_path.open('wb') as file:  # 'wb' 表示写入二进制文件
-            packed_data = msgpack.packb(data)  # 将数据序列化为 MessagePack 格式
-            file.write(packed_data)
-
-    def bin_modify_data(self, key, cont, settings_path, file_name):
-        config = self.bin_load_data(
-            os.path.normpath(os.path.join(settings_path, file_name)))
-
-        config[key] = cont
-
-        self.bin_save_data(
-            os.path.normpath(os.path.join(settings_path, file_name), config))
-
-    def ascii_load_data(self, file_path):
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-        return data
-
-    def ascii_save_data(self, file_path, data):
-        file_path = ensure_parent_directory(file_path)
-        with file_path.open('w', encoding='utf-8') as file:
-            json.dump(data, file, indent=4)
-
-
-
-# 数据管理器
-# class DataManager_new:
-#     def __init__(self, file_path, file_name):
-#         """
-#         初始化数据管理器实例。
-#
-#         :param file_path: 文件的路径
-#         :param file_name: 文件名
-#         """
-#         self.feedback = FeedbackPrompt() # 反馈模块
-#         self.file_path = os.path.normpath(os.path.join(file_path, file_name))
-#
-#     # 读取二进制数据并转换回 Python 对象
-#     def bin_load_data(self):
-#         """
-#         读取二进制文件并反序列化为 Python 对象。
-#
-#         :return: 反序列化后的数据（Python 对象）
-#         """
-#         try:
-#             with open(self.file_path, 'rb') as file:  # 'rb' 表示读取二进制文件
-#                 packed_data = file.read()  # 读取整个二进制文件内容
-#                 data = msgpack.unpackb(packed_data)  # 使用 msgpack 反序列化数据
-#             return data
-#         except FileNotFoundError:
-#             self.feedback.CPW(f"错误: 文件 {self.file_path} 未找到")
-#             return False
-#         except msgpack.exceptions.ExtraData:
-#             self.feedback.CPW(f"错误: 文件 {self.file_path} 数据格式错误")
-#             return False
-#
-#     # 保存数据为二进制格式
-#     def bin_save_data(self, data):
-#         """
-#         将数据序列化为二进制格式并保存到文件。
-#
-#         :param data: 需要保存的数据
-#         """
-#         try:
-#             with open(self.file_path, 'wb') as file:  # 'wb' 表示写入二进制文件
-#                 packed_data = msgpack.packb(data)  # 使用 msgpack 序列化数据
-#                 file.write(packed_data)  # 写入文件
-#         except Exception as e:
-#             self.feedback.CPW(f"保存数据时发生错误: {e}")
-#             return False
-#
-#     def bin_modify_data(self, key, cont):
-#         """
-#         修改二进制文件中的指定键的值。
-#
-#         :param key: 需要修改的键
-#         :param cont: 新的内容
-#         :return: 修改后的数据
-#         """
-#
-#
-#         config = self.bin_load_data(self.file_path)
-#         if config is None:
-#             self.feedback.CPW(f"无法读取数据，无法修改")
-#             return False
-#
-#         config[key] = cont
-#         self.bin_save_data(config)
-#
-#         return config
-#
-#     def bin_modify_nested_data(self, key_path, cont):
-#         """
-#         修改嵌套数据结构中的指定键的值。
-#
-#         :param key_path: 键的路径（一个由多个键组成的列表）
-#         :param cont: 新的内容
-#         :return: 修改后的数据
-#         """
-#
-#         if not key_path:
-#             self.feedback.CPW("key_path 不能是空的")  # 确保key路径不为空
-#             return False
-#         config = self.bin_load_data(self.file_path)
-#
-#         if config is None:
-#             self.feedback.CPW(f"无法读取数据，无法修改")
-#             return False
-#
-#
-#         # 根据给定的键路径逐层访问数据
-#         current_level = config
-#         for key in key_path[:-1]:  # 遍历到倒数第二个键
-#
-#             if key not in current_level:
-#                 self.feedback.CPW(f"错误: 在路径 {' -> '.join(key_path)} 中找不到键 {key}")
-#                 return False
-#
-#             current_level = current_level[key]  # 进入下一层级
-#
-#         # 设置最终键的值为新值
-#         current_level[key_path[-1]] = cont
-#
-#         self.bin_save_data(config)
-#
-#         return config
-#
-#     def ascii_load_data(self):
-#         """
-#         读取 ASCII 格式的 JSON 文件并返回数据。
-#
-#         :return: 读取的 Python 对象
-#         """
-#         try:
-#             with open(self.file_path, 'r', encoding='utf-8') as file:
-#                 data = json.load(file)  # 使用 json 加载数据
-#             return data
-#         except FileNotFoundError:
-#             self.feedback.CPW(f"错误: 文件 {self.file_path} 未找到")
-#             return False
-#         except json.JSONDecodeError:
-#             self.feedback.CPW(f"错误: 文件 {self.file_path} 数据格式错误")
-#             return False
-#
-#     def ascii_save_data(self, data):
-#         """
-#         将数据保存为 ASCII 格式的 JSON 文件。
-#
-#         :param data: 需要保存的数据
-#         """
-#         try:
-#             with open(self.file_path, 'w', encoding='utf-8') as file:
-#                 json.dump(data, file, indent=4)  # 使用 json 保存数据，并格式化
-#         except Exception as e:
-#             self.feedback.CPW(f"保存数据时发生错误: {e}")
-#             return False
+    def save_json(self, file_path, data):
+        return save_json_file(file_path, data)
 
 
 

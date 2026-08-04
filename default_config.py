@@ -1,8 +1,7 @@
 # ______________________________________________________________________________>>> 导入必要库
 import os # 操作系统文件路径相关操作
-import msgpack # 高效二进制序列化工具
 
-from storage import ensure_parent_directory
+from storage import save_json
 
 
 
@@ -295,19 +294,6 @@ Arnold_Magic_Settings = {
 # 当前脚本路径
 script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
 
-# ______________________________________________________________________________>>> 数据保存函数
-def bin_save_data(file_path, data):
-    """
-    保存数据为二进制格式。
-
-    :param file_path: 文件保存路径
-    :param data: 要保存的数据
-    """
-    file_path = ensure_parent_directory(file_path)
-    with file_path.open('wb') as file:
-        packed_data = msgpack.packb(data)
-        file.write(packed_data)
-
 # ______________________________________________________________________________>>> 配置文件检测函数
 def detecting_initial_config_files(path, filename, data):
     """
@@ -317,10 +303,10 @@ def detecting_initial_config_files(path, filename, data):
     :param filename: 配置文件名称
     :param data: 配置文件数据
     """
-    abs_path = os.path.join(path, filename + '.bin')
+    abs_path = os.path.join(path, filename + '.json')
 
     if not os.path.exists(abs_path) or os.path.getsize(abs_path) == 0:
-        bin_save_data(abs_path, data)
+        save_json(abs_path, data)
 
 # ______________________________________________________________________________>>> 主程序入口
 def Main_program():

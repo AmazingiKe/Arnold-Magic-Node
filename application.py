@@ -29,10 +29,12 @@ from contextlib import contextmanager
 script_path = os.path.normpath(os.path.join(os.path.dirname(__file__))) # 获取当前脚本的目录路径
 # ------------------------------------------
 
-# 9. 自定义库导入与依赖管理
-import core  # 导入核心功能模块
+# 9. 自定义库导入
+# 使用项目唯一的模块名，避免 Maya 进程中其他名为 core 的模块污染导入缓存。
+import arnold_magic_core as core
 importlib.reload(core)  # 在开发阶段，重新加载模块以反映对库的更改
-from core import *  # 从核心功能模块中导入现有公共内容
+from arnold_magic_core import *
+from arnold_magic_core import DataManager
 
 import default_config
 from storage import ensure_directory
@@ -60,7 +62,7 @@ icon_path = os.path.normpath(os.path.join(script_path, "icon"))  # 定义图标�
 
 render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))  # 定义渲染预设文件夹路径 -> 全局变量
 
-AMS_Config = "Arnold_Magic_Settings.bin" # Arnold_Magic_Settings
+AMS_Config = "Arnold_Magic_Settings.json" # Arnold_Magic_Settings
 
 # 定义全局字体大小变量
 SMALL_FONT_SIZE = 10
@@ -94,11 +96,11 @@ def language_loading():
     dataM = DataManager()
 
     # 加载语言配置文件并获取 'language_config' 键的值
-    language_config = dataM.ascii_load_data(
+    language_config = dataM.load_json(
         os.path.join(script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
 
     # 动态加载相应语言的JSON文件
-    language = dataM.ascii_load_data(
+    language = dataM.load_json(
         os.path.join(script_path, 'Datas', 'languages', f'{language_config}.json'))
 
     return language
@@ -373,8 +375,14 @@ class MainWindow(object):
 
         # 获取并添加渲染预设文件名
         ensure_directory(render_preset_path)
-        file_names = os.listdir(render_preset_path)
-        file_names_without_json_list = [file_name.replace(".bin", "") for file_name in file_names]
+        file_names = [
+            file_name
+            for file_name in os.listdir(render_preset_path)
+            if file_name.lower().endswith(".json")
+        ]
+        file_names_without_json_list = [
+            os.path.splitext(file_name)[0] for file_name in file_names
+        ]
 
         for renderer_data_mode_name in file_names_without_json_list:
             self.rendering_preset_name[renderer_data_mode_name] = cmds.menuItem(label=renderer_data_mode_name)
@@ -393,7 +401,7 @@ class MainWindow(object):
         self.language = language_loading()['ArnoldMagicNode']['AMDUI_WIN']
 
         # 加载设置配置
-        self.config = self.dataM.bin_load_data(os.path.normpath(os.path.join(settings_path, AMS_Config)))
+        self.config = self.dataM.load_json(os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
     #______________________________________________________________________________>>> 保存设置内容的函数
     def modify_nested_config(self, key_path, cont):
@@ -410,7 +418,7 @@ class MainWindow(object):
         3. 保存修改后的配置数据。
         """
         # 加载当前配置数据
-        config = self.dataM.bin_load_data(
+        config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config))
         )
 
@@ -423,13 +431,13 @@ class MainWindow(object):
         current_level[key_path[-1]] = cont
 
         # 保存修改后的配置数据
-        self.dataM.bin_save_data(
+        self.dataM.save_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config)),
             config
         )
 
         # 重新加载配置数据以更新当前实例的配置
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config))
         )
 
@@ -474,7 +482,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.pathD = PathDetection()  # 数据检测模块
 
         ### 初始化配置数据
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
            os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
         # 加载语言配置
@@ -525,11 +533,15 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         ensure_directory(settings_presets_path)
 
         # 遍历预设文件夹，获取所有预设文件名
-        preset_files = os.listdir(settings_presets_path)
+        preset_files = [
+            file_name
+            for file_name in os.listdir(settings_presets_path)
+            if file_name.lower().endswith(".json")
+        ]
         # 遍历预设文件名列表，创建菜单项
 
         for preset_file in preset_files:
-            preset_name = preset_file.replace(".bin", "")  # 去掉文件扩展名
+            preset_name = os.path.splitext(preset_file)[0]  # 去掉文件扩展名
             action = QAction(preset_name, self)
             self.settings_presets_menu.addAction(action)
             # 把默认参数 pf 传进去，body 只用 pf
@@ -628,7 +640,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 构造预设文件所在的目录路径
         settings_presets_dir = os.path.join(datas_path, "settings_presets")
         # 构造具体的预设文件路径
-        preset_file_path = os.path.join(settings_presets_dir, preset_file_name +  ".bin")
+        preset_file_path = os.path.join(settings_presets_dir, preset_file_name +  ".json")
 
         # 如果预设文件不存在，直接返回
         if not os.path.isfile(preset_file_path):
@@ -698,7 +710,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(self, '错误', '当前配置文件不存在，无法创建预设！')
             return
 
-        dst = os.path.join(presets_dir, new_name + ".bin")
+        dst = os.path.join(presets_dir, new_name + ".json")
         # 防止覆盖已有同名文件
         if os.path.exists(dst):
             reply = QtWidgets.QMessageBox.question(
@@ -723,7 +735,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     def modify_settings_preset(self, preset_file_name):
         """
-        修改预设名称：弹出对话框输入新名称，重命名磁盘上的 .bin 文件，
+        修改预设名称：弹出对话框输入新名称，重命名磁盘上的 JSON 文件，
         并更新菜单中对应 QAction 的文本和触发行为。
         """
         # 1. 找到对应的 QAction
@@ -768,8 +780,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 3. 文件重命名
         presets_dir = os.path.join(datas_path, "settings_presets")
-        old_path = os.path.join(presets_dir, preset_file_name + ".bin")
-        new_path = os.path.join(presets_dir, new_name + ".bin")
+        old_path = os.path.join(presets_dir, preset_file_name + ".json")
+        new_path = os.path.join(presets_dir, new_name + ".json")
         if not os.path.isfile(old_path):
             QtWidgets.QMessageBox.critical(self, '错误', '原预设文件不存在！')
             return
@@ -799,7 +811,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
     def delete_settings_preset(self, preset_file_name):
         """
-        删除预设：从磁盘删除 .bin 文件，并从菜单中移除对应 QAction。
+        删除预设：从磁盘删除 JSON 文件，并从菜单中移除对应 QAction。
         """
         # 1. 用户确认
         reply = QtWidgets.QMessageBox.question(
@@ -812,7 +824,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 2. 删除文件
         presets_dir = os.path.join(datas_path, "settings_presets")
-        file_path = os.path.join(presets_dir, preset_file_name + ".bin")
+        file_path = os.path.join(presets_dir, preset_file_name + ".json")
         if os.path.isfile(file_path):
             try:
                 os.remove(file_path)
@@ -1187,7 +1199,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         font.setBold(True)  # 设置加粗
 
         #_______________________________________________________________>>> 加载路径检测配置
-        path_detection_config = self.dataM.bin_load_data(
+        path_detection_config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config)))['path_detection_params']
 
         # 创建节点路径匹配选项卡
@@ -1459,7 +1471,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         font.setBold(True)
 
         # _______________________________________________________________>>> 加载路径检测配置
-        config = self.dataM.bin_load_data(
+        config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config))
         )['node_connection_mixer_config']
 
@@ -1787,12 +1799,12 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 加载语言配置文件并设置默认语言
         lang_config_path = os.path.join(settings_path, 'language_config.json')
-        lang_config = self.dataM.ascii_load_data(lang_config_path)
+        lang_config = self.dataM.load_json(lang_config_path)
 
         # 检查配置并设置语言菜单默认值
         for file_name in os.listdir(self.languages_folder_path):
             if lang_config['language_config'] == file_name.replace('.json', ''):
-                lang = self.dataM.ascii_load_data(os.path.join(self.languages_folder_path, file_name))
+                lang = self.dataM.load_json(os.path.join(self.languages_folder_path, file_name))
                 self.language_combo_box.setCurrentText(lang['language_type'])
 
         layout.addWidget(self.language_combo_box)
@@ -1866,16 +1878,16 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # -----通用
     def modify_config(self, key, cont, file_name = AMS_Config):
 
-        config = self.dataM.bin_load_data(
+        config = self.dataM.load_json(
             os.path.join(settings_path, file_name))
 
         config[key] = cont
 
-        self.dataM.bin_save_data(
+        self.dataM.save_json(
             os.path.join(settings_path, file_name), config)
 
         ### 初始化配置数据
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
            os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
     def modify_nested_config(self, key_path, cont):
@@ -1892,8 +1904,8 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         3. 保存修改后的配置数据。
         """
 
-        # 加载二进制配置数据
-        config = self.dataM.bin_load_data(
+        # 加载 JSON 配置数据
+        config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config))
         )
 
@@ -1906,13 +1918,13 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         current_level[key_path[-1]] = cont
 
         # 保存修改后的配置数据
-        self.dataM.bin_save_data(
+        self.dataM.save_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config)),
             config
         )
 
         ### 初始化配置数据
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
            os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
         # --------------------保存设置内容的函数
@@ -2064,7 +2076,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 遍历文件夹中的所有JSON文件
         for file_name in os.listdir(folder_path):
 
-            lang = self.dataM.ascii_load_data(os.path.join(folder_path, file_name))
+            lang = self.dataM.load_json(os.path.join(folder_path, file_name))
             languages_list.append(lang['language_type'])
 
         return languages_list
@@ -2079,11 +2091,11 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         lang_config_path = os.path.join(script_path, 'Datas', 'settings', 'language_config.json')
 
         # 加载语言配置文件
-        lang_config = self.dataM.ascii_load_data(lang_config_path)
+        lang_config = self.dataM.load_json(lang_config_path)
 
         # 遍历文件夹中的所有JSON文件
         for file_name in os.listdir(language_folder):
-            lang = self.dataM.ascii_load_data(os.path.join(language_folder, file_name))
+            lang = self.dataM.load_json(os.path.join(language_folder, file_name))
             if selected_lang == lang['language_type']:
                 # 修改语言文件
                 lang_config['language_config'] = file_name.replace('.json', '')
@@ -2091,7 +2103,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
                 self.feedback.CP(f'语言已修改成:{lang["language_type"]}')
 
         # 保存修改过后的语言文件
-        self.dataM.ascii_save_data(lang_config_path, lang_config)
+        self.dataM.save_json(lang_config_path, lang_config)
 
 #______________________________________________________________________________>>>AOV灯光组管理器
 
@@ -2337,11 +2349,11 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 缓存文件
         cache = ["RGBA"]
 
-        self.cache_path = os.path.join(script_path, "Datas", "aov_light_group_manager", "cache.bin")
+        self.cache_path = os.path.join(script_path, "Datas", "aov_light_group_manager", "cache.json")
 
         # 如果缓存文件不存在则创建
         if not os.path.exists(self.cache_path):
-            self.dataM.bin_save_data(self.cache_path, cache)
+            self.dataM.save_json(self.cache_path, cache)
 
     def _create_widgets(self):
         # 刷新按钮
@@ -2416,7 +2428,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
 
         self.aov_select_list_widget.currentItemChanged.connect(lambda *args: self._modify_aov_select_list_cache())
         # 设置初始选中项
-        self._select_aov_select_list_texts(self.dataM.bin_load_data(self.cache_path))
+        self._select_aov_select_list_texts(self.dataM.load_json(self.cache_path))
 
 
         # 功能按钮
@@ -2692,7 +2704,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 获取用户选择的灯光组配置
         selected_groups = self._get_all_items()
         # 从缓存加载AOV通道配置数据
-        aov_channels = self.dataM.bin_load_data(self.cache_path)
+        aov_channels = self.dataM.load_json(self.cache_path)
 
         # 遍历每个灯光组配置
         for group in selected_groups:
@@ -2927,7 +2939,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         - 支持同时清理多个灯光组配置
         """
         # 获取用户选择的通道配置（从缓存加载）
-        selected_channels = self.dataM.bin_load_data(self.cache_path)
+        selected_channels = self.dataM.load_json(self.cache_path)
 
         # 获取场景中所有aiAOV节点
         all_aovs = cmds.ls(type='aiAOV') or []
@@ -2961,7 +2973,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         工作流程：
         1. 获取 QListWidget 中所有被选中的项。
         2. 提取每个选中项的文本内容并生成列表。
-        3. 使用 self.dataM.bin_save_data() 方法将数据保存到缓存文件路径。
+        3. 使用 self.dataM.save_json() 方法将数据保存到缓存文件路径。
         """
 
         def modify_cache():
@@ -2972,7 +2984,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
             new_cache_data = [item.text() for item in selected_items]
 
             # 将缓存数据保存到指定路径 (self.cache_path)
-            self.dataM.bin_save_data(self.cache_path, new_cache_data)
+            self.dataM.save_json(self.cache_path, new_cache_data)
 
         # 使用 Qt 的定时器单次调用机制来延迟执行保存操作
         QtCore.QTimer.singleShot(0, lambda *args: modify_cache())
@@ -3084,7 +3096,7 @@ def AutoSet_TexColorSpace():
     lang = language_loading()['ArnoldMagicNode']['ASTCS']
 
     # 加载数据
-    texture_processing_data = dataM.bin_load_data(
+    texture_processing_data = dataM.load_json(
         os.path.join(settings_path, AMS_Config))
 
     FilterData = texture_processing_data["texture_filter_params"] # 过滤贴图的数据
@@ -3232,13 +3244,13 @@ class rendering_preset_menu(object):
 
         # _______________________________________________________________________>>> 初始化配置变量并加载数据
         # 加载渲染设置数据
-        self.Render_settings_Data = self.dataM.bin_load_data(
+        self.Render_settings_Data = self.dataM.load_json(
             os.path.normpath(
-                os.path.join(datas_path, 'render_presets', menu_sl_val + '.bin')
+                os.path.join(datas_path, 'render_presets', menu_sl_val + '.json')
             )
         )
         # 读取渲染配置参数
-        config = self.dataM.bin_load_data(
+        config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config))
         )['render_preset_params']
 
@@ -3824,9 +3836,9 @@ class rendering_preset_settings_button():
                 'AOV_properties': AOV_properties
             }
 
-            # 03, 将渲染器属性保存到二进制文件中
-            if not os.path.exists(os.path.join(write_data_path, self.import_val + ".bin")):
-                self.dataM.bin_save_data(os.path.join(write_data_path, self.import_val + ".bin"), Render_settings)
+            # 03, 将渲染器属性保存到 JSON 文件中
+            if not os.path.exists(os.path.join(write_data_path, self.import_val + ".json")):
+                self.dataM.save_json(os.path.join(write_data_path, self.import_val + ".json"), Render_settings)
 
 
 
@@ -3885,7 +3897,7 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
 
     # 2, 删除本地文件
     os.remove(os.path.normpath(os.path.join(
-                render_preset_path,  sl_name+ '.bin'
+                render_preset_path,  sl_name+ '.json'
             )))
 
 # 修改渲染预设设置
@@ -3939,11 +3951,11 @@ class Path_Detection_Connection:
         self.nodeP = NodeProcessor() # 节点处理模块
         ### 初始化配置数据
         # 加载数据
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
             os.path.join(settings_path, AMS_Config))
 
 
-        self.texture_processing_data = self.dataM.bin_load_data(
+        self.texture_processing_data = self.dataM.load_json(
             os.path.join(settings_path, AMS_Config))
 
         self.path_detection_data = self.config['path_detection_params']
@@ -4134,7 +4146,7 @@ class Magic_Node_Connection:
 
         ### 初始化配置数据
         # 加载数据
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
             os.path.join(settings_path, AMS_Config))
 
         self.texture_filter_dict = self.config[
@@ -4214,7 +4226,7 @@ class Magic_Node_Connection:
     # 修改材质名称
     def modify_mat_name(self,original_mat_name,  file_name):
 
-        texture_processing_data = self.dataM.bin_load_data(
+        texture_processing_data = self.dataM.load_json(
             os.path.join(settings_path, AMS_Config))
 
         # 修改材质名称
@@ -4444,10 +4456,10 @@ class IntelligentMaterialRepair:
         因为这样子方便测试
         """
         # 获取配置数据
-        config = self.dataM.bin_load_data(os.path.join(
+        config = self.dataM.load_json(os.path.join(
                                                                     settings_path, AMS_Config))['path_detection_params']
 
-        texture_filter_dict = self.dataM.bin_load_data(os.path.join(
+        texture_filter_dict = self.dataM.load_json(os.path.join(
                                                                     settings_path, AMS_Config))['texture_filter_params']
 
 
@@ -4518,7 +4530,7 @@ class IntelligentMaterialRepair:
     # 主程序
     def process(self):
 
-        sttings_config = self.dataM.bin_load_data(os.path.join(
+        sttings_config = self.dataM.load_json(os.path.join(
                                                                     settings_path, AMS_Config))
 
 
@@ -4581,7 +4593,7 @@ class QuickConnectNode:
         ### 实例各种模块
         self.dataM = DataManager()  # 数据管理模块
 
-        self.config = self.dataM.bin_load_data(os.path.join(settings_path, AMS_Config))['node_connection_mixer_config']['quick_connect_node_parms']
+        self.config = self.dataM.load_json(os.path.join(settings_path, AMS_Config))['node_connection_mixer_config']['quick_connect_node_parms']
 
     def get_select_node(self):
         """
@@ -4843,7 +4855,7 @@ class SceneNameOptimization:
 
         self.scene_nodes = get_scene_all_data()
 
-        self.config = self.dataM.bin_load_data(
+        self.config = self.dataM.load_json(
             os.path.normpath(os.path.join(settings_path, AMS_Config)))
 
     # ______________________________________________________________________________>>> 主函数入口
