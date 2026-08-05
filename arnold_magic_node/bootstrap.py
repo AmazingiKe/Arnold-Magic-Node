@@ -3,11 +3,9 @@ import os  # 操作系统文件路径和操作
 import importlib  # 动态加载模块
 import maya.cmds as cmds  # Maya命令接口
 
-from .core.paths import PROJECT_ROOT
+from .core.paths import LANGUAGES_ROOT
 from .core.storage import save_json
-
-# 获取脚本的根路径
-script_path = os.path.normpath(str(PROJECT_ROOT))
+from .maya.environment import get_user_data_root
 
 #______________________________________________________________________________>>> 检测 Maya 语言配置并创建语言文件
 def detecting_language():
@@ -18,8 +16,7 @@ def detecting_language():
     language = {}
 
     # 获取语言文件目录中的所有语言选项
-    language_list_dir = os.listdir(
-        os.path.normpath(os.path.join(script_path, "Datas", "languages")))
+    language_list_dir = [path.name for path in LANGUAGES_ROOT.glob("*.json")]
 
     # 去掉文件后缀（.json）
     language_list_dir = [val.replace('.json', '') for val in language_list_dir]
@@ -34,8 +31,7 @@ def detecting_language():
         language['language_config'] = 'en_US'
 
     # 定义语言配置文件路径
-    language_config_file_path = os.path.normpath(os.path.join(
-        script_path, "Datas", "settings", "language_config.json"))
+    language_config_file_path = get_user_data_root() / "settings" / "language_config.json"
 
     # 如果语言配置文件不存在，则创建
     if not os.path.exists(language_config_file_path):

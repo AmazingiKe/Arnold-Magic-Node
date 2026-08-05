@@ -7,7 +7,15 @@ import maya.cmds as cmds  # 导入 Maya 的 cmds 模块，用于执行 Maya 命�
 # 2. 文件与系统操作
 import os  # 提供与操作系统交互的功能，如文件路径操作、目录遍历等
 import importlib  # 用于动态导入和重新加载模块，支持模块的按需加载
-from .core.paths import ICONS_ROOT, PROJECT_ROOT
+from .core.paths import (
+    ICONS_ROOT,
+    LANGUAGES_ROOT,
+    PROJECT_ROOT,
+    user_aov_cache_path,
+    user_preset_dir,
+    user_settings_dir,
+)
+from .maya.environment import get_user_data_root
 # ------------------------------------------
 # 获取脚本路径
 script_path = os.path.normpath(str(PROJECT_ROOT)) # 获取当前脚本的目录路径
@@ -35,13 +43,16 @@ pluginFeedbackURL = r"https://flowus.cn/form/7b125d97-3971-40ee-ac8b-c338e4a9190
 pluginUpdateDownloadURL = r'https://flowus.cn/amazingike/share/84422156-5158-4b73-9a5f-c5cadbb6625a?code=LZVF69'
 pluginHelpDocumentURL = r'https://flowus.cn/amazingike/share/6e8b16c6-f8b1-4f04-bad7-24ff003224dc?code=LZVF69'
 
-datas_path = os.path.normpath(os.path.join(script_path, "Datas"))  # 定义数据文件夹路径 -> 全局变量
+user_data_root = get_user_data_root()
+datas_path = os.path.normpath(str(user_data_root))  # 兼容旧模块变量名，实际指向 Maya 用户目录
 
-settings_path = os.path.normpath(os.path.join(datas_path, "settings"))  # 定义设置配置文件夹路径 -> 全局变量
+settings_path = os.path.normpath(str(user_settings_dir(user_data_root)))  # 用户设置目录
 
 icon_path = os.path.normpath(str(ICONS_ROOT))  # 定义图标路径 -> 全局变量
 
-render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))  # 定义渲染预设文件夹路径 -> 全局变量
+render_preset_path = os.path.normpath(str(user_preset_dir(user_data_root, "render")))  # 渲染预设目录
+settings_presets_path = os.path.normpath(str(user_preset_dir(user_data_root, "settings")))  # 设置预设目录
+aov_cache_path = os.path.normpath(str(user_aov_cache_path(user_data_root)))  # AOV 单文件缓存
 
 AMS_Config = "Arnold_Magic_Settings.json" # Arnold_Magic_Settings
 
@@ -72,11 +83,11 @@ def language_loading():
 
     # 加载语言配置文件并获取 'language_config' 键的值
     language_config = dataM.load_json(
-        os.path.join(script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
+        os.path.join(settings_path, 'language_config.json'))['language_config']
 
     # 动态加载相应语言的JSON文件
     language = dataM.load_json(
-        os.path.join(script_path, 'Datas', 'languages', f'{language_config}.json'))
+        os.path.join(str(LANGUAGES_ROOT), f'{language_config}.json'))
 
     return language
 
@@ -296,7 +307,7 @@ class rendering_preset_menu(object):
         # 加载渲染设置数据
         self.Render_settings_Data = self.dataM.load_json(
             os.path.normpath(
-                os.path.join(datas_path, 'render_presets', menu_sl_val + '.json')
+                os.path.join(render_preset_path, menu_sl_val + '.json')
             )
         )
         # 读取渲染配置参数

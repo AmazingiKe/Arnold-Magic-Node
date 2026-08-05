@@ -10,7 +10,6 @@ from ..application import (
     SMALL_FONT_SIZE,
     SoftwareState,
     SoftwareVersion,
-    datas_path,
     icon_path,
     is_modifier_pressed,
     language_loading,
@@ -18,7 +17,7 @@ from ..application import (
     pluginHelpDocumentURL,
     pluginHomeURL,
     pluginUpdateDownloadURL,
-    script_path,
+    settings_presets_path,
     settings_path,
 )
 from ..arnold_magic_core import (
@@ -28,6 +27,7 @@ from ..arnold_magic_core import (
     process_sl_data,
 )
 from ..core.storage import ensure_directory
+from ..core.paths import LANGUAGES_ROOT
 from .qt import QAction, QtCore, QtGui, QtWidgets
 from .workspace import delete_window_if_existe
 
@@ -74,7 +74,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.language = language_loading()['ArnoldMagicNode']['AMNSP_WIN']
 
 
-        self.languages_folder_path = os.path.join(script_path, 'Datas', 'languages')  # 语言文件夹路径
+        self.languages_folder_path = os.path.normpath(str(LANGUAGES_ROOT))  # 只读语言资源路径
 
     def initialize_window_config(self):
 
@@ -114,7 +114,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 把它插入 menubar
         self.main_menu_bar.addMenu(self.settings_presets_menu)
 
-        settings_presets_path  = os.path.join(datas_path, "settings_presets")  # 预设文件夹路径
         ensure_directory(settings_presets_path)
 
         # 遍历预设文件夹，获取所有预设文件名
@@ -207,7 +206,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         # 打开预设文件夹
         self.open_presets_folder = QtWidgets.QAction('打开预设文件夹', self)
-        self.open_presets_folder.triggered.connect(lambda *args: os.startfile(os.path.join(datas_path, "settings_presets")))
+        self.open_presets_folder.triggered.connect(lambda *args: os.startfile(settings_presets_path))
 
         # 构造右键子菜单
         cmenu = QtWidgets.QMenu(self)
@@ -223,7 +222,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
     # 加载预设文件
     def load_settings_preset(self, preset_file_name):
         # 构造预设文件所在的目录路径
-        settings_presets_dir = os.path.join(datas_path, "settings_presets")
+        settings_presets_dir = settings_presets_path
         # 构造具体的预设文件路径
         preset_file_path = os.path.join(settings_presets_dir, preset_file_name +  ".json")
 
@@ -288,7 +287,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             return
 
         # 3. 准备路径
-        presets_dir = os.path.join(datas_path, "settings_presets")
+        presets_dir = settings_presets_path
         ensure_directory(presets_dir)
         src = os.path.join(settings_path, AMS_Config)
         if not os.path.isfile(src):
@@ -364,7 +363,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             return  # 名称未改动
 
         # 3. 文件重命名
-        presets_dir = os.path.join(datas_path, "settings_presets")
+        presets_dir = settings_presets_path
         old_path = os.path.join(presets_dir, preset_file_name + ".json")
         new_path = os.path.join(presets_dir, new_name + ".json")
         if not os.path.isfile(old_path):
@@ -408,7 +407,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
             return
 
         # 2. 删除文件
-        presets_dir = os.path.join(datas_path, "settings_presets")
+        presets_dir = settings_presets_path
         file_path = os.path.join(presets_dir, preset_file_name + ".json")
         if os.path.isfile(file_path):
             try:
@@ -1673,7 +1672,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         selected_lang = self.language_combo_box.currentText()
 
         # 语言配置路径
-        lang_config_path = os.path.join(script_path, 'Datas', 'settings', 'language_config.json')
+        lang_config_path = os.path.join(settings_path, 'language_config.json')
 
         # 加载语言配置文件
         lang_config = self.dataM.load_json(lang_config_path)

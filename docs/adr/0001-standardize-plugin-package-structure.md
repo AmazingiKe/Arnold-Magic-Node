@@ -2,7 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-08-05
-- 修订：2026-08-05，将具名 Python 包提升到仓库根目录，移除 `scripts/` 承载层
+- 修订：2026-08-05，将具名 Python 包提升到仓库根目录，移除 `scripts/` 承载层；运行时数据路径由 ADR-0002 单独决策
 - 范围：Arnold Magic Node V2 结构重构
 
 ## 背景
@@ -102,7 +102,7 @@ Arnold-Magic-Node/
 
 该目录是最终目标结构，不要求第一阶段一次性创建全部空目录和空模块。只有开始迁移对应职责时，才创建相应文件。目标树没有列出现阶段仍位于仓库根目录的 `Datas/` 和 `config/`；它们与最终 `resources/`、用户配置目录之间的映射尚未决定，不得根据目录名称直接搬迁。
 
-截至本次修订，项目处于下述“第一阶段过渡布局”：具名包和 UI 已完成物理迁移，`Datas/`、`config/`、`icons/` 仍在仓库根目录，`maya/`、`services/` 和 `resources/` 等最终层尚未全部建立。
+截至本次修订，项目处于下述“第一阶段过渡布局”：具名包、UI、`maya/environment.py` 和 `resources/i18n/` 已建立；`services/` 等业务层仍按功能逐步抽取。仓库根级 `Datas/` 仅作为旧版本地数据遗留目录，不再是生产运行时路径；`config/` 与 `icons/` 仍是仓库根级只读资源。
 
 Maya 模块描述文件或 Installer 生成的 Shelf 命令必须把仓库根目录作为唯一 Python 搜索根；不得再引用 `scripts/`，也不得把 `core/`、`ui/` 等内部目录分别加入 `sys.path`。
 
@@ -379,7 +379,7 @@ Maya 集成行为必须在支持的 Maya 环境中另行执行冒烟测试，普
 - 入口会清理 `reload(application)` 遗留的旧 UI 名称，活动调用只指向新模块。
 - `TextureBatchImporterWin` 只移动且保持无活动入口，不得恢复已删除的 Texture Manager。
 - Maya 冒烟测试必须分别连续打开主窗口、设置窗口和 AOV 窗口两次，并验证渲染预设的新增、修改和删除入口；普通 Python 测试不能替代该项。
-- `Datas` 和 `config` 的实际路径保持不变。
+- 根级 `config/` 和 `icons/` 的实际路径保持不变；旧 `Datas/` 不自动迁移、不读取、不写入，用户数据改由 ADR-0002 定义的 Maya 用户目录承载。
 - 根级 `icon/` 已规范为仓库根级 `icons/`，所有活动图标引用均指向新目录。
 - 不再存在承载源码的 `scripts/`，生产代码、Installer 和模块配置均不再把旧路径作为有效运行路径；文档只可在历史或禁止性说明中提及它。
 - `import arnold_magic_node` 在仓库根目录作为唯一搜索根时可解析，并保持无 Maya/Qt 的急切导入。

@@ -4,7 +4,7 @@ import os
 
 import maya.cmds as cmds
 
-from ..application import datas_path, language_loading, render_preset_path
+from ..application import language_loading, render_preset_path
 from ..arnold_magic_core import DataManager, FeedbackPrompt
 
 
@@ -370,7 +370,7 @@ class rendering_preset_settings_button():
             AOV_properties = self.get_AOV_properties()
 
             # 定义写入数据的路径
-            write_data_path = os.path.normpath(os.path.join(datas_path, 'render_presets'))
+            write_data_path = render_preset_path
 
             # 02, 组织渲染器属性数据
             Render_settings = {

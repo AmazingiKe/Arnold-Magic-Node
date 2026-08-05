@@ -9,8 +9,8 @@ import mtoa.aovs as aovs
 from ..application import (
     SoftwareState,
     SoftwareVersion,
+    aov_cache_path,
     icon_path,
-    script_path,
 )
 from ..arnold_magic_core import DataManager, FeedbackPrompt, GetNodeData
 from .qt import QtCore, QtGui, QtWidgets
@@ -257,7 +257,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 缓存文件
         cache = ["RGBA"]
 
-        self.cache_path = os.path.join(script_path, "Datas", "aov_light_group_manager", "cache.json")
+        self.cache_path = aov_cache_path
 
         # 如果缓存文件不存在则创建
         if not os.path.exists(self.cache_path):

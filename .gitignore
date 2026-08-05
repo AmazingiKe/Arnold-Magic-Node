@@ -24,15 +24,10 @@ __pycache__/
 # 插件临时文件
 /Temp/
 
-# 插件运行时生成的数据
-/Datas/aov_light_group_manager/
-/Datas/execution_logs/
-/Datas/keys/
-/Datas/logs/
-/Datas/render_presets/
-/Datas/settings/
-/Datas/settings_presets/
-/Datas/texture_manager/
+# 旧版插件本地数据（新版本不读取、不写入、不自动迁移）
+/Datas/
+
+# 插件用户数据由 Maya 提供的用户目录管理，不进入仓库
 
 # 通用日志与临时文件
 *.log

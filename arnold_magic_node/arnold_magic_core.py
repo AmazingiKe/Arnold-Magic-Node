@@ -21,11 +21,13 @@ import re  # 提供正则表达式操作，用于模式匹配、搜索和替换�
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
-from .core.paths import PROJECT_ROOT
+from .core.paths import LANGUAGES_ROOT
+from .maya.environment import get_user_data_root
 from .core.storage import load_json as load_json_file
 from .core.storage import save_json as save_json_file
 
-Script_path = os.path.normpath(str(PROJECT_ROOT))
+USER_DATA_ROOT = get_user_data_root()
+Script_path = os.path.normpath(str(USER_DATA_ROOT))
 
 # ##############################################################################################
 
@@ -45,11 +47,11 @@ def language_loading():
 
     # 加载语言配置文件并获取 'language_config' 键的值
     language_config = dataM.load_json(
-        os.path.join(Script_path, 'Datas', 'settings', 'language_config.json'))['language_config']
+        os.path.join(Script_path, 'settings', 'language_config.json'))['language_config']
 
     # 动态加载相应语言的JSON文件
     language = dataM.load_json(
-        os.path.join(Script_path, 'Datas', 'languages', f'{language_config}.json'))
+        os.path.join(str(LANGUAGES_ROOT), f'{language_config}.json'))
 
     return language
 
