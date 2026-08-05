@@ -17,11 +17,7 @@
 2. 解压到Maya模块目录：
    - **Windows**: `C:\Users\<用户>\Documents\maya\modules`
    - **macOS**: `~/Library/Preferences/Autodesk/maya/modules`
-3. 创建模块描述文件 `arnoldMagic.mod`：
-```
-+ ArnoldMagic 1.0 <模块路径>
-PYTHONPATH += <模块路径>
-```
+
 ## 🛠️ 核心功能
 ### 材质工作流
 - 自动创建PBR材质网络（金属/非金属工作流）
@@ -38,58 +34,9 @@ PYTHONPATH += <模块路径>
 - 灯光组管理系统
 - 渲染统计报告
 - 内存优化工具
-## 📖 使用指南
-### 基础工作流
-```python
-# 示例：批量创建金属材质
-from arnold_magic import material_builder
-builder = material_builder.MaterialFactory()
-builder.create_batch(
-    preset='metallic',
-    textures={
-        'base_color': 'textures/*_albedo.exr',
-        'roughness': 'textures/*_roughness.exr'
-    },
-    assignment=['pSphere1', 'pCube1']
-)
-```
-### 快捷键配置
-| 功能                | 快捷键   |
-|---------------------|----------|
-| 材质创建            | Ctrl+M   |
-| AOV管理面板         | Ctrl+A   |
-| 节点优化            | Ctrl+O   |
-| 渲染诊断            | Ctrl+D   |
-## 🌐 支持与社区
-### 系统要求
-| 组件            | 最低要求               |
-|-----------------|------------------------|
-| Maya            | 2022.5+               |
-| Arnold          | 5.3.1+                |
-| Python          | 3.7+                  |
-| 操作系统         | Windows 10/11, macOS 12+ |
-### 常见问题
-❓ **安装失败怎么办？**
-- 确保Maya模块目录有写入权限
-- 检查路径是否包含中文或特殊字符
-- 验证Python环境是否配置正确
-💡 **材质显示异常？**
-- 检查文件纹理的color space设置
-- 验证Arnold渲染器版本兼容性
-- 使用`Render Diagnostics`工具进行自动检测
-## 🤝 参与贡献
+
 欢迎通过以下方式参与项目：
 1. 提交Issue报告问题
 2. 发起Pull Request改进代码
 3. 参与文档翻译
 4. 分享使用案例
-贡献指南请见 [CONTRIBUTING.md](https://example.com/contributing)
-## 📞 联系我们
-- 技术支持：support@arnoldmagic.com
-- 商务合作：biz@arnoldmagic.com
-- 社区论坛：[forum.arnoldmagic.com](https://forum.arnoldmagic.com)
-- Twitter: [@ArnoldMagicTool](https://twitter.com/ArnoldMagicTool)
----
-[【立即下载】](https://example.com/download) | [【观看演示视频】](https://youtube.com/demo) | [【查看完整文档】](https://docs.arnoldmagic.com)
-
-**Last Updated: March 24, 2025**
