@@ -1,17 +1,18 @@
 """Arnold Magic Node 的 Maya 主窗口界面。"""
 
+import os
+
+import maya.cmds as cmds
+import maya.OpenMayaUI as omui
+
+from ..arnold_magic_core import DataManager, FeedbackPrompt, GetNodeData
+from ..core.storage import ensure_directory
+
 # 迁移期兼容层：主窗口仍调用 application.py 中尚未拆分的旧实现。
-# application.Main_program() 会在旧模块完整加载后延迟导入并重载本模块。
+# application.Main_program() 会在旧模块完整加载后延迟导入并重载 UI 模块。
 from ..application import (
     AMS_Config,
-    AOVLightGroupManagerInstance,
-    ArnoldMagicNodeSettingsPanel,
     AutoSet_TexColorSpace,
-    DataManager,
-    FeedbackPrompt,
-    GetNodeData,
-    QtGui,
-    QtWidgets,
     SceneNameOptimization,
     SoftwareState,
     SoftwareVersion,
@@ -19,30 +20,31 @@ from ..application import (
     all_convert_old_materials_to_arnold_button,
     all_intelligent_material_repair_button,
     auto_set_file_node_udim,
-    cmds,
     color_space_preset_menu,
-    delete_rendering_preset_menuItem,
     direct_connection_button,
-    ensure_directory,
     icon_path,
     intelligent_mix,
     language_loading,
     magic_connection_button,
-    modify_rendering_preset_menuItem,
-    omui,
-    os,
     path_detection_connection_button,
     quick_connect_node_button,
     render_preset_path,
     rendering_preset_menu,
-    rendering_preset_settings_button,
     select_convert_old_materials_to_arnold_button,
     select_intelligent_material_repair_button,
     settings_path,
     unify_uv_node_button,
     uv_preset_menu,
-    wrapInstance,
 )
+from .aov_dialog import AOVLightGroupManagerInstance
+from .qt import QtGui, QtWidgets, wrapInstance
+from .rendering_preset_dialog import (
+    delete_rendering_preset_menuItem,
+    modify_rendering_preset_menuItem,
+    rendering_preset_settings_button,
+)
+from .settings_dialog import ArnoldMagicNodeSettingsPanel
+
 
 class MainWindow(object):
     def __init__(self):
