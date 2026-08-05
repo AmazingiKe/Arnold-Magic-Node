@@ -20,8 +20,7 @@
 3. 创建模块描述文件 `arnoldMagic.mod`：
 ```
 + ArnoldMagic 1.0 <模块路径>
-PATH += <模块路径>/bin
-PYTHONPATH += <模块路径>/scripts
+PYTHONPATH += <模块路径>
 ```
 ## 🛠️ 核心功能
 ### 材质工作流

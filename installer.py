@@ -26,9 +26,8 @@ if not os.path.exists(file_path):
         title="Arnold Magic Node",
     )
 else:
-    scripts_path = os.path.join(file_path, "scripts")
-    if scripts_path not in sys.path:
-        sys.path.insert(0, scripts_path)
+    if file_path not in sys.path:
+        sys.path.insert(0, file_path)
 
     import arnold_magic_node
     arnold_magic_node.show()
