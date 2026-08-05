@@ -1513,8 +1513,9 @@ def path_detection_connection_button():
 
 # 实例使用魔法连接
 def magic_connection_button():
-    MC = Magic_Node_Connection()
-    MC.main()
+    from .services.magic_connection import MagicConnectionTool
+
+    MagicConnectionTool().run()
 
 # 全选转换旧材质到阿诺德
 def all_convert_old_materials_to_arnold_button():
