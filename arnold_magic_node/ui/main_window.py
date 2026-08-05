@@ -25,7 +25,6 @@ from ..application import (
     icon_path,
     intelligent_mix,
     language_loading,
-    magic_connection_button,
     path_detection_connection_button,
     quick_connect_node_button,
     render_preset_path,
@@ -36,6 +35,7 @@ from ..application import (
     unify_uv_node_button,
     uv_preset_menu,
 )
+from ..tools.magic_connection import run_magic_connection
 from .aov_dialog import AOVLightGroupManagerInstance
 from .qt import QtGui, QtWidgets, wrapInstance
 from .rendering_preset_dialog import (
@@ -220,7 +220,7 @@ class MainWindow(object):
         # 创建各种按钮
         self.magic_connection = cmds.button(
             label=self.language['create_widgets']['magic_connection'],
-            c=lambda *args: magic_connection_button()
+            c=lambda *args: run_magic_connection()
         )
 
         self.path_detection_connection = cmds.button(

@@ -754,131 +754,6 @@ class Path_Detection_Connection:
         else:
             return
 
-# 魔法连接
-class Magic_Node_Connection:
-    def __init__(self):
-        ### 实例各种模块
-        self.dataM = DataManager()  # 数据管理模块
-        self.feedback = FeedbackPrompt()  # 错误提示模块
-        self.pathD = PathDetection()  # 数据检测模块
-        self.nodeP = NodeProcessor()
-
-        ### 初始化配置数据
-        # 加载数据
-        self.config = self.dataM.load_json(
-            os.path.join(settings_path, AMS_Config))
-
-        self.texture_filter_dict = self.config[
-            "texture_filter_params"]  # 过滤贴图的数据
-        self.processing_node_data = self.config[
-            'proc_node_config'][
-            'params']  # 相应贴图节点的参数
-        self.magic_connection_options = self.config[
-            'magic_conn_config'][
-            'conn_params']  # 相应贴图是否要连接的参数
-        self.auto_node_connection_options = self.config[
-            'proc_node_config'][
-            'conn_params']  # 相应贴图是否要连接相应的节点
-
-        # 获取选择节点
-        self.select_node = process_sl_data()
-
-    def main(self):
-
-        # 如果没有选择节点将会直接退出函数
-        if self.select_node is None:
-            return
-
-        self.magic_processing_node_connection()
-
-    # 魔法连接处理节点
-    def magic_processing_node_connection(self):
-        # 检查SlNode字典中是否有file key 如果没有直接退出函数
-        if 'file' not in self.select_node:
-            return self.feedback.CPW('没有选择纹理节点，请选择纹理节点')
-
-        mat_name = self.detect_and_create_materials()
-
-        # 如果选择了着色节点会连接上
-        if 'shadingEngine' in self.select_node:
-            shadingEngine = self.select_node['shadingEngine'][0]
-        else:
-            shadingEngine = None
-
-        self.matching_dict = self.nodeP.AutoNodeConnect(self.select_node['file'],
-                                                        mat_name,
-                                                        self.texture_filter_dict,
-                                                        self.processing_node_data,
-                                                        self.magic_connection_options,
-                                                        self.auto_node_connection_options,
-                                                        shadingEngine)
-        # 自动UDIM
-        self.auto_set_file_udim()
-
-        # 自动色彩空间
-        self.modify_color_space()
-
-        # 如果材质变量是None的话就不需要处理
-        if mat_name is None:
-            return
-
-        new_mat_name = self.modify_mat_name(original_mat_name=mat_name, file_name=self.select_node['file'][0])
-
-        self.feedback.CP('已完成 {} 材质连接'.format(new_mat_name))
-
-    # 检测并创建材质
-    def detect_and_create_materials(self):
-        mat_types = ['aiStandardSurface', 'standardSurface', 'aiOpenPBRSurface']
-        mat_name = None
-
-        # 检测有没有选择材质球
-        for mat_type in mat_types:
-            if mat_type in self.select_node:
-                mat_name = self.select_node[mat_type][0]
-                break  # 找到匹配的材质类型后就退出循环
-        else:
-            if is_modifier_pressed(MAYA_SHIFT_MODIFIER):
-                mat_name = cmds.shadingNode('aiStandardSurface', asShader=True)
-
-        return mat_name
-
-    # 修改材质名称
-    def modify_mat_name(self,original_mat_name,  file_name):
-
-        texture_processing_data = self.dataM.load_json(
-            os.path.join(settings_path, AMS_Config))
-
-        # 修改材质名称
-        if self.config['magic_conn_config']['set_material_name']:
-            new_mat_name = self.nodeP.clean_material_name(file_name, self.texture_filter_dict)
-        else:
-            return original_mat_name
-
-        # 修改材质节点名称
-        cmds.rename(original_mat_name, new_mat_name)
-
-        self.feedback.CP('已将 {} 材质名称修改成 {}'.format(original_mat_name, new_mat_name))
-
-        return new_mat_name
-
-    # 修改颜色空间
-    def modify_color_space(self):
-        if self.config['magic_conn_config']['set_color_space']:
-            self.nodeP.AutoSetTexColorSpace(
-                auto_set_color_space_config = self.config['color_space_params']['params'],
-                matching_channel = self.matching_dict)
-        else:
-            return
-
-    # 自动udim
-    def auto_set_file_udim(self):
-
-        if self.config['magic_conn_config']['set_udim']:
-            node_list = [key for key in self.matching_dict.keys()]
-            self.nodeP.auto_set_udim(node_list)
-        else:
-            return
-
 # 转换旧材质到阿诺德
 class ConvertOldMaterialsToArnold:
     def __init__(self, select_all = None):
@@ -1513,9 +1388,9 @@ def path_detection_connection_button():
 
 # 实例使用魔法连接
 def magic_connection_button():
-    from .services.magic_connection import MagicConnectionTool
+    from .tools.magic_connection import run_magic_connection
 
-    MagicConnectionTool().run()
+    return run_magic_connection()
 
 # 全选转换旧材质到阿诺德
 def all_convert_old_materials_to_arnold_button():

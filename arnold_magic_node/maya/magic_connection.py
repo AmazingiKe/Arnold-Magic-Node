@@ -68,7 +68,8 @@ class MayaMagicConnectionAdapter:
         self.cmds.setAttr(node_name + ".uvTilingMode", 3 if enabled else 0)
 
     def set_color_space(self, node_name, color_space):
-        self.cmds.setAttr(node_name + ".colorSpace", color_space, type="string")
+        self.cmds.setAttr(node_name + ".colorSpace",
+                          color_space, type="string")
         self.cmds.setAttr(node_name + ".alphaIsLuminance", 1)
         self.cmds.setAttr(node_name + ".ignoreColorSpaceFileRules", 1)
 
@@ -164,7 +165,8 @@ class MayaMagicConnectionExecutor:
                         "normalCamera",
                     )
                 else:
-                    self._connect(bump_node, "outValue", normal_map_node, "normal")
+                    self._connect(bump_node, "outValue",
+                                  normal_map_node, "normal")
 
             elif channel == "displacement":
                 if plan.material_name is None and plan.shading_engine_name is None:
@@ -216,7 +218,7 @@ class MayaMagicConnectionExecutor:
                 previous_node, previous_outputs, node_name, input_ports
             ):
                 raise MagicConnectionExecutionError(
-                    "无法连接 {} 到处理节点 {}".format(previous_node, node_name)
+                    f"无法连接 {str(previous_node)}, {str(previous_outputs)} 到处理节点 {str(node_name)}, {str(input_ports)}"
                 )
 
             previous_node = node_name
@@ -227,7 +229,8 @@ class MayaMagicConnectionExecutor:
 
     def _connect_source(self, source, target_node, target_port):
         if not self._connect_first(
-            source[0], (source[1],) + DEFAULT_OUTPUT_PORTS, target_node, (target_port,)
+            source[0], (source[1],) +
+            DEFAULT_OUTPUT_PORTS, target_node, (target_port,)
         ):
             raise MagicConnectionExecutionError(
                 "无法连接 {}.{} 到 {}.{}".format(

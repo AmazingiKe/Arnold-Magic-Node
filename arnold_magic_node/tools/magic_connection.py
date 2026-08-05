@@ -1,4 +1,4 @@
-"""Magic Connection 用户功能服务。"""
+"""Magic Connection 用户功能工具。"""
 
 import os
 from dataclasses import dataclass
@@ -161,4 +161,19 @@ class MagicConnectionTool:
         return load_json(config_path)
 
 
-__all__ = ["MagicConnectionResult", "MagicConnectionTool"]
+def run_magic_connection(config=None, adapter=None, feedback=None, config_path=None):
+    """执行一次 Magic Connection，供 Qt 和调试脚本直接调用。"""
+
+    return MagicConnectionTool(
+        config=config,
+        adapter=adapter,
+        feedback=feedback,
+        config_path=config_path,
+    ).run()
+
+
+__all__ = [
+    "MagicConnectionResult",
+    "MagicConnectionTool",
+    "run_magic_connection",
+]
