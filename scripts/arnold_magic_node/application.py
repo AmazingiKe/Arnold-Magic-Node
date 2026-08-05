@@ -24,7 +24,7 @@ except ImportError:
     from shiboken2 import wrapInstance
 
 from contextlib import contextmanager
-from .core.paths import PROJECT_ROOT
+from .core.paths import ICONS_ROOT, PROJECT_ROOT
 # ------------------------------------------
 # 获取脚本路径
 script_path = os.path.normpath(str(PROJECT_ROOT)) # 获取当前脚本的目录路径
@@ -59,7 +59,7 @@ datas_path = os.path.normpath(os.path.join(script_path, "Datas"))  # 定义数�
 
 settings_path = os.path.normpath(os.path.join(datas_path, "settings"))  # 定义设置配置文件夹路径 -> 全局变量
 
-icon_path = os.path.normpath(os.path.join(script_path, "icon"))  # 定义图标路径 -> 全局变量
+icon_path = os.path.normpath(str(ICONS_ROOT))  # 定义图标路径 -> 全局变量
 
 render_preset_path = os.path.normpath(os.path.join(datas_path, "render_presets"))  # 定义渲染预设文件夹路径 -> 全局变量
 

@@ -43,7 +43,7 @@ else:
             annotation=button_name,
             imageOverlayLabel=button_name,
             sourceType="Python",
-            image=os.path.join(script_path, "icon", "Logo_B.svg"),
+            image=os.path.join(script_path, "icons", "Logo_B.svg"),
             parent=parent,
             label=button_name,
         )
