@@ -109,9 +109,12 @@ Arnold-Magic-Node/
 scripts/arnold_magic_node/
 ├─ __init__.py
 ├─ bootstrap.py
-├─ application.py          # 未拆分的 UI、业务与 Maya 操作单体
+├─ application.py          # 未拆分的设置/AOV界面、业务与 Maya 操作单体
 ├─ arnold_magic_core.py    # 未拆分的算法与 Maya 操作单体
 ├─ default_config.py       # 未拆分的默认数据与初始化逻辑
+├─ ui/
+│  ├─ __init__.py
+│  └─ main_window.py       # 仅物理迁移主窗口，暂时调用 application
 └─ core/
    ├─ __init__.py
    ├─ paths.py
@@ -129,10 +132,11 @@ scripts/arnold_magic_node/
 | `startup.py` | `scripts/arnold_magic_node/bootstrap.py` |
 | `storage.py` | `scripts/arnold_magic_node/core/storage.py` |
 | `arnold_magic_matching.py` | `scripts/arnold_magic_node/core/matching.py` |
+| `application.py` 中的 `MainWindow` | `scripts/arnold_magic_node/ui/main_window.py` |
 
 根目录暂时保留薄层 `startup.py`，只用于兼容已经安装的旧 Shelf 命令。新入口使用 `arnold_magic_node.show()`。过渡模块不得新增业务功能；后续必须在特征测试保护下逐步拆除。
 
-本 ADR 中的“整文件迁移”是指保持可观察行为不变，允许且仅允许修改包内导入、公共入口委托、项目资源根路径计算，以及将根级静态图标目录由 `icon/` 规范为 `icons/` 所需的路径引用。它不要求搬迁前后的源文件逐字节相同。
+本 ADR 中的“整文件迁移”是指保持可观察行为不变，允许且仅允许修改包内导入、公共入口委托、项目资源根路径计算，将根级静态图标目录由 `icon/` 规范为 `icons/` 所需的路径引用，以及将 `MainWindow` 类体不变地物理迁入 `ui/main_window.py`。它不要求搬迁前后的源文件逐字节相同。
 
 `storage.py` 和 `arnold_magic_matching.py` 在进入 `core` 前必须确认不依赖 Maya、Arnold 或 Qt，不在导入时执行文件读写，并可由普通 Python 直接导入；当前两个文件已经满足这些条件。若其他旧文件不满足，不得仅凭名称将其放入 `core`。
 
@@ -244,6 +248,8 @@ Maya 用户目录由 `maya/environment.py` 查询，再由 `bootstrap` 传给设
 
 第一阶段为了保证整文件移动不改变行为，可以暂时保留旧单体文件中已经存在的通配导入和 `importlib.reload()`。它们属于明确的迁移期例外，不得新增，并必须在对应单体拆分完成时删除。因此第一阶段不视为已经达到最终依赖验收标准。
 
+主窗口物理迁移期间，唯一允许的新反向依赖是 `ui.main_window → application`，用于调用尚未抽取的设置窗口、AOV 窗口和业务回调。`application` 不得在模块初始化阶段导入 `ui.main_window`，只能在 `Main_program()` 中等待旧模块完整加载后延迟导入。为使主窗口在现有 `application` 热重载后重新绑定最新回调，允许该入口同步重载 `ui.main_window`；这一重载必须与 `application` 的生产热重载一起删除。该例外不得扩展到其他 UI 模块。
+
 ## 资源与用户数据
 
 Maya、Shelf 和插件界面可直接访问的公共静态图标放在模块根目录 `icons/`。该目录只包含随插件发布的只读图标，不存放运行时生成的数据。
@@ -293,11 +299,12 @@ arnold_magic_node/
 1. 将现有回归测试纳入版本控制，建立可重复运行的行为基线。
 2. 建立 `scripts/arnold_magic_node` 包壳和稳定的 `show()` 入口，同时保留旧 Shelf 入口兼容。
 3. 原样迁移 `storage.py` 与 `arnold_magic_matching.py` 到 `core`。
-4. 将纯加权相似度算法迁移到 `core/similarity.py`。
-5. 以 Quick Connect 作为第一个完整功能，验证 `旧入口 → service → maya` 的迁移方式。
-6. 依次迁移小型节点工具、Magic Connection、Path Detection、材质转换与修复、渲染预设和 AOV。
-7. 最后拆分设置窗口和主窗口。
-8. Texture Manager 在基础结构稳定后单独重新设计。
+4. 在特征测试保护下，将 `MainWindow` 类体不变地物理迁入 `ui/main_window.py`，暂时保留对旧 `application` 的兼容调用。
+5. 将纯加权相似度算法迁移到 `core/similarity.py`。
+6. 以 Quick Connect 作为第一个完整功能，验证 `旧入口 → service → maya` 的迁移方式。
+7. 依次迁移小型节点工具、Magic Connection、Path Detection、材质转换与修复、渲染预设和 AOV。
+8. 最后清除主窗口对 `application` 的过渡依赖，并完成设置窗口和主窗口的职责拆分。
+9. Texture Manager 在基础结构稳定后单独重新设计。
 
 每个功能分为两个步骤：
 
@@ -324,13 +331,15 @@ Maya 集成行为必须在支持的 Maya 环境中另行执行冒烟测试，普
 - Python 3.7 语法检查通过。
 - 重构前后的节点类型、关键属性和连接关系保持一致；行为变化必须单独记录。
 - 对应旧实现已删除或缩减为兼容委托，不长期保留两套实现。
-- 除第一阶段明确列出的遗留通配导入和热重载外，不得新增通配导入、跨层反向依赖或生产热重载；对应单体拆分完成后必须清除这些遗留。
+- 除第一阶段明确列出的遗留通配导入、热重载和 `ui.main_window → application` 过渡桥接外，不得新增通配导入、跨层反向依赖或生产热重载；对应单体拆分完成后必须清除这些遗留。
 
 第一阶段还必须满足：
 
-- 只修改内部导入、入口委托、项目根路径引用和 `icon/` 到 `icons/` 的静态资源路径引用。
+- 只修改内部导入、入口委托、项目根路径引用、`icon/` 到 `icons/` 的静态资源路径引用，以及 `MainWindow` 的物理位置和必要导入。
 - `storage.py` 与匹配算法文件保持原内容迁移。
-- 大型单体中的类、函数、默认配置和可观察执行顺序保持不变。
+- `MainWindow` 类体和可观察初始化顺序保持不变，原位置删除且入口缩减为延迟委托。
+- 除 `MainWindow` 的物理迁移外，大型单体中的其他类、函数、默认配置和可观察执行顺序保持不变。
+- 主窗口的反向依赖严格限制在已记录的唯一白名单，不得由其他 UI 模块复制。
 - `Datas` 和 `config` 的实际路径保持不变。
 - 根级 `icon/` 已规范为 `icons/`，所有活动图标引用均指向新目录。
 - 旧 Shelf 与新包入口都能到达同一个 `bootstrap.main()`。
