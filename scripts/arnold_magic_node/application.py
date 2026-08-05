@@ -24,20 +24,21 @@ except ImportError:
     from shiboken2 import wrapInstance
 
 from contextlib import contextmanager
+from .core.paths import PROJECT_ROOT
 # ------------------------------------------
 # 获取脚本路径
-script_path = os.path.normpath(os.path.join(os.path.dirname(__file__))) # 获取当前脚本的目录路径
+script_path = os.path.normpath(str(PROJECT_ROOT)) # 获取当前脚本的目录路径
 # ------------------------------------------
 
 # 9. 自定义库导入
 # 使用项目唯一的模块名，避免 Maya 进程中其他名为 core 的模块污染导入缓存。
-import arnold_magic_core as core
+from . import arnold_magic_core as core
 importlib.reload(core)  # 在开发阶段，重新加载模块以反映对库的更改
-from arnold_magic_core import *
-from arnold_magic_core import DataManager
+from .arnold_magic_core import *
+from .arnold_magic_core import DataManager
 
-import default_config
-from storage import ensure_directory
+from . import default_config
+from .core.storage import ensure_directory
 
 ##############################################################################################
 

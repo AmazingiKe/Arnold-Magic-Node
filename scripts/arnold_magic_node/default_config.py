@@ -1,7 +1,8 @@
 # ______________________________________________________________________________>>> 导入必要库
 import os # 操作系统文件路径相关操作
 
-from storage import save_json
+from .core.paths import PROJECT_ROOT
+from .core.storage import save_json
 
 
 
@@ -292,7 +293,7 @@ Arnold_Magic_Settings = {
 }
 
 # 当前脚本路径
-script_path = os.path.normpath(os.path.join(os.path.dirname(__file__)))
+script_path = os.path.normpath(str(PROJECT_ROOT))
 
 # ______________________________________________________________________________>>> 配置文件检测函数
 def detecting_initial_config_files(path, filename, data):

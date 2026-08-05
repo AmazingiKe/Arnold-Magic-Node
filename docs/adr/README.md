@@ -2,6 +2,10 @@
 
 本目录用于记录 Arnold Magic Node V2 重构过程中的重要架构决策。
 
+## 已记录决策
+
+- [ADR-0001：规范化插件包结构](0001-standardize-plugin-package-structure.md)
+
 ADR 文件按顺序编号，例如：
 
 ```text

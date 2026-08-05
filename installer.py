@@ -12,8 +12,7 @@ class Installer:
     def install(self):
         script_path = os.path.normpath(os.path.dirname(__file__))
 
-        command = f'''import importlib
-import os
+        command = f'''import os
 import sys
 
 import maya.cmds as cmds
@@ -27,13 +26,12 @@ if not os.path.exists(file_path):
         title="Arnold Magic Node",
     )
 else:
-    if file_path not in sys.path:
-        sys.path.insert(0, file_path)
+    scripts_path = os.path.join(file_path, "scripts")
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
 
-    import startup
-
-    importlib.reload(startup)
-    startup.main()
+    import arnold_magic_node
+    arnold_magic_node.show()
 '''
 
         shelf = maya.mel.eval('$gShelfTopLevel=$gShelfTopLevel')

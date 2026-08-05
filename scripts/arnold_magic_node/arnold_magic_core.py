@@ -10,7 +10,7 @@ import os  # 提供与操作系统交互的功能，如文件路径操作、目�
 import pathlib  # 提供面向对象的文件系统路径操作，增强对路径的处理能力
 
 # 3. 数据处理
-import arnold_magic_matching as _matching
+from .core import matching as _matching
 from collections import defaultdict
 import difflib
 # 4. 字符串处理
@@ -21,10 +21,11 @@ import re  # 提供正则表达式操作，用于模式匹配、搜索和替换�
 import time  # 提供时间相关的函数，如时间戳获取、延时操作等
 from datetime import datetime  # 提供日期和时间的对象和操作方法，支持更复杂的时间处理
 
-from storage import load_json as load_json_file
-from storage import save_json as save_json_file
+from .core.paths import PROJECT_ROOT
+from .core.storage import load_json as load_json_file
+from .core.storage import save_json as save_json_file
 
-Script_path = os.path.dirname(os.path.abspath(__file__))
+Script_path = os.path.normpath(str(PROJECT_ROOT))
 
 # ##############################################################################################
 
