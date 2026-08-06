@@ -132,13 +132,15 @@ class MagicConnectionTool:
 
     def _apply_post_processing(self, plan, texture_files):
         magic_config = self.config["magic_conn_config"]
-        color_spaces = self.config.get("color_space_params", {}).get("params", {})
+        color_spaces = self.config.get(
+            "color_space_params", {}).get("params", {})
 
         for texture in plan.textures:
             node_name = texture.node_name
             file_path = texture_files[node_name]
             if magic_config.get("set_udim", False):
-                self.adapter.set_udim(node_name, contains_udim_number(file_path))
+                self.adapter.set_udim(
+                    node_name, contains_udim_number(file_path))
 
             if magic_config.get("set_color_space", False):
                 color_space = color_spaces.get(texture.channel)
@@ -189,6 +191,8 @@ class MagicConnectionTool:
 
 def run_magic_connection(config=None, adapter=None, feedback=None, config_path=None):
     """执行一次 Magic Connection，供 Qt 和调试脚本直接调用。"""
+
+    print("debug run_magic_connection()")
 
     return MagicConnectionTool(
         config=config,

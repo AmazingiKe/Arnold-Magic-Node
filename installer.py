@@ -14,7 +14,7 @@ class Installer:
 
         command = f'''import os
 import sys
-
+import importlib
 import maya.cmds as cmds
 
 file_path = r"{script_path}"
@@ -30,6 +30,7 @@ else:
         sys.path.insert(0, file_path)
 
     import arnold_magic_node
+    importlib.reload(arnold_magic_node)
     arnold_magic_node.show()
 '''
 
