@@ -3,6 +3,7 @@
 - 状态：已接受
 - 日期：2026-08-05
 - 修订：2026-08-05，将具名 Python 包提升到仓库根目录，移除 `scripts/` 承载层；运行时数据路径由 ADR-0002 单独决策
+- 修订：2026-08-06，完成旧单体拆分，以 `tools` 作为功能编排层并固化最终依赖边界
 - 范围：Arnold Magic Node V2 结构重构
 
 ## 背景
@@ -47,36 +48,38 @@ Arnold-Magic-Node/
 │  │
 │  ├─ core/
 │  │  ├─ __init__.py
-│  │  ├─ constants.py
-│  │  ├─ models.py
+│  │  ├─ magic_connection.py
+│  │  ├─ naming.py
+│  │  ├─ path_detection.py
 │  │  ├─ paths.py
 │  │  ├─ storage.py
 │  │  ├─ settings.py
-│  │  ├─ i18n.py
 │  │  ├─ matching.py
 │  │  └─ similarity.py
 │  │
 │  ├─ maya/
 │  │  ├─ __init__.py
 │  │  ├─ environment.py
-│  │  ├─ selection.py
+│  │  ├─ magic_connection.py
 │  │  ├─ nodes.py
+│  │  ├─ scene.py
 │  │  ├─ textures.py
-│  │  ├─ materials.py
-│  │  ├─ render.py
 │  │  └─ aovs.py
 │  │
-│  ├─ services/
+│  ├─ tools/
 │  │  ├─ __init__.py
-│  │  ├─ quick_connect.py
+│  │  ├─ aovs.py
+│  │  ├─ feedback.py
 │  │  ├─ magic_connection.py
+│  │  ├─ materials.py
+│  │  ├─ node_graph.py
 │  │  ├─ path_detection.py
-│  │  ├─ material_conversion.py
-│  │  ├─ material_repair.py
-│  │  ├─ node_mix.py
-│  │  ├─ render_presets.py
-│  │  ├─ light_groups.py
-│  │  └─ scene_naming.py
+│  │  ├─ rendering.py
+│  │  ├─ runtime.py
+│  │  ├─ scene.py
+│  │  ├─ selection.py
+│  │  ├─ settings.py
+│  │  └─ texture.py
 │  │
 │  ├─ ui/
 │  │  ├─ __init__.py
@@ -88,13 +91,10 @@ Arnold-Magic-Node/
 │  │  └─ rendering_preset_dialog.py
 │  │
 │  └─ resources/
-│     ├─ i18n/
-│     ├─ defaults/
-│     └─ mappings/
+│     └─ i18n/
 │
 ├─ tests/
-│  ├─ unit/
-│  └─ maya/
+│  └─ test_*.py
 │
 └─ docs/
    └─ adr/
@@ -102,11 +102,13 @@ Arnold-Magic-Node/
 
 该目录是最终目标结构，不要求第一阶段一次性创建全部空目录和空模块。只有开始迁移对应职责时，才创建相应文件。目标树没有列出现阶段仍位于仓库根目录的 `Datas/` 和 `config/`；它们与最终 `resources/`、用户配置目录之间的映射尚未决定，不得根据目录名称直接搬迁。
 
-截至本次修订，项目处于下述“第一阶段过渡布局”：具名包、UI、`maya/environment.py` 和 `resources/i18n/` 已建立；`services/` 等业务层仍按功能逐步抽取。仓库根级 `Datas/` 仅作为旧版本地数据遗留目录，不再是生产运行时路径；`config/` 与 `icons/` 仍是仓库根级只读资源。
+截至 2026-08-06，本次源码分层已经完成。项目采用 `core`、`maya`、`tools`、`ui` 和 `bootstrap` 五层；`tools` 是功能编排层，替代早期草案中的 `services` 名称。`application.py`、`arnold_magic_core.py` 和根级 `default_config.py` 均已删除，不保留兼容转发模块。默认设置实现现位于 `core/settings.py`。
+
+仓库根级 `Datas/` 仅作为旧版本地数据遗留目录，不再是生产运行时路径；`config/` 与 `icons/` 仍是仓库根级只读资源。
 
 Maya 模块描述文件或 Installer 生成的 Shelf 命令必须把仓库根目录作为唯一 Python 搜索根；不得再引用 `scripts/`，也不得把 `core/`、`ui/` 等内部目录分别加入 `sys.path`。
 
-### 第一阶段过渡布局
+### 第一阶段过渡布局（历史记录）
 
 在职责尚未完成拆分期间，混合职责代码不得仅为了符合目标目录名称而被误认为已经完成分层。第一阶段采用以下过渡布局：
 
@@ -181,7 +183,7 @@ arnold_magic_node/
 - `paths.py` 只负责计算路径，不负责启动时批量创建目录。
 - 所有核心逻辑必须能在普通 Python 进程中测试。
 
-当前 `arnold_magic_core.py` 不得整体移动到 `core/`。其中的纯算法进入 `core`，Maya 操作和业务流程分别进入 `maya` 与 `services`。
+拆分期间，`arnold_magic_core.py` 没有整体移动到 `core/`。其中的纯算法已进入 `core`，Maya 操作和业务流程已分别进入 `maya` 与 `tools`，旧文件现已删除。
 
 ### `maya`
 
@@ -193,11 +195,11 @@ arnold_magic_node/
 - 贴图尺寸、UDIM 和颜色空间操作。
 - 材质、渲染设置及 AOV 操作。
 
-该层可以依赖 `core`，但不能导入 `services`、`ui` 或 `bootstrap`。
+该层可以依赖 `core`，但不能导入 `tools`、`ui` 或 `bootstrap`。
 
-### `services`
+### `tools`
 
-`services` 表达用户能够直接执行的插件功能，并组合 `core` 与 `maya`：
+`tools` 表达用户能够直接执行的插件功能，并组合 `core` 与 `maya`：
 
 - 快速连接。
 - 魔法连接。
@@ -207,7 +209,7 @@ arnold_magic_node/
 - 渲染预设和灯光组。
 - 场景名称优化。
 
-服务层不负责创建窗口，不保存 Qt 控件引用。一个服务应对应一个明确的用户功能。
+工具编排层不负责创建窗口，不保存 Qt 控件引用。一个工具应对应一个明确的用户功能，并通过 `maya` 适配器访问宿主能力。
 
 ### `ui`
 
@@ -215,12 +217,12 @@ arnold_magic_node/
 
 - 构建 Maya Workspace Control 和 Qt 窗口。
 - 收集用户输入。
-- 调用服务层。
+- 调用工具编排层。
 - 展示结果、警告和错误。
 
-完成对应模块拆分后，业务判断、文件扫描和 Maya 节点网络创建不得直接实现于 UI 类中。PySide2、PySide6 和 shiboken 的兼容导入统一放在 `ui/qt.py`。第一阶段过渡 `application.py` 不受此最终状态约束，但不得继续增加混合职责。
+业务判断、文件扫描和 Maya 节点网络创建不得直接实现于 UI 类中。PySide2、PySide6 和 shiboken 的兼容导入统一放在 `ui/qt.py`。旧 `application.py` 的过渡例外已经取消。
 
-当前 `settings_dialog.py`、`aov_dialog.py` 和 `rendering_preset_dialog.py` 只完成物理迁移，其中仍保留原窗口类内部已有的配置读写、Maya 操作和渲染数据采集。这些内容属于迁移期债务，后续仍须分别下沉到 `core`、`maya` 或 `services`；不得因为文件已经位于 `ui/` 就将其视为最终职责边界已经达成。`texture_batch_importer.py` 仅保存无活动入口的遗留窗口，不得由本阶段重新接入菜单。
+`settings_dialog.py`、`aov_dialog.py` 和 `rendering_preset_dialog.py` 已将配置、AOV 与渲染场景操作委托给 `tools`；UI 只保留窗口构建、输入采集和结果展示。`texture_batch_importer.py` 仅保存无活动入口的遗留窗口，不得重新接入菜单。
 
 ### `bootstrap`
 
@@ -228,7 +230,7 @@ arnold_magic_node/
 
 - 初始化缺失的用户配置。
 - 关闭、复用或创建插件窗口。
-- 组装 UI 与服务。
+- 组装 UI 与工具。
 - 保存必要的窗口引用，防止 Qt 对象被回收。
 
 包外只使用以下公共入口：
@@ -240,49 +242,47 @@ arnold_magic_node.show()
 
 `arnold_magic_node/__init__.py` 必须保持轻量、无副作用，并通过延迟导入暴露 `show()`。
 
-当前迁移期以 `arnold_magic_node.show()` 作为唯一包外公开 API，以 `bootstrap.main()` 作为包内启动实现。`bootstrap.main()` 会把旧应用组装临时委托给 `application.Main_program()`；后者负责清理旧绑定、按顺序重载 UI 模块并创建主窗口。这是待删除的兼容职责，不代表 `bootstrap` 的最终组装边界已经实现。
+`arnold_magic_node.show()` 是唯一包外公开 API，`bootstrap.main()` 是包内启动实现。`bootstrap` 直接初始化工具层并创建主窗口，不再经过旧应用单体或生产热重载。
 
 ## 依赖方向
 
 最终依赖必须保持单向：
 
 ```text
-bootstrap ──> ui / services / maya / core
-ui        ──> services / core
-services  ──> maya / core
+bootstrap ──> ui / tools
+ui        ──> tools
+tools     ──> maya / core
 maya      ──> core
 core      ──> Python 标准库
 ```
 
-`bootstrap` 是组合根，可以导入所有下层实现并负责传递依赖。UI 可以读取 `core` 中的只读模型、翻译结果和设置值，但不能绕过服务层直接修改 Maya 场景。
+`bootstrap` 是组合根。UI 不得绕过 `tools` 直接修改 Maya 场景；`tools` 不得直接导入 `maya.cmds` 或 `mtoa`，所有宿主访问通过 `maya` 适配器完成。
 
 Maya 用户目录由 `maya/environment.py` 查询，再由 `bootstrap` 传给设置仓库。`core` 不得为了获取用户路径而直接导入 `maya.cmds`。
 
 禁止事项：
 
 - `core` 反向导入其他层。
-- `maya` 导入服务层或界面层。
-- `services` 导入具体 Qt 窗口。
+- `maya` 导入工具层或界面层。
+- `tools` 导入具体 Qt 窗口。
 - 使用 `from ... import *`。
 - 使用通用顶级模块名，例如重新建立根级 `core.py`。
 - 在生产入口中执行 `importlib.reload()`。
 
 开发热重载如有需要，应独立放置，只处理 `arnold_magic_node.*` 模块，并在重载前关闭现有窗口和回调。
 
-第一阶段为了保证物理移动不改变行为，可以暂时保留旧单体文件中已经存在的通配导入和 `importlib.reload()`，并允许为重新绑定已迁移窗口而增加下述固定 UI 重载序列。它们属于明确的迁移期例外；除此之外不得新增重载，并必须在对应单体拆分完成时删除。因此第一阶段不视为已经达到最终依赖验收标准。
+### 历史过渡例外（已取消）
 
-窗口物理迁移期间，允许以下临时反向依赖，用于调用尚未抽取的旧配置、业务和 Maya 实现：
+第一阶段为了保证物理移动不改变行为，曾暂时保留旧单体中的通配导入、`importlib.reload()` 和下述 UI 反向依赖：
+
+窗口物理迁移期间曾允许以下临时反向依赖，用于调用尚未抽取的旧配置、业务和 Maya 实现：
 
 - `ui.main_window → application`
 - `ui.settings_dialog → application`
 - `ui.aov_dialog → application`
 - `ui.rendering_preset_dialog → application`
 
-窗口模块还暂时直接使用尚未拆分的 `arnold_magic_core`，`settings_dialog` 另需调用旧 `default_config`。它们不是额外的 `ui → application` 桥接，但同样属于明确记录的遗留依赖；只允许复用当前所需符号，不得继续扩大，并须在职责迁入 `core`、`maya` 和 `services` 后删除。
-
-`ui.qt`、`ui.workspace` 和休眠的 `ui.texture_batch_importer` 不得依赖 `application`。`application` 不得在模块初始化阶段导入任何具体 UI 模块，只能在 `Main_program()` 中等待旧模块完整加载后延迟导入。为使各窗口在现有 `application` 热重载后重新绑定最新对象，允许该入口按 `qt → workspace → settings_dialog → aov_dialog → rendering_preset_dialog → main_window` 的顺序同步重载活动 UI 模块；`texture_batch_importer` 保持休眠且不由入口加载。入口还应清理 Python `reload()` 遗留在 `application` 模块字典中的旧 UI 定义和已迁走的导入绑定。这些重载和反向依赖必须与 `application` 的生产热重载一起删除，不得扩展到其他模块。
-
-UI 模块重载前，`Main_program()` 必须先关闭已有的设置窗口、AOV 窗口和渲染预设输入窗口；主窗口继续由 `MainWindow` 构造过程替换，休眠的批量导入窗口不参与活动入口。这样可避免旧类实例跨过模块重载继续存活。若后续增加其他独立窗口或回调，也必须纳入统一生命周期管理，并最终由 `bootstrap` 接管。
+窗口模块还曾直接使用 `arnold_magic_core`，`settings_dialog` 也调用过旧 `default_config`。上述反向依赖、通配导入和生产热重载已经随职责迁入 `core`、`maya` 和 `tools` 全部删除。窗口生命周期现由 `bootstrap` 统一组装和清理。
 
 ## 资源与用户数据
 
@@ -329,27 +329,28 @@ arnold_magic_node/
 
 ## 渐进迁移
 
-迁移不得采用一次性重写。顺序如下：
+迁移按下列顺序分批完成：
 
-1. 建立可重复运行的本地回归测试基线；当前 `tests/` 按仓库策略保持忽略。
+1. 建立可重复运行的本地回归测试基线，并将 `tests/` 纳入版本控制。
 2. 在仓库根目录建立 `arnold_magic_node` 包壳和稳定的 `show()` 入口；旧版根级 `startup.py` 兼容入口已在后续清理中删除。
 3. 原样迁移 `storage.py` 与 `arnold_magic_matching.py` 到 `core`。
 4. 在特征测试保护下，将 `MainWindow` 类体不变地物理迁入 `ui/main_window.py`，暂时保留对旧 `application` 的兼容调用。
 5. 将 Qt 兼容层、窗口辅助、设置窗口、AOV 窗口、渲染预设输入窗口和休眠批量导入窗口按定义体不变的方式迁入 `ui/`，并保持休眠入口关闭。
 6. 将纯加权相似度算法迁移到 `core/similarity.py`。
-7. 以 Quick Connect 作为第一个完整功能，验证 `旧入口 → service → maya` 的迁移方式。
+7. 以 Quick Connect 作为第一个完整功能，验证 `旧入口 → tools → maya` 的迁移方式。
 8. 依次迁移小型节点工具、Magic Connection、Path Detection、材质转换与修复，并将渲染预设、AOV 和设置窗口中的非 UI 逻辑下沉到对应层。
-9. 最后清除所有 UI 模块对 `application` 的过渡依赖，并完成主窗口与各子窗口的职责拆分。
-10. Texture Manager 在基础结构稳定后单独重新设计；休眠的 `TextureBatchImporterWin` 是否保留另行决策。
+9. 清除所有 UI 模块对 `application` 的过渡依赖，并完成主窗口与各子窗口的职责拆分。
+10. 删除 `application.py`、`arnold_magic_core.py` 和根级 `default_config.py`，增加自动化分层依赖检查。
+11. Texture Manager 在基础结构稳定后单独重新设计；休眠的 `TextureBatchImporterWin` 是否保留另行决策。
 
 每个功能分为两个步骤：
 
 1. 先为旧实现增加特征测试，记录可观察行为。
 2. 再迁移实现，并保持同一组测试通过。
 
-结构移动与行为修复不得混在同一个提交中。新抽取的纯核心模块应达到至少 80% 的测试覆盖率。当前本地测试目录由 `.gitignore` 排除；若后续纳入版本控制，应继续在发布包中单独排除 `tests/`。
+结构移动与行为修复不得混在同一个提交中。新抽取的纯核心模块应达到至少 80% 的测试覆盖率。测试源码纳入版本控制，但发布包应单独排除 `tests/`。
 
-第一阶段的普通 Python 基线命令为：
+普通 Python 回归命令为：
 
 ```text
 python -m unittest discover -s tests -v
@@ -367,9 +368,10 @@ Maya 集成行为必须在支持的 Maya 环境中另行执行冒烟测试，普
 - Python 3.7 语法检查通过。
 - 重构前后的节点类型、关键属性和连接关系保持一致；行为变化必须单独记录。
 - 对应旧实现已删除或缩减为兼容委托，不长期保留两套实现。
-- 除第一阶段明确列出的遗留通配导入、热重载和四条 `ui → application` 过渡桥接外，不得新增通配导入、跨层反向依赖或生产热重载；对应单体拆分完成后必须清除这些遗留。
+- 不得存在通配导入、跨层反向依赖、生产热重载或 `ui → application` 过渡桥接。
+- `core`、`maya` 和 `tools` 的依赖方向由普通 Python 架构测试持续检查。
 
-第一阶段还必须满足：
+第一阶段的历史验收项如下，保留用于追溯：
 
 - 只修改内部导入、入口委托与重载顺序、包搜索路径、项目根路径引用、`icon/` 到 `icons/` 的静态资源路径引用，以及已记录窗口定义、窗口辅助和 UI 共享状态的物理位置与必要导入。
 - `storage.py` 与匹配算法文件保持原内容迁移。
@@ -411,7 +413,7 @@ C4D 参考目录服务于多工具流水线，包含插件 ID 注册、解释器
 
 代价与约束：
 
-- 迁移期间需要保留 `bootstrap.main() → application.Main_program()` 等少量包内过渡委托，但不恢复已删除的根级 `startup.py`。
+- 分批迁移需要维护特征测试和清晰的依赖注入边界。
 - 功能移动前必须先补充特征测试。
-- UI、服务和 Maya 操作之间需要显式传递依赖，初期代码量会略有增加。
+- UI、工具和 Maya 操作之间需要显式传递依赖，初期代码量会略有增加。
 - 目录结构本身不能代替边界约束，代码审查必须持续检查依赖方向。

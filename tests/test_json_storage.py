@@ -8,11 +8,11 @@ from unittest.mock import patch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = PROJECT_ROOT / "arnold_magic_node"
-CORE_SOURCE_PATH = PACKAGE_ROOT / "arnold_magic_core.py"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from arnold_magic_node.core.storage import load_json, save_json
+from arnold_magic_node.tools.runtime import DataManager
 
 
 class JsonStorageTests(unittest.TestCase):
@@ -103,31 +103,12 @@ class JsonStorageTests(unittest.TestCase):
                     save_json(target, {"unsupported": {"set value"}})
 
 
-def load_data_manager_class():
-    source = CORE_SOURCE_PATH.read_text(encoding="utf-8-sig")
-    tree = ast.parse(source)
-    class_node = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.ClassDef) and node.name == "DataManager"
-    )
-    isolated_module = ast.fix_missing_locations(
-        ast.Module(body=[class_node], type_ignores=[])
-    )
-    namespace = {
-        "load_json_file": load_json,
-        "save_json_file": save_json,
-    }
-    exec(compile(isolated_module, "arnold_magic_core.py", "exec"), namespace)
-    return namespace["DataManager"]
-
-
 class DataManagerIntegrationTests(unittest.TestCase):
     def test_data_manager_delegates_to_json_storage(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "config.json"
             data = {"中文": [1, True, None]}
-            manager = load_data_manager_class()()
+            manager = DataManager()
 
             manager.save_json(target, data)
 

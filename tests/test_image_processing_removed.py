@@ -1,9 +1,11 @@
 import ast
 import json
-import os
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+
+from arnold_magic_node.core.similarity import resolution_similarity
+from arnold_magic_node.maya.textures import MayaTextureAdapter
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -20,13 +22,14 @@ class ImageDependencyRemovalTests(unittest.TestCase):
         self.assertFalse((PROJECT_ROOT / "dependencies.py").exists())
 
     def test_core_has_no_external_image_processing_imports(self):
-        _, tree = parse_module("arnold_magic_core.py")
         imports = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                imports.update(alias.name for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                imports.add(node.module)
+        for path in (PACKAGE_ROOT / "core").glob("*.py"):
+            _, tree = parse_module(str(path.relative_to(PACKAGE_ROOT)))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imports.update(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    imports.add(node.module)
         self.assertTrue(
             imports.isdisjoint({"numpy", "PIL", "pyexr", "OpenEXR", "Imath"})
         )
@@ -78,25 +81,10 @@ class TextureManagerRemovalTests(unittest.TestCase):
         self.assertFalse((PROJECT_ROOT / "icons/TXManagerShelf_200.png").exists())
 
     def test_missing_image_dimensions_do_not_count_as_a_match(self):
-        _, core_tree = parse_module("arnold_magic_core.py")
-        function_node = next(
-            node for node in ast.walk(core_tree)
-            if isinstance(node, ast.FunctionDef) and node.name == "resolution_similarity"
-        )
-        module = ast.fix_missing_locations(ast.Module(body=[function_node], type_ignores=[]))
-        namespace = {}
-        exec(compile(module, "arnold_magic_core.py", "exec"), namespace)
-        similarity = namespace["resolution_similarity"]
-        self.assertEqual(similarity(None, [0, 0], [0, 0]), 0.0)
-        self.assertEqual(similarity(None, [1024, 1024], [0, 0]), 0.0)
+        self.assertEqual(resolution_similarity([0, 0], [0, 0]), 0.0)
+        self.assertEqual(resolution_similarity([1024, 1024], [0, 0]), 0.0)
 
     def test_image_dimensions_use_maya_and_fall_back_to_zero(self):
-        _, core_tree = parse_module("arnold_magic_core.py")
-        function_node = next(
-            node for node in ast.walk(core_tree)
-            if isinstance(node, ast.FunctionDef) and node.name == "get_image_dimensions"
-        )
-        module = ast.fix_missing_locations(ast.Module(body=[function_node], type_ignores=[]))
         calls = []
 
         class FakeImage(object):
@@ -109,18 +97,16 @@ class TextureManagerRemovalTests(unittest.TestCase):
                 return 2048, 1024
 
         maya_api = SimpleNamespace(MImage=FakeImage)
-        namespace = {"om": maya_api, "os": os}
-        exec(compile(module, "arnold_magic_core.py", "exec"), namespace)
-        dimensions = namespace["get_image_dimensions"]
-        self.assertEqual(dimensions("textures/../source.exr"), [2048, 1024])
-        self.assertEqual(calls, [(os.path.normpath("textures/../source.exr"), FakeImage.kUnknown)])
+        adapter = MayaTextureAdapter(SimpleNamespace(), maya_api)
+        self.assertEqual(adapter.image_dimensions("textures/../source.exr"), (2048, 1024))
+        self.assertEqual(len(calls), 1)
 
         class UnreadableImage(FakeImage):
             def readFromFile(self, path, pixel_type):
                 raise RuntimeError("unsupported image")
 
         maya_api.MImage = UnreadableImage
-        self.assertEqual(dimensions("missing.exr"), [0, 0])
+        self.assertEqual(adapter.image_dimensions("missing.exr"), (0, 0))
 
 
 if __name__ == "__main__":
