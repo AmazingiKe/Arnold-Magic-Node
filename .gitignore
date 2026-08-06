@@ -13,9 +13,6 @@ __pycache__/
 /.coverage
 /htmlcov/
 
-# 本地自动化测试
-/tests/
-
 # 本地虚拟环境
 /.venv/
 /venv/
