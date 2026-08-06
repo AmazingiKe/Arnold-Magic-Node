@@ -7,8 +7,32 @@ directory. It intentionally does not create directories while being imported.
 from ..core.paths import user_data_root
 
 
-def get_user_data_root():
-    """Return the shared, cross-version Arnold Magic Node user data root."""
-    import maya.cmds as cmds
+def _load_cmds():
+    try:
+        import maya.cmds as cmds
+    except ImportError:
+        raise RuntimeError("Maya 环境适配器只能在 Maya 中使用")
+    return cmds
 
-    return user_data_root(cmds.internalVar(userAppDir=True))
+
+class MayaEnvironmentAdapter(object):
+    def __init__(self, cmds_module=None):
+        self.cmds = cmds_module or _load_cmds()
+
+    def user_data_root(self):
+        return user_data_root(self.cmds.internalVar(userAppDir=True))
+
+    def ui_language(self):
+        return self.cmds.about(uil=True)
+
+    def modifiers(self):
+        return self.cmds.getModifiers()
+
+
+def get_user_data_root(adapter=None):
+    """Return the shared, cross-version Arnold Magic Node user data root."""
+
+    return (adapter or MayaEnvironmentAdapter()).user_data_root()
+
+
+__all__ = ["MayaEnvironmentAdapter", "get_user_data_root"]
