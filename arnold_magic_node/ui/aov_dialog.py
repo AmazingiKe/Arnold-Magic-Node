@@ -3,9 +3,7 @@
 from contextlib import contextmanager
 import os
 
-import maya.cmds as cmds
-import mtoa.aovs as aovs
-
+from ..tools.aovs import AovLightGroupTool
 from ..tools.feedback import FeedbackPrompt
 from ..tools.runtime import DataManager, SOFTWARE_STATE, SOFTWARE_VERSION, get_runtime_paths
 from ..tools.scene import SceneQueryTool
@@ -221,12 +219,13 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
 
 class AOVLightGroupManager(QtWidgets.QDialog):
 
-    def __init__(self, parent = get_maya_main_window()):
+    def __init__(self, parent=get_maya_main_window(), aov_tool=None):
 
         super(AOVLightGroupManager, self).__init__(parent)
 
         # 创建实例类
         self.feedback = FeedbackPrompt()  # 错误提示模块
+        self.aov_tool = aov_tool or AovLightGroupTool(feedback=self.feedback)
         self.getnodedata = GetNodeData()  # 提取数据模块
         self.dataM = DataManager()  # 储存模块
 
@@ -515,24 +514,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 获取灯光组树的数据
         items = self._get_all_items()
 
-        # 对灯光组进行更新
-        for item in items:
-            if item['children']:  # 父级节点存在子节点
-                current_light_group = item['text']  # 当前灯光组的名称
-
-                for light_child_item in item['children']:
-                    light_name = light_child_item['text']  # 灯光名称
-                    try:
-                        old_light_group = cmds.getAttr(f"{light_name}.aiAov")  # 获取旧灯光组
-
-                        if current_light_group != old_light_group:
-                            if isinstance(current_light_group, str):
-                                cmds.setAttr(f"{light_name}.aiAov", current_light_group, type="string")
-                            else:
-                                self.feedback.CPW(f"灯光组名称必须为字符串，当前为：{type(current_light_group)}")
-
-                    except Exception as e:
-                        self.feedback.CPW(f"更新灯光 '{light_name}' 的灯光组 '{current_light_group}' 失败: {e}")
+        self.aov_tool.update_light_groups(items)
 
     # 选择到灯光
     def _select_lights(self):
@@ -544,18 +526,8 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         selected_lights = []
 
         for item in selected_items:
-            try:
-                light_name = item.text(0)
-                if cmds.objExists(light_name):  # 检查对象是否存在
-                    selected_lights.append(light_name)
-            except Exception as e:
-                print(f"错误：无法选择 {item.text(0)} - {e}")
-
-        # 如果存在有效的灯光对象列表，则一次性选择
-        if selected_lights:
-            cmds.select(selected_lights, replace=True)  # 全选
-        else:
-            cmds.select(clear=True)  # 如果列表为空，清除选择
+            selected_lights.append(item.text(0))
+        self.aov_tool.select_lights(selected_lights)
 
     # 处理滑动条变化事件
     def handle_zoom_change(self):
@@ -575,7 +547,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         获取当前场景中选择的灯光，并根据其所属的灯光组进行分类。
         返回一个列表，包含选中灯光组中与当前选择灯光匹配的灯光。
         """
-        selected_lights = cmds.ls(selection=True, type='transform')  # 获取当前选择的物体
+        selected_lights = self.aov_tool.selected_transforms()
 
         matching_lights = []
         iterator = QtWidgets.QTreeWidgetItemIterator(self.light_group_tree_widget)
@@ -618,36 +590,10 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 从缓存加载AOV通道配置数据
         aov_channels = self.dataM.load_json(self.cache_path)
 
-        # 遍历每个灯光组配置
-        for group in selected_groups:
-            # 跳过空组（根据业务逻辑需要可以调整）
-            if not group['children']:
-                continue
-
-            # 获取当前灯光组名称
-            light_group_name = group['text']
-
-            # 跳过默认灯光组（根据业务逻辑需要可以调整）
-            if light_group_name == 'default':
-                continue
-
-            # 为每个AOV通道创建对应的灯光组AOV
-            for channel in aov_channels:
-                # 生成符合规范的AOV名称（通道_灯光组）
-                aov_name = f"{channel}_{light_group_name}"
-
-                # 检查AOV是否已存在（优化后的检查方式）
-                if self._aov_exists(aov_name):
-                    print(f"AOV '{aov_name}' 已存在，跳过创建")
-                    continue
-
-                try:
-                    # 创建AOV节点并配置参数
-                    self._create_configured_aov(aov_name)
-                    print(f"成功创建AOV：{aov_name}")
-                except Exception as e:
-                    print(f"创建AOV '{aov_name}' 失败：{str(e)}")
-                    continue
+        for aov_name in self.aov_tool.create_light_group_aovs(
+            selected_groups, aov_channels
+        ):
+            print("成功创建AOV：{}".format(aov_name))
 
     # 检查AOV是否存在
     def _aov_exists(self, aov_name):
@@ -656,11 +602,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         :param aov_name: 需要检查的AOV名称
         :return: bool - 是否存在
         """
-        # 获取场景中所有aiAOV节点
-        existing_aovs = cmds.ls(type='aiAOV') or []
-
-        # 检查名称是否匹配（比遍历属性更高效）
-        return any(cmds.getAttr(f"{aov}.name") == aov_name for aov in existing_aovs)
+        return self.aov_tool.aov_exists(aov_name)
 
     # 创建并配置AOV节点
     def _create_configured_aov(self, aov_name):
@@ -668,22 +610,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         创建并配置单个AOV节点
         :param aov_name: 需要创建的AOV名称
         """
-        # 创建AOV节点（使用Arnold API接口）
-        aov_interface = aovs.AOVInterface()
-        new_aov = aov_interface.addAOV(aov_name)
-
-        # 构造节点名称（arnold默认命名规则）
-        aov_node = f"aiAOV_{aov_name}"
-
-        # 参数配置（根据需求可扩展更多参数）
-        # 6 = RGBA类型（根据实际需要确认数值是否正确）
-        # 注意：Maya 2020+版本建议使用aov_interface.set_aov_type(...)方法
-        if cmds.objExists(aov_node):
-            cmds.setAttr(f"{aov_node}.type", 6)  # 设置AOV类型
-            cmds.setAttr(f"{aov_node}.enabled", True)  # 启用AOV
-        else:
-            raise RuntimeError(f"AOV节点 {aov_node} 创建失败")
-        # 储存配置文件
+        return self.aov_tool.create_configured_aov(aov_name)
 
 
     # 为所有没有父级的子级项创建同名父级，并将子级移动至其下
@@ -853,20 +780,7 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 获取用户选择的通道配置（从缓存加载）
         selected_channels = self.dataM.load_json(self.cache_path)
 
-        # 获取场景中所有aiAOV节点
-        all_aovs = cmds.ls(type='aiAOV') or []
-
-        # 遍历处理每个AOV节点
-        deleted_aovs = []
-        for aov_node in all_aovs:
-            try:
-                aov_name = cmds.getAttr(f"{aov_node}.name")
-                # 匹配规则：通道名_任意字符 且通道名在用户选择列表中
-                if any(aov_name.startswith(f"{channel}_") for channel in selected_channels):
-                    cmds.delete(aov_node)
-                    deleted_aovs.append(aov_name)
-            except Exception as e:
-                self.feedback.CPW(f"清理AOV失败: {aov_node} - {str(e)}")
+        deleted_aovs = self.aov_tool.clear_custom_aovs(selected_channels)
 
         # 反馈清理结果
         result_msg = f"已清理自定义AOV通道 [{len(deleted_aovs)}个]:\n" + "\n".join(deleted_aovs)

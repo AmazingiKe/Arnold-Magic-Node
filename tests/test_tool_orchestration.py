@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 from arnold_magic_node.tools.path_detection import PathDetectionConnectionTool
 from arnold_magic_node.tools.materials import MaterialConversionTool
 from arnold_magic_node.tools.node_graph import QuickConnectTool
-from arnold_magic_node.tools.rendering import toggle_aovs
+from arnold_magic_node.tools.rendering import RenderingCaptureTool, toggle_aovs
+from arnold_magic_node.tools.aovs import AovLightGroupTool
 from arnold_magic_node.tools.scene import SceneNameOptimizationTool
 from arnold_magic_node.tools.selection import process_selected_nodes
 from arnold_magic_node.tools.texture import (
@@ -213,6 +214,58 @@ class RenderingToolTests(unittest.TestCase):
                 unittest.mock.call("aiAOV2.enabled", 1),
             ],
         )
+
+    def test_captures_node_groups_and_aov_network_through_adapter(self):
+        adapter = MagicMock()
+        adapter.get_attr.side_effect = [
+            1920,
+            "RGBA",
+            "RGBA",
+            "exr",
+            "gaussian",
+        ]
+        adapter.object_exists.return_value = True
+        adapter.list_connections.side_effect = [
+            ["aiAOV_RGBA"],
+            ["driver1", "filter1"],
+        ]
+        adapter.node_type.side_effect = ["aiAOVDriver", "aiAOVFilter"]
+        tool = RenderingCaptureTool(adapter=adapter, feedback=MagicMock())
+
+        groups = tool.capture_node_groups({"defaultResolution": ["width"]})
+        aovs = tool.capture_aovs(["name"], ["aiTranslator"], ["aiTranslator"])
+
+        self.assertEqual(groups, {"defaultResolution": {"width": 1920}})
+        self.assertEqual(aovs["aiAOV_RGBA"][1]["aov_attributes"]["name"], "RGBA")
+        self.assertEqual(aovs["aiAOV_RGBA"][2]["driver"]["driver_name"], "driver1")
+        self.assertEqual(aovs["aiAOV_RGBA"][3]["filter"]["filter_name"], "filter1")
+
+
+class AovToolTests(unittest.TestCase):
+    def test_updates_selects_creates_and_clears_aov_data_through_adapter(self):
+        adapter = MagicMock()
+        adapter.get_attr.side_effect = ["old", "RGBA_key", "N"]
+        adapter.object_exists.return_value = True
+        adapter.list_nodes.side_effect = [[], ["aov_rgba", "aov_n"]]
+        adapter.create_aov.return_value = object()
+        tool = AovLightGroupTool(adapter=adapter, feedback=MagicMock())
+
+        tool.update_light_groups(
+            [{"text": "key", "children": [{"text": "light1", "children": []}]}]
+        )
+        selected = tool.select_lights(["light1", "missing"])
+        created = tool.create_light_group_aovs(
+            [{"text": "key", "children": [{"text": "light1"}]}],
+            ["RGBA"],
+        )
+        deleted = tool.clear_custom_aovs(["RGBA"])
+
+        adapter.set_attr.assert_any_call("light1.aiAov", "key", value_type="string")
+        self.assertEqual(selected, ["light1", "missing"])
+        adapter.select.assert_called_once_with(["light1", "missing"], replace=True)
+        self.assertEqual(created, ["RGBA_key"])
+        self.assertEqual(deleted, ["RGBA_key"])
+        adapter.delete.assert_called_once_with("aov_rgba")
 
 
 if __name__ == "__main__":

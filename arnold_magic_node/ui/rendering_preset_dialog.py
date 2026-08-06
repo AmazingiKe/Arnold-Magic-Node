@@ -5,6 +5,7 @@ import os
 import maya.cmds as cmds
 
 from ..tools.feedback import FeedbackPrompt
+from ..tools.rendering import RenderingCaptureTool
 from ..tools.runtime import DataManager, get_runtime_paths, load_language
 
 
@@ -17,7 +18,7 @@ new_rendering_preset_name = {}
 
 class rendering_preset_settings_button():
 
-    def __init__(self,menu_name):
+    def __init__(self, menu_name, capture_tool=None):
 
         self.import_val = None
 
@@ -26,6 +27,9 @@ class rendering_preset_settings_button():
         self.import_name_win(menu_name)
 
         self.feedback = FeedbackPrompt() # 错误提示模块
+        self.capture_tool = capture_tool or RenderingCaptureTool(
+            feedback=self.feedback
+        )
         self.dataM = DataManager() # 数据管理模块
 
 
@@ -75,38 +79,11 @@ class rendering_preset_settings_button():
                                       "nodeState", "oddFieldFirst", "pixelAspect", "pixelDensityUnits", "width",
                                       "zerothScanline"]
 
-        default_render_options_attribute = {
-            'defaultRenderGlobals' : {},
-            'defaultRenderQuality' : {},
-            'defaultResolution' : {}
-        }
-
-        # 获取defaultRenderGlobals的属性
-        for i in defaultRenderGlobals_options:
-            try:
-                default_render_options_attribute['defaultRenderGlobals'][i] = cmds.getAttr("defaultRenderGlobals."+ i)
-            except:
-                # None值将不会写入到渲染器里
-                default_render_options_attribute['defaultRenderGlobals'][i] = None
-
-        # 获取defaultRenderQuality的属性
-        for i in defaultRenderQuality_options:
-            try:
-                default_render_options_attribute['defaultRenderQuality'][i] = cmds.getAttr("defaultRenderQuality."+ i)
-            except:
-                # None值将不会写入到渲染器里
-                default_render_options_attribute['defaultRenderQuality'][i] = None
-
-        # 获取defaultResolution的属性
-        for i in defaultResolution_options:
-            try:
-                default_render_options_attribute['defaultResolution'][i] = cmds.getAttr("defaultResolution."+ i)
-            except:
-                # None值将不会写入到渲染器里
-                default_render_options_attribute['defaultResolution'][i] = None
-
-
-        return default_render_options_attribute
+        return self.capture_tool.capture_node_groups({
+            'defaultRenderGlobals': defaultRenderGlobals_options,
+            'defaultRenderQuality': defaultRenderQuality_options,
+            'defaultResolution': defaultResolution_options,
+        })
 
     # 获取阿诺德渲染设置
     def get_rendering_properties(self):
@@ -166,39 +143,11 @@ class rendering_preset_settings_button():
                                       "textureMaxOpenFiles", "textureSpecularBlur", "texture_searchpath", "threads", "threads_autodetect",
                                       "use_existing_tiled_textures", "use_sample_clamp", "use_sample_clamp_AOVs", "version"]
 
-        arnold_render_options_attribute = {
-            'defaultArnoldDriver' : {},
-            'defaultArnoldFilter' : {},
-            'defaultArnoldRenderOptions' : {}
-        }
-
-        render_options_attribute = {}
-
-        # 获取defaultArnoldDriver的属性
-        for i in defaultArnoldDriver:
-            try:
-                arnold_render_options_attribute['defaultArnoldDriver'][i] = cmds.getAttr("defaultArnoldDriver."+ i)
-            except:
-                # None值将不会写入到渲染器里
-                arnold_render_options_attribute['defaultArnoldDriver'][i] = None
-
-        # 获取defaultArnoldFilter的属性
-        for i in defaultArnoldFilter:
-            try:
-                arnold_render_options_attribute['defaultArnoldFilter'][i] = cmds.getAttr("defaultArnoldFilter."+ i)
-            except:
-                # None值将不会写入到渲染器里
-                arnold_render_options_attribute['defaultArnoldFilter'][i] = None
-
-        # 获取defaultArnoldRenderOptions的属性
-        for i in defaultArnoldRenderOptions:
-            try:
-                arnold_render_options_attribute['defaultArnoldRenderOptions'][i] = cmds.getAttr("defaultArnoldRenderOptions."+ i)
-            except:
-                # None值将不会写入到渲染器里
-                arnold_render_options_attribute['defaultArnoldRenderOptions'][i] = None
-
-        return arnold_render_options_attribute
+        return self.capture_tool.capture_node_groups({
+            'defaultArnoldDriver': defaultArnoldDriver,
+            'defaultArnoldFilter': defaultArnoldFilter,
+            'defaultArnoldRenderOptions': defaultArnoldRenderOptions,
+        })
 
     # 获取AOV设置
     def get_AOV_properties(self):
@@ -218,72 +167,11 @@ class rendering_preset_settings_button():
                              "domain", "filterWeights", "frozen", "isHistoricallyInteresting", "maximum", "message",
                              "minimum", "nodeState", "scalarMode", "width"]
 
-        if cmds.objExists("defaultArnoldRenderOptions") == False:
-            self.feedback.CPW("没检测到阿诺德渲染器节点，无法写入阿诺德的内容请切换渲染器先")
-            return None
-
-        aiAov_name_list = cmds.listConnections("defaultArnoldRenderOptions.aovList", source=True)
-        # 这是所有aiAOV的名字
-
-        if aiAov_name_list == None:
-            self.feedback.CP(f'还没有设置AOV哦～将不会写入AOV')
-            return None
-
-        aov_info_dict = {}
-        # 这个是数据结构的列表
-
-        for AOV_name in aiAov_name_list:
-            # 0，前期获取一些参数
-            driver_and_filter_name = self.get_driver_and_filter_nodes(AOV_name)
-
-
-            # 1，创建对应空的列表---
-            aov_info_dict[AOV_name] = []
-
-            # 2，写入节点名字属性---
-            aov_info_dict[AOV_name].append({"aov_name":AOV_name})
-
-            # 3, 写入节点属性---
-            aov_info_dict[AOV_name].append({"aov_attributes":{}})
-            for attribute in aiAOV_att_list:
-                try:
-                    att_value = cmds.getAttr("{}.{}".format(AOV_name, attribute)) # 获取节点属性
-                    aov_info_dict[AOV_name][1]['aov_attributes'][attribute] = att_value # 写入属性列表
-                except:
-                    aov_info_dict[AOV_name][1]['aov_attributes'][attribute] = None
-
-            # 4，创建driver列表---
-            aov_info_dict[AOV_name].append({"driver":{}})
-
-            # 5，写入driver节点名字---
-            aov_info_dict[AOV_name][2]['driver']["driver_name"] = driver_and_filter_name[0]
-
-            # 5，写入driver节点属性---
-            aov_info_dict[AOV_name][2]['driver']["driver_attribute"] = {}
-            for attribute in aiDriver_att_list:
-                try:
-                    att_value = cmds.getAttr("{}.{}".format(driver_and_filter_name[0], attribute)) # 获取节点属性
-                    aov_info_dict[AOV_name][2]['driver']["driver_attribute"][attribute] = att_value
-                except:
-                    aov_info_dict[AOV_name][2]['driver']["driver_attribute"][attribute] = None
-
-            # 6，创建filter列表---
-            aov_info_dict[AOV_name].append({"filter":{}})
-
-            # 7，写入filter节点名字---
-            aov_info_dict[AOV_name][3]['filter']["filter_name"] = driver_and_filter_name[1]
-
-            # 8，写入filter节点属性---
-            aov_info_dict[AOV_name][3]['filter']["filter_attribute"] = {}
-            for attribute in aiFilter_att_list:
-                try:
-                    att_value = cmds.getAttr("{}.{}".format(driver_and_filter_name[1], attribute)) # 获取节点属性
-                    aov_info_dict[AOV_name][3]['filter']["filter_attribute"][attribute] = att_value
-                except:
-                    aov_info_dict[AOV_name][3]['filter']["filter_attribute"][attribute] = None
-
-
-        return aov_info_dict
+        return self.capture_tool.capture_aovs(
+            aiAOV_att_list,
+            aiDriver_att_list,
+            aiFilter_att_list,
+        )
 
     # 获取driver_and_filter的名字
     def get_driver_and_filter_nodes(self,node_name):
@@ -305,27 +193,7 @@ class rendering_preset_settings_button():
             driver_nodes, filter_nodes = get_driver_and_filter_nodes(node_name)
         """
 
-        driver_node_name = None
-        filter_node_name = None
-
-        # 检查节点是否存在
-        if not cmds.objExists(node_name):
-            self.feedback.CP("节点 {} 不存在".format(node_name))
-            return None, None
-
-        # 获取节点的输出连接
-        output_connections = cmds.listConnections(node_name + '.outputs', source=True, destination=False)
-
-        # 遍历输出连接，找到 driver 和 filter 节点
-        for connection in output_connections:
-            # 检查连接的节点类型是否为 driver
-            if cmds.nodeType(connection) == 'aiAOVDriver':
-                driver_node_name = connection
-            # 检查连接的节点类型是否为 filter
-            elif cmds.nodeType(connection) == 'aiAOVFilter':
-                filter_node_name = connection
-
-        return driver_node_name, filter_node_name
+        return self.capture_tool.driver_and_filter_nodes(node_name)
 
     # _______________________________________________________________________>>> 导入名称窗口函数
     def import_name_win(self, menu_name):

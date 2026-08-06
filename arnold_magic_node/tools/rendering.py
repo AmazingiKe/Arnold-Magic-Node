@@ -11,6 +11,90 @@ from .runtime import DataManager, get_runtime_paths, load_config, load_language
 ATTRIBUTE_TYPES = ("bool", "int", "float", "string")
 
 
+class RenderingCaptureTool(object):
+    """从 Maya 场景采集可序列化的渲染预设数据。"""
+
+    def __init__(self, adapter=None, feedback=None):
+        self.adapter = adapter or MayaNodeAdapter()
+        self.feedback = feedback or FeedbackPrompt(self.adapter)
+
+    def capture_node_groups(self, node_attributes):
+        result = {}
+        for node_name, attributes in node_attributes.items():
+            result[node_name] = {}
+            for attribute in attributes:
+                try:
+                    value = self.adapter.get_attr(
+                        "{}.{}".format(node_name, attribute)
+                    )
+                except Exception:
+                    value = None
+                result[node_name][attribute] = value
+        return result
+
+    def driver_and_filter_nodes(self, aov_node):
+        if not self.adapter.object_exists(aov_node):
+            self.feedback.CP("节点 {} 不存在".format(aov_node))
+            return None, None
+        driver_name = None
+        filter_name = None
+        for connection in self.adapter.list_connections(
+            aov_node + ".outputs", source=True, destination=False
+        ):
+            node_type = self.adapter.node_type(connection)
+            if node_type == "aiAOVDriver":
+                driver_name = connection
+            elif node_type == "aiAOVFilter":
+                filter_name = connection
+        return driver_name, filter_name
+
+    def capture_aovs(
+        self,
+        aov_attributes,
+        driver_attributes,
+        filter_attributes,
+    ):
+        if not self.adapter.object_exists("defaultArnoldRenderOptions"):
+            self.feedback.CPW("没检测到阿诺德渲染器节点，无法写入阿诺德内容")
+            return None
+        aov_nodes = self.adapter.list_connections(
+            "defaultArnoldRenderOptions.aovList", source=True
+        )
+        if not aov_nodes:
+            self.feedback.CP("还没有设置AOV，将不会写入AOV")
+            return None
+
+        result = {}
+        for aov_node in aov_nodes:
+            driver_name, filter_name = self.driver_and_filter_nodes(aov_node)
+            aov_values = self.capture_node_groups(
+                {aov_node: aov_attributes}
+            )[aov_node]
+            driver_values = self.capture_node_groups(
+                {driver_name: driver_attributes}
+            )[driver_name]
+            filter_values = self.capture_node_groups(
+                {filter_name: filter_attributes}
+            )[filter_name]
+            result[aov_node] = [
+                {"aov_name": aov_node},
+                {"aov_attributes": aov_values},
+                {
+                    "driver": {
+                        "driver_name": driver_name,
+                        "driver_attribute": driver_values,
+                    }
+                },
+                {
+                    "filter": {
+                        "filter_name": filter_name,
+                        "filter_attribute": filter_values,
+                    }
+                },
+            ]
+        return result
+
+
 class RenderingPresetTool(object):
     """读取一个保存的渲染预设并写入当前 Maya 场景。"""
 
@@ -247,6 +331,7 @@ ai_aov_switch_button = toggle_aovs
 
 
 __all__ = [
+    "RenderingCaptureTool",
     "RenderingPresetTool",
     "ai_aov_switch_button",
     "apply_rendering_preset",

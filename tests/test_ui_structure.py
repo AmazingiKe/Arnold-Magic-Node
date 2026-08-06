@@ -20,11 +20,29 @@ def imported_modules(path):
     }
 
 
+def all_imported_modules(path):
+    imports = set(imported_modules(path))
+    for node in ast.walk(module_tree(path)):
+        if isinstance(node, ast.Import):
+            imports.update(alias.name for alias in node.names)
+    return imports
+
+
+def maya_command_calls(path):
+    calls = set()
+    for node in ast.walk(module_tree(path)):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if isinstance(node.func.value, ast.Name) and node.func.value.id == "cmds":
+            calls.add(node.func.attr)
+    return calls
+
+
 class UiStructureTests(unittest.TestCase):
     def test_ui_modules_use_tools_not_application_or_legacy_core(self):
         excluded = {"__init__.py", "qt.py", "workspace.py", "texture_batch_importer.py"}
         for path in UI_ROOT.glob("*.py"):
-            imports = imported_modules(path)
+            imports = all_imported_modules(path)
             self.assertNotIn("application", imports, path.name)
             self.assertNotIn("arnold_magic_core", imports, path.name)
             if path.name not in excluded:
@@ -63,6 +81,24 @@ class UiStructureTests(unittest.TestCase):
         self.assertIn("return MainWindow()", source)
         self.assertNotIn("importlib.reload", source)
         self.assertNotIn("import application", source)
+
+    def test_ui_only_uses_maya_for_window_construction(self):
+        forbidden_commands = {
+            "connectAttr", "delete", "getAttr", "listConnections", "ls",
+            "nodeType", "objExists", "rename", "select", "setAttr",
+            "shadingNode",
+        }
+        for path in UI_ROOT.glob("*.py"):
+            self.assertEqual(
+                maya_command_calls(path) & forbidden_commands,
+                set(),
+                path.name,
+            )
+            imports = imported_modules(path)
+            self.assertFalse(
+                any(module == "mtoa" or module.startswith("mtoa.") for module in imports),
+                path.name,
+            )
 
 
 if __name__ == "__main__":

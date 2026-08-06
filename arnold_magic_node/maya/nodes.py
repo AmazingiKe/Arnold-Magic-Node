@@ -65,5 +65,10 @@ class MayaNodeAdapter(object):
     def modifiers(self):
         return self.cmds.getModifiers()
 
+    def select(self, nodes=None, replace=False, clear=False):
+        if clear:
+            return self.cmds.select(clear=True)
+        return self.cmds.select(nodes or [], replace=replace)
+
 
 __all__ = ["MayaNodeAdapter"]
