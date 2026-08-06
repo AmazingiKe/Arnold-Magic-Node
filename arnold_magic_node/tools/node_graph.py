@@ -1,0 +1,276 @@
+"""快速连接与 Arnold 节点混合工具。"""
+
+import maya.cmds as cmds
+
+from .feedback import FeedbackPrompt
+from .runtime import load_config
+from .selection import process_selected_nodes
+
+
+class QuickConnectTool(object):
+    """按选择顺序尝试连接相邻的两个节点。"""
+
+    def __init__(self):
+        self.config = load_config()["node_connection_mixer_config"][
+            "quick_connect_node_parms"
+        ]
+
+    @staticmethod
+    def get_selected_nodes():
+        return cmds.ls(selection=True) or []
+
+    def run(self):
+        nodes = self.get_selected_nodes()
+        if len(nodes) < 2:
+            cmds.warning("至少需要两个节点来建立连接！")
+            return
+
+        for source_node, destination_node in zip(nodes, nodes[1:]):
+            connected = False
+            for output_attribute, input_attribute in self.config[
+                "priority_order"
+            ].items():
+                if not (
+                    cmds.attributeQuery(
+                        output_attribute, node=source_node, exists=True
+                    )
+                    and cmds.attributeQuery(
+                        input_attribute, node=destination_node, exists=True
+                    )
+                ):
+                    continue
+                try:
+                    cmds.connectAttr(
+                        "{}.{}".format(source_node, output_attribute),
+                        "{}.{}".format(destination_node, input_attribute),
+                    )
+                    print(
+                        "[QuickConnect] {}.{} → {}.{}".format(
+                            source_node,
+                            output_attribute,
+                            destination_node,
+                            input_attribute,
+                        )
+                    )
+                    connected = True
+                    break
+                except Exception:
+                    continue
+            if connected:
+                continue
+
+            for output_attribute in self.config["out_port"]:
+                if connected:
+                    break
+                for input_attribute in self.config["input_port"]:
+                    if not (
+                        cmds.attributeQuery(
+                            output_attribute, node=source_node, exists=True
+                        )
+                        and cmds.attributeQuery(
+                            input_attribute, node=destination_node, exists=True
+                        )
+                    ):
+                        continue
+                    try:
+                        cmds.connectAttr(
+                            "{}.{}".format(source_node, output_attribute),
+                            "{}.{}".format(destination_node, input_attribute),
+                        )
+                        print(
+                            "[QuickConnect] {}.{} → {}.{}".format(
+                                source_node,
+                                output_attribute,
+                                destination_node,
+                                input_attribute,
+                            )
+                        )
+                        connected = True
+                        break
+                    except Exception:
+                        continue
+            if not connected:
+                cmds.warning(
+                    "{} → {} 未找到可连接属性，已跳过。".format(
+                        source_node, destination_node
+                    )
+                )
+
+    process = run
+
+
+class NodeMixTool(object):
+    """按节点类别创建对应的 Arnold Layer 节点并连接选择对象。"""
+
+    UTILITY_SHADER_TYPES = (
+        "file", "aiBlackbody", "aiBump2d", "aiBump3d", "aiCameraProjection",
+        "aiClamp", "aiColorConvert", "aiColorCorrect", "aiColorJitter",
+        "aiComplexIor", "aiComposite", "aiDistance", "aiFacingRatio",
+        "aiMotionVector", "aiNormalMap", "aiOslShader", "aiRampFloat",
+        "aiRampRgb", "aiRange", "aiRoundCorners", "aiShuffle",
+        "aiSpaceTransform", "aiStateFloat", "aiStateInt", "aiStateVector",
+        "aiTraceSet", "aiUvProjection", "aiUvTransform", "aiVectorMap",
+    )
+    MATH_TYPES = (
+        "aiAbs", "aiAdd", "aiAtan", "aiCompare", "aiComplement", "aiCross",
+        "aiDivide", "aiDot", "aiExp", "aiFraction", "aiIsFinite", "aiLength",
+        "aiLog", "aiMatrixInterpolate", "aiMatrixMultiplyVector",
+        "aiMatrixTransform", "aiMax", "aiMin", "aiModulo", "aiMultiply",
+        "aiNegate", "aiNormalize", "aiPow", "aiRandom", "aiReciprocal",
+        "aiSign", "aiSqrt", "aiSubtract", "aiTrigo",
+    )
+    SHADER_TYPES = (
+        "aiStandardSurface", "standardSurface", "aiLambert", "aiStandardHair", "aiToon"
+    )
+    MIX_TYPES = ("aiLayerFloat", "aiLayerRgba", "aiLayerShader")
+    COLOR_OUTPUT_PORTS = ("outColor", "outValue")
+    GRAY_OUTPUT_PORTS = (
+        "outColorR", "outColorG", "outColorB", "outAlpha", "outValueX",
+        "outValueY", "outValueZ",
+    )
+
+    def __init__(self):
+        self.feedback = FeedbackPrompt()
+        self.handlers = {
+            "intelligent_mix": self.intelligent_mix_process,
+            "mask_mix": self.mask_mix_process,
+        }
+        self.type_to_category = {}
+        for category, node_types in {
+            "utility": self.UTILITY_SHADER_TYPES,
+            "math": self.MATH_TYPES,
+            "shader": self.SHADER_TYPES,
+            "mix": self.MIX_TYPES,
+        }.items():
+            for node_type in node_types:
+                self.type_to_category[node_type] = category
+
+    def intelligent_mix_process(self, selected_nodes):
+        for node_type, node_names in selected_nodes.items():
+            category = self.type_to_category.get(node_type)
+            if category in ("utility", "math"):
+                self.handle_utility_shader(node_names)
+            elif category == "shader":
+                self.handle_shader(node_names)
+            elif category == "mix":
+                self.handle_mix(node_type, node_names)
+            else:
+                self.feedback.CPW("未知的节点类型：{}".format(node_type))
+
+    def handle_utility_shader(self, nodes):
+        modifiers = cmds.getModifiers()
+        if modifiers == 8:
+            self.handle_grayscale_shader_mix(nodes)
+        else:
+            self.handle_color_shader_mix(nodes)
+
+    def handle_color_shader_mix(self, nodes):
+        mix_node = cmds.createNode("aiLayerRgba", name="shader_mix")
+        for index, node_name in enumerate(nodes, start=1):
+            for output_port in self.COLOR_OUTPUT_PORTS:
+                try:
+                    cmds.connectAttr(
+                        "{}.{}".format(node_name, output_port),
+                        "{}.input{}".format(mix_node, index),
+                        force=True,
+                    )
+                    break
+                except Exception:
+                    pass
+
+    def handle_grayscale_shader_mix(self, nodes):
+        mix_node = cmds.createNode("aiLayerFloat", name="grays_shader_mix")
+        for index, node_name in enumerate(nodes, start=1):
+            for output_port in self.GRAY_OUTPUT_PORTS:
+                try:
+                    cmds.connectAttr(
+                        "{}.{}".format(node_name, output_port),
+                        "{}.input{}".format(mix_node, index),
+                        force=True,
+                    )
+                    break
+                except Exception:
+                    pass
+
+    @staticmethod
+    def handle_shader(nodes):
+        mix_node = cmds.createNode("aiLayerShader", name="shader_mix")
+        for index, node_name in enumerate(nodes, start=1):
+            cmds.connectAttr(
+                node_name + ".outColor",
+                "{}.input{}".format(mix_node, index),
+                force=True,
+            )
+
+    @staticmethod
+    def _create_node(node_type, name):
+        return cmds.createNode(node_type, name=name)
+
+    def handle_mix(self, node_type, nodes):
+        mapping = {
+            "aiLayerFloat": ("aiLayerFloat", "LayerFloat", "outValue"),
+            "aiLayerRgba": ("aiLayerRgba", "LayerRgba", "outColor"),
+            "aiLayerShader": ("aiLayerShader", "LayerShader", "outColor"),
+        }
+        mix_type, name, output_port = mapping[node_type]
+        mix_node = self._create_node(mix_type, name)
+        for index, node_name in enumerate(nodes, start=1):
+            cmds.connectAttr(
+                "{}.{}".format(node_name, output_port),
+                "{}.input{}".format(mix_node, index),
+                force=True,
+            )
+
+    @staticmethod
+    def mask_mix_process(selected_nodes):
+        print("mask_mix_process")
+
+    def run(self, mix_mode):
+        selected_nodes = process_selected_nodes()
+        if not selected_nodes:
+            return self.feedback.CPW("至少需要两个节点来建立连接！")
+        nodes = []
+        for node_names in selected_nodes.values():
+            if isinstance(node_names, (list, tuple, set)):
+                nodes.extend(node_names)
+            else:
+                nodes.append(node_names)
+        if len(nodes) < 2:
+            return self.feedback.CPW("至少需要两个节点来建立连接！")
+        handler = self.handlers.get(mix_mode)
+        if handler:
+            return handler(selected_nodes)
+        return self.feedback.CPW("未知的混合模式：{}".format(mix_mode))
+
+    def process(self, mix_mod=None):
+        return self.run(mix_mod)
+
+
+def quick_connect_nodes():
+    return QuickConnectTool().run()
+
+
+def intelligent_mix():
+    return NodeMixTool().run("intelligent_mix")
+
+
+def mask_node_mix():
+    return NodeMixTool().run("mask_mix")
+
+
+# 旧入口兼容名称。
+QuickConnectNode = QuickConnectTool
+BlendNodeManager = NodeMixTool
+quick_connect_node_button = quick_connect_nodes
+
+
+__all__ = [
+    "BlendNodeManager",
+    "NodeMixTool",
+    "QuickConnectNode",
+    "QuickConnectTool",
+    "intelligent_mix",
+    "mask_node_mix",
+    "quick_connect_node_button",
+    "quick_connect_nodes",
+]

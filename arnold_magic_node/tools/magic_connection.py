@@ -172,8 +172,13 @@ def run_magic_connection(config=None, adapter=None, feedback=None, config_path=N
     ).run()
 
 
+# 旧主窗口按钮入口的语义别名。
+magic_connection_button = run_magic_connection
+
+
 __all__ = [
     "MagicConnectionResult",
     "MagicConnectionTool",
+    "magic_connection_button",
     "run_magic_connection",
 ]
