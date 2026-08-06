@@ -2,13 +2,15 @@
 
 from datetime import datetime
 
+from ..maya.nodes import MayaNodeAdapter
 from .runtime import load_language
 
 
 class FeedbackPrompt(object):
     """保留旧反馈接口，并将语言读取收敛到运行时工具。"""
 
-    def __init__(self):
+    def __init__(self, adapter=None):
+        self.adapter = adapter
         self.language = load_language()["ArnoldMagicNodeLibs"]["FeedbackPrompt"]
         current_time = datetime.now()
         self.primary_contact = "\nmail:1925250542@qq.com\nWeChat:13549971630"
@@ -20,14 +22,15 @@ class FeedbackPrompt(object):
         print(self.DefContent + str(content))
 
     def CPW(self, content=None, EC=None):
-        import maya.cmds as cmds
+        if self.adapter is None:
+            self.adapter = MayaNodeAdapter()
 
         if EC is None:
-            cmds.warning(str(self.DefContent) + str(content))
+            self.adapter.warning(str(self.DefContent) + str(content))
         else:
             print(str(self.DefContent) + self.language["02"] + str(content))
             print("↓" * 65)
-            cmds.warning(str(EC))
+            self.adapter.warning(str(EC))
 
     def CPE(self, content=None, EC=None):
         error_message = "{}{}: {}".format(

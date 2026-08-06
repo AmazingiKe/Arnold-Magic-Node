@@ -1,6 +1,8 @@
 """Magic Connection 的 Maya 适配和节点网络执行器。"""
 
 from ..core.magic_connection import GRAY_CHANNELS
+from .scene import MayaSceneAdapter
+from .textures import MayaTextureAdapter
 
 
 DEFAULT_INPUT_PORTS = ("input", "passthrough", "input1", "input2")
@@ -20,16 +22,11 @@ class MagicConnectionExecutionError(RuntimeError):
     """Maya 节点图无法按计划建立连接时抛出的异常。"""
 
 
-class MayaMagicConnectionAdapter:
+class MayaMagicConnectionAdapter(MayaTextureAdapter, MayaSceneAdapter):
     """对 ``maya.cmds`` 的最小封装，便于服务层和测试替换。"""
 
     def __init__(self, cmds_module=None):
-        if cmds_module is None:
-            try:
-                import maya.cmds as cmds_module
-            except ImportError:
-                raise RuntimeError("MayaMagicConnectionAdapter 只能在 Maya 中使用")
-        self.cmds = cmds_module
+        super(MayaMagicConnectionAdapter, self).__init__(cmds_module)
 
     def selected_nodes_by_type(self):
         selected = self.cmds.ls(sl=True) or []
@@ -40,13 +37,13 @@ class MayaMagicConnectionAdapter:
         return result
 
     def file_texture_path(self, node_name):
-        return self.cmds.getAttr(node_name + ".fileTextureName")
+        return super(MayaMagicConnectionAdapter, self).file_texture_path(node_name)
 
     def is_shift_pressed(self):
         return bool(self.cmds.getModifiers() & 1)
 
     def create_shader(self, shader_type):
-        return self.cmds.shadingNode(shader_type, asShader=True)
+        return self.create_shading_node(shader_type, asShader=True)
 
     def create_node(self, node_type, name=None):
         if name:
@@ -55,7 +52,7 @@ class MayaMagicConnectionAdapter:
 
     def connect(self, source_node, source_port, target_node, target_port):
         try:
-            self.cmds.connectAttr(
+            self.connect_attr(
                 source_node + "." + source_port,
                 target_node + "." + target_port,
                 force=True,
@@ -65,22 +62,21 @@ class MayaMagicConnectionAdapter:
             return False
 
     def set_udim(self, node_name, enabled):
-        self.cmds.setAttr(node_name + ".uvTilingMode", 3 if enabled else 0)
+        return super(MayaMagicConnectionAdapter, self).set_udim(node_name, enabled)
 
     def set_color_space(self, node_name, color_space):
-        self.cmds.setAttr(node_name + ".colorSpace",
-                          color_space, type="string")
-        self.cmds.setAttr(node_name + ".alphaIsLuminance", 1)
-        self.cmds.setAttr(node_name + ".ignoreColorSpaceFileRules", 1)
+        return super(MayaMagicConnectionAdapter, self).set_color_space(
+            node_name, color_space
+        )
 
     def rename_node(self, old_name, new_name):
-        return self.cmds.rename(old_name, new_name)
+        return self.rename(old_name, new_name)
 
     def report(self, message, warning=False):
         if warning:
-            self.cmds.warning(message)
+            self.warning(message)
         else:
-            self.cmds.warning(message)
+            self.warning(message)
 
 
 class MayaMagicConnectionExecutor:

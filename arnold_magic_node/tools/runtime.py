@@ -15,7 +15,7 @@ from ..core.paths import (
     user_settings_dir,
 )
 from ..core.storage import ensure_directory, load_json, save_json
-from ..maya.environment import get_user_data_root
+from ..maya.environment import MayaEnvironmentAdapter, get_user_data_root
 
 
 SOFTWARE_STATE = "Release"
@@ -116,12 +116,11 @@ def load_language(paths=None):
     return load_json(os.path.join(paths.languages_path, language_config + ".json"))
 
 
-def initialize_language_config():
+def initialize_language_config(environment=None, paths=None):
     """按 Maya 当前界面语言创建缺失的语言选择文件。"""
 
-    import maya.cmds as cmds
-
-    paths = get_runtime_paths()
+    environment = environment or MayaEnvironmentAdapter()
+    paths = paths or get_runtime_paths(environment.user_data_root())
     available_languages = [
         filename
         for filename in os.listdir(paths.languages_path)
@@ -130,7 +129,7 @@ def initialize_language_config():
     available_languages = {
         os.path.splitext(filename)[0] for filename in available_languages
     }
-    maya_language = cmds.about(uil=True)
+    maya_language = environment.ui_language()
     selected_language = (
         maya_language if maya_language in available_languages else "en_US"
     )
@@ -141,13 +140,11 @@ def initialize_language_config():
         save_json(language_config_path, {"language_config": selected_language})
 
 
-def is_modifier_pressed(modifier, modifiers=None):
+def is_modifier_pressed(modifier, modifiers=None, environment=None):
     """检测 Maya 当前的修饰键状态。"""
 
     if modifiers is None:
-        import maya.cmds as cmds
-
-        modifiers = cmds.getModifiers()
+        modifiers = (environment or MayaEnvironmentAdapter()).modifiers()
     return bool(modifiers & modifier)
 
 

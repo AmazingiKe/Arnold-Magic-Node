@@ -51,7 +51,7 @@ class MayaNodeAdapter(object):
         return self.cmds.shadingNode(node_type, **kwargs)
 
     def connect_attr(self, source, target, force=True):
-        return self.cmds.connectAttr(source, target, f=force)
+        return self.cmds.connectAttr(source, target, force=force)
 
     def delete(self, *nodes):
         return self.cmds.delete(*nodes)

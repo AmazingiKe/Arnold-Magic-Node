@@ -25,6 +25,32 @@ class MagicConnectionResult:
     created_material: bool
 
 
+def connect_texture_nodes(
+    node_list,
+    material_name,
+    config,
+    adapter,
+    shading_engine_name=None,
+):
+    """为显式 file 节点构建 core 计划并通过 Maya 适配器执行。"""
+
+    texture_files = {
+        node_name: adapter.file_texture_path(node_name)
+        for node_name in node_list
+    }
+    plan = build_magic_connection_plan(
+        texture_files=texture_files,
+        filter_data=config["texture_filter_params"],
+        processing_data=config["proc_node_config"]["params"],
+        magic_connection_options=config["magic_conn_config"]["conn_params"],
+        processing_options=config["proc_node_config"]["conn_params"],
+        material_name=material_name,
+        shading_engine_name=shading_engine_name,
+    )
+    MayaMagicConnectionExecutor(adapter).execute(plan)
+    return {texture.node_name: texture.channel for texture in plan.textures}
+
+
 class MagicConnectionTool:
     """组合 core、配置和 Maya 适配器，执行一次 Magic Connection。"""
 
@@ -179,6 +205,7 @@ magic_connection_button = run_magic_connection
 __all__ = [
     "MagicConnectionResult",
     "MagicConnectionTool",
+    "connect_texture_nodes",
     "magic_connection_button",
     "run_magic_connection",
 ]

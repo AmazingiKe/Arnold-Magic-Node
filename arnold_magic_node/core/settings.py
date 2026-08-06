@@ -1,9 +1,8 @@
 # ______________________________________________________________________________>>> 导入必要库
 import os # 操作系统文件路径相关操作
 
-from .core.paths import user_preset_dir, user_settings_dir
-from .core.storage import save_json
-from .maya.environment import get_user_data_root
+from .paths import user_preset_dir, user_settings_dir
+from .storage import save_json
 
 
 
@@ -257,7 +256,7 @@ Arnold_Magic_Settings = {
                                      'scale','slidemap', 'density', 'beauty', 'x', 'y', 'z' ,'A', 'B',
                                     'C', 'bumpMap', 'temperature',  'surfaceShader'],
             # 优先级组合
-            "priority_order" : {'outColor': 'input' , 'outColor': 'input1'}
+            "priority_order" : {'outColor': 'input1'}
         }
     },
 
@@ -308,11 +307,10 @@ def detecting_initial_config_files(path, filename, data):
         save_json(abs_path, data)
 
 # ______________________________________________________________________________>>> 主程序入口
-def Main_program():
+def initialize_default_settings(user_root):
     """
     主程序，负责初始化配置文件。
     """
-    user_root = get_user_data_root()
     settings_data = user_settings_dir(user_root)
     detecting_initial_config_files(settings_data, 'Arnold_Magic_Settings', Arnold_Magic_Settings)
     detecting_initial_config_files(
@@ -320,3 +318,10 @@ def Main_program():
         'default',
         Arnold_Magic_Settings,
     )
+
+
+__all__ = [
+    "Arnold_Magic_Settings",
+    "detecting_initial_config_files",
+    "initialize_default_settings",
+]

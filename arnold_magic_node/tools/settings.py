@@ -2,15 +2,15 @@
 
 import os
 
+from ..core.settings import initialize_default_settings as initialize_settings_files
 from .runtime import AMS_CONFIG, get_runtime_paths
 
 
 def initialize_default_settings():
     """按需创建缺失的默认用户配置与预设。"""
 
-    from .. import default_config
-
-    return default_config.Main_program()
+    paths = get_runtime_paths()
+    return initialize_settings_files(paths.user_data_root)
 
 
 def reset_settings():

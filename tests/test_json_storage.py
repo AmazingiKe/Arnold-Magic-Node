@@ -136,7 +136,7 @@ class DataManagerIntegrationTests(unittest.TestCase):
 
 class DefaultConfigIntegrationTests(unittest.TestCase):
     def test_complete_default_config_round_trips_through_json(self):
-        from arnold_magic_node import default_config
+        from arnold_magic_node.core import settings as default_config
 
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "default.json"
@@ -149,7 +149,7 @@ class DefaultConfigIntegrationTests(unittest.TestCase):
             )
 
     def test_initializer_creates_and_repairs_json_config(self):
-        from arnold_magic_node import default_config
+        from arnold_magic_node.core import settings as default_config
 
         with tempfile.TemporaryDirectory() as directory:
             data = {"setting": "默认值"}

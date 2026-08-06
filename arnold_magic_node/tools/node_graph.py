@@ -1,7 +1,6 @@
 """快速连接与 Arnold 节点混合工具。"""
 
-import maya.cmds as cmds
-
+from ..maya.nodes import MayaNodeAdapter
 from .feedback import FeedbackPrompt
 from .runtime import load_config
 from .selection import process_selected_nodes
@@ -10,19 +9,19 @@ from .selection import process_selected_nodes
 class QuickConnectTool(object):
     """按选择顺序尝试连接相邻的两个节点。"""
 
-    def __init__(self):
-        self.config = load_config()["node_connection_mixer_config"][
+    def __init__(self, adapter=None, config=None):
+        self.adapter = adapter or MayaNodeAdapter()
+        self.config = config or load_config()["node_connection_mixer_config"][
             "quick_connect_node_parms"
         ]
 
-    @staticmethod
-    def get_selected_nodes():
-        return cmds.ls(selection=True) or []
+    def get_selected_nodes(self):
+        return self.adapter.list_nodes(selection=True)
 
     def run(self):
         nodes = self.get_selected_nodes()
         if len(nodes) < 2:
-            cmds.warning("至少需要两个节点来建立连接！")
+            self.adapter.warning("至少需要两个节点来建立连接！")
             return
 
         for source_node, destination_node in zip(nodes, nodes[1:]):
@@ -31,16 +30,12 @@ class QuickConnectTool(object):
                 "priority_order"
             ].items():
                 if not (
-                    cmds.attributeQuery(
-                        output_attribute, node=source_node, exists=True
-                    )
-                    and cmds.attributeQuery(
-                        input_attribute, node=destination_node, exists=True
-                    )
+                    self.adapter.attribute_exists(source_node, output_attribute)
+                    and self.adapter.attribute_exists(destination_node, input_attribute)
                 ):
                     continue
                 try:
-                    cmds.connectAttr(
+                    self.adapter.connect_attr(
                         "{}.{}".format(source_node, output_attribute),
                         "{}.{}".format(destination_node, input_attribute),
                     )
@@ -64,16 +59,12 @@ class QuickConnectTool(object):
                     break
                 for input_attribute in self.config["input_port"]:
                     if not (
-                        cmds.attributeQuery(
-                            output_attribute, node=source_node, exists=True
-                        )
-                        and cmds.attributeQuery(
-                            input_attribute, node=destination_node, exists=True
-                        )
+                        self.adapter.attribute_exists(source_node, output_attribute)
+                        and self.adapter.attribute_exists(destination_node, input_attribute)
                     ):
                         continue
                     try:
-                        cmds.connectAttr(
+                        self.adapter.connect_attr(
                             "{}.{}".format(source_node, output_attribute),
                             "{}.{}".format(destination_node, input_attribute),
                         )
@@ -90,7 +81,7 @@ class QuickConnectTool(object):
                     except Exception:
                         continue
             if not connected:
-                cmds.warning(
+                self.adapter.warning(
                     "{} → {} 未找到可连接属性，已跳过。".format(
                         source_node, destination_node
                     )
@@ -129,8 +120,9 @@ class NodeMixTool(object):
         "outValueY", "outValueZ",
     )
 
-    def __init__(self):
-        self.feedback = FeedbackPrompt()
+    def __init__(self, adapter=None):
+        self.adapter = adapter or MayaNodeAdapter()
+        self.feedback = FeedbackPrompt(self.adapter)
         self.handlers = {
             "intelligent_mix": self.intelligent_mix_process,
             "mask_mix": self.mask_mix_process,
@@ -158,18 +150,18 @@ class NodeMixTool(object):
                 self.feedback.CPW("未知的节点类型：{}".format(node_type))
 
     def handle_utility_shader(self, nodes):
-        modifiers = cmds.getModifiers()
+        modifiers = self.adapter.modifiers()
         if modifiers == 8:
             self.handle_grayscale_shader_mix(nodes)
         else:
             self.handle_color_shader_mix(nodes)
 
     def handle_color_shader_mix(self, nodes):
-        mix_node = cmds.createNode("aiLayerRgba", name="shader_mix")
+        mix_node = self.adapter.create_node("aiLayerRgba", name="shader_mix")
         for index, node_name in enumerate(nodes, start=1):
             for output_port in self.COLOR_OUTPUT_PORTS:
                 try:
-                    cmds.connectAttr(
+                    self.adapter.connect_attr(
                         "{}.{}".format(node_name, output_port),
                         "{}.input{}".format(mix_node, index),
                         force=True,
@@ -179,11 +171,11 @@ class NodeMixTool(object):
                     pass
 
     def handle_grayscale_shader_mix(self, nodes):
-        mix_node = cmds.createNode("aiLayerFloat", name="grays_shader_mix")
+        mix_node = self.adapter.create_node("aiLayerFloat", name="grays_shader_mix")
         for index, node_name in enumerate(nodes, start=1):
             for output_port in self.GRAY_OUTPUT_PORTS:
                 try:
-                    cmds.connectAttr(
+                    self.adapter.connect_attr(
                         "{}.{}".format(node_name, output_port),
                         "{}.input{}".format(mix_node, index),
                         force=True,
@@ -192,19 +184,17 @@ class NodeMixTool(object):
                 except Exception:
                     pass
 
-    @staticmethod
-    def handle_shader(nodes):
-        mix_node = cmds.createNode("aiLayerShader", name="shader_mix")
+    def handle_shader(self, nodes):
+        mix_node = self.adapter.create_node("aiLayerShader", name="shader_mix")
         for index, node_name in enumerate(nodes, start=1):
-            cmds.connectAttr(
+            self.adapter.connect_attr(
                 node_name + ".outColor",
                 "{}.input{}".format(mix_node, index),
                 force=True,
             )
 
-    @staticmethod
-    def _create_node(node_type, name):
-        return cmds.createNode(node_type, name=name)
+    def _create_node(self, node_type, name):
+        return self.adapter.create_node(node_type, name=name)
 
     def handle_mix(self, node_type, nodes):
         mapping = {
@@ -215,7 +205,7 @@ class NodeMixTool(object):
         mix_type, name, output_port = mapping[node_type]
         mix_node = self._create_node(mix_type, name)
         for index, node_name in enumerate(nodes, start=1):
-            cmds.connectAttr(
+            self.adapter.connect_attr(
                 "{}.{}".format(node_name, output_port),
                 "{}.input{}".format(mix_node, index),
                 force=True,
@@ -226,7 +216,9 @@ class NodeMixTool(object):
         print("mask_mix_process")
 
     def run(self, mix_mode):
-        selected_nodes = process_selected_nodes()
+        selected_nodes = process_selected_nodes(
+            adapter=self.adapter, feedback=self.feedback
+        )
         if not selected_nodes:
             return self.feedback.CPW("至少需要两个节点来建立连接！")
         nodes = []
@@ -246,16 +238,16 @@ class NodeMixTool(object):
         return self.run(mix_mod)
 
 
-def quick_connect_nodes():
-    return QuickConnectTool().run()
+def quick_connect_nodes(adapter=None):
+    return QuickConnectTool(adapter=adapter).run()
 
 
-def intelligent_mix():
-    return NodeMixTool().run("intelligent_mix")
+def intelligent_mix(adapter=None):
+    return NodeMixTool(adapter=adapter).run("intelligent_mix")
 
 
-def mask_node_mix():
-    return NodeMixTool().run("mask_mix")
+def mask_node_mix(adapter=None):
+    return NodeMixTool(adapter=adapter).run("mask_mix")
 
 
 # 旧入口兼容名称。

@@ -3,8 +3,7 @@
 import os
 import re
 
-import maya.cmds as cmds
-
+from ..maya.nodes import MayaNodeAdapter
 from .feedback import FeedbackPrompt
 from .runtime import DataManager, get_runtime_paths, load_config, load_language
 
@@ -15,8 +14,9 @@ ATTRIBUTE_TYPES = ("bool", "int", "float", "string")
 class RenderingPresetTool(object):
     """读取一个保存的渲染预设并写入当前 Maya 场景。"""
 
-    def __init__(self, preset_name):
-        self.feedback = FeedbackPrompt()
+    def __init__(self, preset_name, adapter=None, feedback=None):
+        self.adapter = adapter or MayaNodeAdapter()
+        self.feedback = feedback or FeedbackPrompt(self.adapter)
         self.data_manager = DataManager()
         self.paths = get_runtime_paths()
         self.preset_name = preset_name
@@ -46,7 +46,7 @@ class RenderingPresetTool(object):
                     )
                 )
 
-        if not cmds.objExists("defaultArnoldRenderOptions"):
+        if not self.adapter.object_exists("defaultArnoldRenderOptions"):
             self.feedback.CPW(self.language["__init__"]["03"])
             return
 
@@ -100,16 +100,18 @@ class RenderingPresetTool(object):
     def _set_attributes(self, node_name, attributes):
         for attribute_name, value in attributes.items():
             try:
-                cmds.setAttr("{}.{}".format(node_name, attribute_name), value)
+                self.adapter.set_attr(
+                    "{}.{}".format(node_name, attribute_name), value
+                )
                 continue
             except Exception:
                 pass
             for attribute_type in ATTRIBUTE_TYPES:
                 try:
-                    cmds.setAttr(
+                    self.adapter.set_attr(
                         "{}.{}".format(node_name, attribute_name),
                         value,
-                        type=attribute_type,
+                        value_type=attribute_type,
                     )
                     break
                 except Exception:
@@ -130,41 +132,43 @@ class RenderingPresetTool(object):
         cryptomatte_node_name = None
         for aov_name in aov_data:
             if re.search("CRYPTO", aov_name.upper(), re.IGNORECASE):
-                cryptomatte_node_name = cmds.shadingNode("cryptomatte", app=True)
+                cryptomatte_node_name = self.adapter.create_shading_node(
+                    "cryptomatte", app=True
+                )
                 break
 
         aov_index = 0
         for aov_key, values in aov_data.items():
-            aov_node = cmds.shadingNode(
+            aov_node = self.adapter.create_shading_node(
                 "aiAOV", app=True, name=values[0]["aov_name"]
             )
             self._set_attributes(aov_node, values[1]["aov_attributes"])
 
             driver_data = values[2]["driver"]
-            driver_node = cmds.shadingNode(
+            driver_node = self.adapter.create_shading_node(
                 "aiAOVDriver", app=True, name=driver_data["driver_name"]
             )
             self._set_attributes(driver_node, driver_data["driver_attribute"])
-            cmds.connectAttr(
+            self.adapter.connect_attr(
                 driver_node + ".message", aov_node + ".outputs[0].driver"
             )
 
             filter_data = values[3]["filter"]
-            filter_node = cmds.shadingNode(
+            filter_node = self.adapter.create_shading_node(
                 "aiAOVFilter", app=True, name=filter_data["filter_name"]
             )
             self._set_attributes(filter_node, filter_data["filter_attribute"])
-            cmds.connectAttr(
+            self.adapter.connect_attr(
                 filter_node + ".message", aov_node + ".outputs[0].filter"
             )
-            cmds.connectAttr(
+            self.adapter.connect_attr(
                 aov_node + ".message",
                 "defaultArnoldRenderOptions.aovList[{}]".format(aov_index),
                 force=True,
             )
 
             if re.search("CRYPTO", aov_key.upper(), re.IGNORECASE):
-                cmds.connectAttr(
+                self.adapter.connect_attr(
                     cryptomatte_node_name + ".outColor",
                     aov_node + ".defaultValue",
                     force=True,
@@ -183,22 +187,22 @@ class RenderingPresetTool(object):
             "defaultViewColorManager", "defaultArnoldDisplayDriver",
             "defaultArnoldDriver", "defaultArnoldFilter", "defaultArnoldRenderOptions",
         }
-        aov_nodes = cmds.listConnections(
+        aov_nodes = self.adapter.list_connections(
             "defaultArnoldRenderOptions.aovList", source=True
         )
-        if aov_nodes is None:
+        if not aov_nodes:
             return
 
         nodes_to_delete = list(aov_nodes)
         for aov_node in aov_nodes:
             nodes_to_delete.extend(
-                cmds.listConnections(
+                self.adapter.list_connections(
                     "{}.outputs[0].filter".format(aov_node), source=True
                 )
                 or []
             )
             nodes_to_delete.extend(
-                cmds.listConnections(
+                self.adapter.list_connections(
                     "{}.outputs[0].driver".format(aov_node), source=True
                 )
                 or []
@@ -207,33 +211,34 @@ class RenderingPresetTool(object):
         for node_name in nodes_to_delete:
             try:
                 if node_name not in nodes_to_keep:
-                    cmds.delete(node_name)
+                    self.adapter.delete(node_name)
             except Exception:
                 pass
 
 
-def apply_rendering_preset(preset_name):
+def apply_rendering_preset(preset_name, adapter=None):
     """执行指定的渲染预设。"""
 
-    tool = RenderingPresetTool(preset_name)
+    tool = RenderingPresetTool(preset_name, adapter=adapter)
     tool.apply()
     return tool
 
 
-def toggle_aovs():
+def toggle_aovs(adapter=None, feedback=None):
     """切换当前 Arnold AOV 的 enabled 状态。"""
 
-    feedback = FeedbackPrompt()
-    if not cmds.objExists("defaultArnoldRenderOptions.aovList"):
+    adapter = adapter or MayaNodeAdapter()
+    feedback = feedback or FeedbackPrompt(adapter)
+    if not adapter.object_exists("defaultArnoldRenderOptions.aovList"):
         return feedback.CPW("未创建AOV")
-    connections = cmds.listConnections(
+    connections = adapter.list_connections(
         "defaultArnoldRenderOptions.aovList", source=True
     )
-    if connections is None:
+    if not connections:
         return feedback.CPW("未创建AOV")
     for aov_node in connections:
-        enabled = cmds.getAttr(aov_node + ".enabled")
-        cmds.setAttr(aov_node + ".enabled", 0 if enabled == 1 else 1)
+        enabled = adapter.get_attr(aov_node + ".enabled")
+        adapter.set_attr(aov_node + ".enabled", 0 if enabled == 1 else 1)
 
 
 # 旧调用名称，便于现有 Shelf 命令平滑切换。

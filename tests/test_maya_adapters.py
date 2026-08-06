@@ -51,7 +51,9 @@ class MayaNodeAdapterTests(unittest.TestCase):
         self.cmds.setAttr.assert_called_once_with(
             "node.attr", "text", type="string"
         )
-        self.cmds.connectAttr.assert_called_once_with("a.out", "b.input", f=True)
+        self.cmds.connectAttr.assert_called_once_with(
+            "a.out", "b.input", force=True
+        )
 
 
 class MayaTextureAdapterTests(unittest.TestCase):
