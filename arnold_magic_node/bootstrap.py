@@ -18,10 +18,10 @@ def main():
 
     import maya.cmds as cmds
 
-    from .tools.settings import initialize_default_settings
+    from .tools.settings import ensure_user_settings
 
     detecting_language()
-    initialize_default_settings()
+    ensure_user_settings()
 
     from .ui import workspace
     from .ui.main_window import MainWindow

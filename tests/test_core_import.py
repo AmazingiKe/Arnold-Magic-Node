@@ -69,10 +69,16 @@ class CoreImportTests(unittest.TestCase):
         self.assertIn("core.paths", imports)
         self.assertIn("core.storage", imports)
 
-    def test_settings_tool_uses_core_settings_instead_of_root_module(self):
-        imports = import_modules(PACKAGE_ROOT / "tools" / "settings.py")
-        self.assertIn("core.settings", imports)
-        self.assertNotIn("default_config", imports)
+    def test_settings_tool_uses_storage_and_bundled_config_resource(self):
+        settings_path = PACKAGE_ROOT / "tools" / "settings.py"
+        imports = import_modules(settings_path)
+        self.assertIn("core.paths", imports)
+        self.assertIn("core.storage", imports)
+        self.assertNotIn("core.settings", imports)
+        self.assertFalse((PACKAGE_ROOT / "core" / "settings.py").exists())
+        source = settings_path.read_text(encoding="utf-8-sig")
+        self.assertNotIn("detecting_initial_config_files", source)
+        self.assertNotIn("initialize_default_settings", source)
 
     def test_tools_do_not_depend_on_the_deleted_monolith(self):
         for path in python_files("tools"):

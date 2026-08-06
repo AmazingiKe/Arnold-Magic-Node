@@ -57,7 +57,6 @@ class RuntimePaths:
     user_data_root: str
     settings_path: str
     render_preset_path: str
-    settings_presets_path: str
     aov_cache_path: str
     icon_path: str
     languages_path: str
@@ -73,9 +72,6 @@ def get_runtime_paths(user_root=None):
         user_data_root=os.path.normpath(str(user_root)),
         settings_path=os.path.normpath(str(user_settings_dir(user_root))),
         render_preset_path=os.path.normpath(str(user_preset_dir(user_root, "render"))),
-        settings_presets_path=os.path.normpath(
-            str(user_preset_dir(user_root, "settings"))
-        ),
         aov_cache_path=os.path.normpath(str(user_aov_cache_path(user_root))),
         icon_path=os.path.normpath(str(ICONS_ROOT)),
         languages_path=os.path.normpath(str(LANGUAGES_ROOT)),

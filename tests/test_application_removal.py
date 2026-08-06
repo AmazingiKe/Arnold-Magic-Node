@@ -74,6 +74,7 @@ class ApplicationRemovalTests(unittest.TestCase):
         self.assertTrue(
             paths.render_preset_path.endswith("arnold_magic_node\\presets\\render")
         )
+        self.assertFalse(hasattr(paths, "settings_presets_path"))
 
     def test_runtime_data_manager_delegates_to_core_storage(self):
         from arnold_magic_node.tools.runtime import DataManager

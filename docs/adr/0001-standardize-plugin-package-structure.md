@@ -4,6 +4,7 @@
 - 日期：2026-08-05
 - 修订：2026-08-05，将具名 Python 包提升到仓库根目录，移除 `scripts/` 承载层；运行时数据路径由 ADR-0002 单独决策
 - 修订：2026-08-06，完成旧单体拆分，以 `tools` 作为功能编排层并固化最终依赖边界
+- 修订：2026-08-06，将默认设置改为根级 `config/` 只读 JSON，并删除设置预设菜单
 - 范围：Arnold Magic Node V2 结构重构
 
 ## 背景
@@ -40,6 +41,9 @@ Arnold-Magic-Node/
 ├─ installer.py
 │
 ├─ icons/
+├─ config/
+│  ├─ Arnold_Magic_Settings.json
+│  └─ shader_convert_map.json
 │
 ├─ arnold_magic_node/
 │  ├─ __init__.py
@@ -53,7 +57,6 @@ Arnold-Magic-Node/
 │  │  ├─ path_detection.py
 │  │  ├─ paths.py
 │  │  ├─ storage.py
-│  │  ├─ settings.py
 │  │  ├─ matching.py
 │  │  └─ similarity.py
 │  │
@@ -100,9 +103,9 @@ Arnold-Magic-Node/
    └─ adr/
 ```
 
-该目录是最终目标结构，不要求第一阶段一次性创建全部空目录和空模块。只有开始迁移对应职责时，才创建相应文件。目标树没有列出现阶段仍位于仓库根目录的 `Datas/` 和 `config/`；它们与最终 `resources/`、用户配置目录之间的映射尚未决定，不得根据目录名称直接搬迁。
+该目录是最终目标结构，不要求第一阶段一次性创建全部空目录和空模块。只有开始迁移对应职责时，才创建相应文件。根级 `config/` 保存随插件发布的只读配置；用户修改后的设置仍写入 ADR-0002 定义的 Maya 用户目录。
 
-截至 2026-08-06，本次源码分层已经完成。项目采用 `core`、`maya`、`tools`、`ui` 和 `bootstrap` 五层；`tools` 是功能编排层，替代早期草案中的 `services` 名称。`application.py`、`arnold_magic_core.py` 和根级 `default_config.py` 均已删除，不保留兼容转发模块。默认设置实现现位于 `core/settings.py`。
+截至 2026-08-06，本次源码分层已经完成。项目采用 `core`、`maya`、`tools`、`ui` 和 `bootstrap` 五层；`tools` 是功能编排层，替代早期草案中的 `services` 名称。`application.py`、`arnold_magic_core.py`、根级 `default_config.py` 和过渡期 `core/settings.py` 均已删除，不保留兼容转发模块。默认设置数据现位于 `config/Arnold_Magic_Settings.json`，初始化由 `tools/settings.py` 编排。
 
 仓库根级 `Datas/` 仅作为旧版本地数据遗留目录，不再是生产运行时路径；`config/` 与 `icons/` 仍是仓库根级只读资源。
 
@@ -170,7 +173,7 @@ arnold_magic_node/
 - 常量和纯数据模型。
 - 路径计算规则。
 - 标准库 JSON 存储。
-- 设置读取、默认值合并和配置迁移。
+- 设置路径与标准库 JSON 存储。
 - 国际化资源选择和读取。
 - 贴图名称标准化、关键词匹配和编辑距离。
 - 名称、分辨率、格式及创建时间的加权相似度计算。
@@ -288,11 +291,10 @@ Maya 用户目录由 `maya/environment.py` 查询，再由 `bootstrap` 传给设
 
 Maya、Shelf 和插件界面可直接访问的公共静态图标放在仓库根目录（同时也是 Maya 模块根目录）的 `icons/`。该目录只包含随插件发布的只读图标，不存放运行时生成的数据。
 
-最终状态下，其余随插件发布且只读的内容放入 `arnold_magic_node/resources/`：
+随插件发布且只读的内容按访问方式存放：
 
 - `i18n/`：语言文件。
-- `defaults/`：默认设置。
-- `mappings/`：材质和节点映射。
+- 根级 `config/`：默认设置与材质转换映射。
 
 最终状态下，运行时可写数据不得写入插件安装目录。用户配置目录使用：
 
@@ -306,7 +308,6 @@ Path(cmds.internalVar(userPrefDir=True)) / "arnold_magic_node"
 arnold_magic_node/
 ├─ settings/
 ├─ presets/
-│  ├─ settings/
 │  └─ render/
 ├─ cache/
 └─ logs/

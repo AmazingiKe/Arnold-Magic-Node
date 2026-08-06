@@ -1,0 +1,471 @@
+{
+  "texture_filter_params": {
+    "base": [
+      "BASE_MASK"
+    ],
+    "baseColor": [
+      "ALBEDO",
+      "BASE_COLOR",
+      "BASECOLOR",
+      "DIFFUSE",
+      "COLOR"
+    ],
+    "diffuseRoughness": [
+      "DIFFUSEROUGHNESS"
+    ],
+    "metalness": [
+      "METALNESS",
+      "METALLIC",
+      "METALIC",
+      "METAL",
+      "DIFFUSE"
+    ],
+    "specular": [
+      "SPECULAR",
+      "SPEC"
+    ],
+    "specularColor": [
+      "SPECULARCOLOR"
+    ],
+    "specularRoughness": [
+      "ROUGHNESS",
+      "ROUGH",
+      "REFL"
+    ],
+    "specularAnisotropy": [
+      "SPECULARANISOTROPY"
+    ],
+    "specularRotation": [
+      "SPECULARROTATION"
+    ],
+    "subsurface": [
+      "SUBSURFACE",
+      "SSS"
+    ],
+    "subsurfaceColor": [
+      "TRANSLUCENCY",
+      "SUBSURFACECOLOR"
+    ],
+    "subsurfaceRadius": [
+      "SUBSURFACERADIUS",
+      "SUBSURFACE-RADIUS",
+      "SUBSURFACE-RAD"
+    ],
+    "emission": [
+      "EMISSION",
+      "ILLUMINATION",
+      "GLOW",
+      "SELF_ILLUMINATION"
+    ],
+    "emissionColor": [
+      "EMISSIONCOLOR",
+      "GLOW_COLOR"
+    ],
+    "opacity": [
+      "ALPHA",
+      "ALPHAMASKED",
+      "MASK",
+      "OPACITY",
+      "TRANSPARENCY",
+      "ALPHA_MASK"
+    ],
+    "normalCamera": [
+      "NORMAL",
+      "NORMALMAP",
+      "NRM",
+      "NORMALMAP_BUMP"
+    ],
+    "ao": [
+      "AO",
+      "AMBIENT_OCCLUSION",
+      "OCC",
+      "AMBIENT",
+      "OCCLUSION"
+    ],
+    "bump": [
+      "BUMP",
+      "BMP"
+    ],
+    "displacement": [
+      "HEIGHT",
+      "DISPLACEMENT",
+      "DISP",
+      "DEPTH",
+      "HEIGHTMAP"
+    ]
+  },
+  "color_space_params": {
+    "config": [
+      "sRGB",
+      "Gamma 2.2 / Rec.709",
+      "Rec.1886 / Rec.709 video",
+      "AdobeRGB",
+      "PCI-P3 D65",
+      "ACEScg",
+      "ACES2065-1",
+      "scene-linear Rec.709-sRGB",
+      "scene-linear DCI-P3 D65",
+      "scene-linear Rec.2020",
+      "Raw",
+      "ACEScct",
+      "Utility - Raw",
+      "Utility - linear - sRGB",
+      "Utility - sRGB - Texture"
+    ],
+    "params": {
+      "base": "Raw",
+      "baseColor": "sRGB",
+      "diffuseRoughness": "Raw",
+      "metalness": "Raw",
+      "specular": "Raw",
+      "specularColor": "sRGB",
+      "specularRoughness": "Raw",
+      "specularAnisotropy": "Raw",
+      "specularRotation": "Raw",
+      "subsurface": "Raw",
+      "subsurfaceColor": "sRGB",
+      "subsurfaceRadius": "Raw",
+      "emission": "Raw",
+      "emissionColor": "sRGB",
+      "opacity": "Raw",
+      "normalCamera": "Raw",
+      "ao": "Raw",
+      "bump": "Raw",
+      "displacement": "Raw"
+    }
+  },
+  "magic_conn_config": {
+    "conn_params": {
+      "base": false,
+      "baseColor": true,
+      "diffuseRoughness": false,
+      "metalness": true,
+      "specular": false,
+      "specularColor": false,
+      "specularRoughness": true,
+      "specularAnisotropy": false,
+      "specularRotation": false,
+      "subsurface": false,
+      "subsurfaceColor": false,
+      "subsurfaceRadius": false,
+      "emission": false,
+      "emissionColor": false,
+      "opacity": true,
+      "normalCamera": true,
+      "ao": true,
+      "bump": false,
+      "displacement": false
+    },
+    "set_color_space": true,
+    "set_material_name": true,
+    "set_udim": true
+  },
+  "proc_node_config": {
+    "conn_params": {
+      "base": false,
+      "baseColor": true,
+      "diffuseRoughness": false,
+      "metalness": false,
+      "specular": false,
+      "specularColor": false,
+      "specularRoughness": true,
+      "specularAnisotropy": false,
+      "specularRotation": false,
+      "subsurface": false,
+      "subsurfaceColor": false,
+      "subsurfaceRadius": false,
+      "emission": false,
+      "emissionColor": false,
+      "opacity": false,
+      "normalCamera": false,
+      "ao": false,
+      "bump": false,
+      "displacement": true
+    },
+    "params": {
+      "base": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "baseColor": {
+        "NodeList": [
+          "aiColorCorrect"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColor"
+      },
+      "diffuseRoughness": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "metalness": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "specular": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "specularColor": {
+        "NodeList": [
+          "aiColorCorrect"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColor"
+      },
+      "specularRoughness": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "specularAnisotropy": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "specularRotation": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "subsurface": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "subsurfaceColor": {
+        "NodeList": [
+          "aiColorCorrect"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColor"
+      },
+      "subsurfaceRadius": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "emission": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "emissionColor": {
+        "NodeList": [
+          "aiColorCorrect"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColor"
+      },
+      "opacity": {
+        "NodeList": [
+          "aiColorCorrect"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColor"
+      },
+      "normalCamera": {
+        "NodeList": [
+          "aiColorCorrect"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColor"
+      },
+      "ao": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "bump": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      },
+      "displacement": {
+        "NodeList": [
+          "aiRampRgb",
+          "aiRange"
+        ],
+        "InputPort": "input",
+        "OutputPort": "outColorR"
+      }
+    },
+    "first_node_input": [
+      "input",
+      "passthrough"
+    ],
+    "last_node_output": [
+      "outColor",
+      "outAlpha",
+      "outValue",
+      "outTransparency",
+      "outColorR",
+      "outColorG",
+      "outColorB"
+    ]
+  },
+  "path_detection_params": {
+    "exclude_formats": [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".bmp",
+      ".tiff",
+      ".tif",
+      ".exr",
+      ".hdr",
+      ".tga"
+    ],
+    "exclude": [
+      "_PREVIEW",
+      "_preview",
+      "LOD1",
+      "LOD2",
+      "LOD3",
+      "LOD4",
+      "LOD5",
+      "LOD6",
+      "LOD7",
+      "LOD8",
+      "LOD9",
+      "LOD10"
+    ],
+    "detection_excluded": [
+      "Texture",
+      "sRGB",
+      "Raw"
+    ],
+    "similarity_range": 0.1,
+    "similarity_max": 1,
+    "name_weight": 0.55,
+    "resolution_weight": 0.15,
+    "format_weight": 0.05,
+    "creation_time_weight": 0.15,
+    "creation_day_range_tolerance": 30,
+    "auto_max_val": true,
+    "disable_feedback": false,
+    "set_material_name": true,
+    "set_color_space": true,
+    "set_udim": true
+  },
+  "render_preset_params": {
+    "default_rendering_properties_write_options": true,
+    "rendering_properties_write_options": true,
+    "AOV_properties_properties_write_options": true
+  },
+  "node_connection_mixer_config": {
+    "quick_connect_node_parms": {
+      "out_port": [
+        "outColor",
+        "outValue",
+        "outAlpha",
+        "outColorR",
+        "outColorG",
+        "outColorB",
+        "outTransparency"
+      ],
+      "input_port": [
+        "input",
+        "input1",
+        "inputR",
+        "inputG",
+        "inputB",
+        "inputA",
+        "scale",
+        "slidemap",
+        "density",
+        "beauty",
+        "x",
+        "y",
+        "z",
+        "A",
+        "B",
+        "C",
+        "bumpMap",
+        "temperature",
+        "surfaceShader"
+      ],
+      "priority_order": {
+        "outColor": "input1"
+      }
+    }
+  },
+  "optimized_scene_node_name": {
+    "replace_param": [
+      {
+        "case_sensitive": false,
+        "switch_checkbox": true,
+        "target_cont": "prefix_",
+        "replace_cont": ""
+      },
+      {
+        "case_sensitive": false,
+        "switch_checkbox": true,
+        "target_cont": "pasted__",
+        "replace_cont": ""
+      }
+    ]
+  },
+  "general_config": {
+    "GrayScaleTextures": [
+      "base",
+      "diffuseRoughness",
+      "metalness",
+      "specularRoughness",
+      "subsurface",
+      "emission",
+      "ao",
+      "bump",
+      "displacement"
+    ],
+    "ColorTextures": [
+      "baseColor",
+      "specularColor",
+      "subsurfaceColor",
+      "subsurfaceRadius",
+      "emissionColor",
+      "opacity",
+      "normalCamera"
+    ]
+  }
+}

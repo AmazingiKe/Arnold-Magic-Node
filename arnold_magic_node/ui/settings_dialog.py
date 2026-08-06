@@ -1,7 +1,6 @@
 """Arnold Magic Node 设置窗口。"""
 
 import os
-import shutil
 
 from ..tools.feedback import FeedbackPrompt
 from ..tools.runtime import (
@@ -15,7 +14,6 @@ from ..tools.runtime import (
     PLUGIN_UPDATE_DOWNLOAD_URL,
     SOFTWARE_STATE,
     SOFTWARE_VERSION,
-    ensure_runtime_directory,
     get_runtime_paths,
     is_modifier_pressed,
     load_language,
@@ -36,9 +34,7 @@ pluginFeedbackURL = PLUGIN_FEEDBACK_URL
 pluginHelpDocumentURL = PLUGIN_HELP_DOCUMENT_URL
 pluginHomeURL = PLUGIN_HOME_URL
 pluginUpdateDownloadURL = PLUGIN_UPDATE_DOWNLOAD_URL
-settings_presets_path = _runtime_paths.settings_presets_path
 settings_path = _runtime_paths.settings_path
-ensure_directory = ensure_runtime_directory
 process_sl_data = process_selected_nodes
 
 
@@ -112,49 +108,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
 
         self.settings_menu.addAction(self.reset_data_action)
-        # 创建“语言设置”动作
-
-
-
-
-        self.settings_presets_menu = QtWidgets.QMenu("预设", self)
-        # 把它插入 menubar
-        self.main_menu_bar.addMenu(self.settings_presets_menu)
-
-        ensure_directory(settings_presets_path)
-
-        # 遍历预设文件夹，获取所有预设文件名
-        preset_files = [
-            file_name
-            for file_name in os.listdir(settings_presets_path)
-            if file_name.lower().endswith(".json")
-        ]
-        # 遍历预设文件名列表，创建菜单项
-
-        for preset_file in preset_files:
-            preset_name = os.path.splitext(preset_file)[0]  # 去掉文件扩展名
-            action = QAction(preset_name, self)
-            self.settings_presets_menu.addAction(action)
-            # 把默认参数 pf 传进去，body 只用 pf
-            action.triggered.connect(lambda *args, pf=preset_name: self.load_settings_preset(pf))
-
-
-
-
-
-
-
-
-        # —— 关键在这里 ——
-        # 让这个 QMenu 自己响应右键
-        # 为“预设”子菜单启用自定义上下文菜单策略，
-        # 使其在用户右键点击时发出 customContextMenuRequested 信号
-        self.settings_presets_menu.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-
-        # 将 customContextMenuRequested 信号连接到自定义的槽函数 on_settings_presets_context_menu
-        # 当用户在 settings_presets_menu 内部右键时，Qt 会调用该槽并传入点击位置
-        self.settings_presets_menu.customContextMenuRequested.connect(self.on_settings_presets_context_menu)
-
         # 关于菜单及其动作
         self.about_menu = self.main_menu_bar.addMenu(self.language['create_menu']['about_menu']) # 关于
 
@@ -183,253 +136,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.about_menu.addAction(self.plugin_update_download_action)
         self.about_menu.addAction(self.help_document_action)
 
-
-    def on_settings_presets_context_menu(self, pos: QtCore.QPoint):
-        """
-        在 settings_presets_menu 内部右键时触发
-        pos 是菜单内部坐标
-        """
-        # 找到光标下对应的 QAction
-        action = self.settings_presets_menu.actionAt(pos)
-        if action is None:
-            return
-
-        # 你可以根据 action 区分不同的行为
-        # 例如只对 modify_presets/delete_presets 弹菜单
-        # if action == self.add_presets: …
-        preset_name = action.text()
-
-        # 添加预设
-        self.add_presets    = QtWidgets.QAction('添加预设', self)
-        self.add_presets.triggered.connect(lambda *args: self.add_settings_preset())
-
-        # 修改预设
-        self.modify_presets = QtWidgets.QAction('修改预设', self)
-        self.modify_presets.triggered.connect(lambda *args: self.modify_settings_preset(preset_name))
-
-        # 删除预设
-        self.delete_presets = QtWidgets.QAction('删除预设', self)
-        self.delete_presets.triggered.connect(lambda *args: self.delete_settings_preset(preset_name))
-
-        # 打开预设文件夹
-        self.open_presets_folder = QtWidgets.QAction('打开预设文件夹', self)
-        self.open_presets_folder.triggered.connect(lambda *args: os.startfile(settings_presets_path))
-
-        # 构造右键子菜单
-        cmenu = QtWidgets.QMenu(self)
-        # 举例：对任意项都提供“修改”和“删除”两项
-
-        cmenu.addAction(self.add_presets)
-        cmenu.addAction(self.modify_presets)
-        cmenu.addAction(self.delete_presets)
-        cmenu.addAction(self.open_presets_folder)
-        # 在全局坐标下弹出
-        cmenu.exec_( self.settings_presets_menu.mapToGlobal(pos) )
-
-    # 加载预设文件
-    def load_settings_preset(self, preset_file_name):
-        # 构造预设文件所在的目录路径
-        settings_presets_dir = settings_presets_path
-        # 构造具体的预设文件路径
-        preset_file_path = os.path.join(settings_presets_dir, preset_file_name +  ".json")
-
-        # 如果预设文件不存在，直接返回
-        if not os.path.isfile(preset_file_path):
-            return
-
-        # 构造当前配置文件的目标路径（将要替换的旧配置）
-        old_target = os.path.join(settings_path, AMS_Config)
-        ensure_directory(settings_path)
-        # 如果旧配置文件存在，则先删除
-        if os.path.exists(old_target):
-            os.remove(old_target)
-
-        # 复制预设文件到配置目录（settings_path），保留原文件名
-        copied_path = shutil.copy2(preset_file_path, settings_path)
-
-        # 将复制出来的文件重命名为 AMS_Config（正式配置文件名）
-        old_path = copied_path  # 即 settings_path/preset_file_name
-        new_path = old_target  # 即 settings_path/AMS_Config
-        os.rename(old_path, new_path)
-
-    # 添加预设文件
-    def add_settings_preset(self,):
-        """
-        弹出对话框，输入新的预设名称，确认后复制当前配置到 settings_presets 目录，
-        并在 settings_presets_menu 中添加对应 QAction。
-        """
-        # 1. 构造对话框
-        dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle('添加预设')
-        dialog.setModal(True)
-
-        # 垂直布局：第一排输入框，第二排按钮
-        layout = QtWidgets.QVBoxLayout(dialog)
-
-        # 第一排：输入框
-        line_edit = QtWidgets.QLineEdit(dialog)
-        line_edit.setPlaceholderText('请输入预设名称')
-        layout.addWidget(line_edit)
-
-        # 第二排：确定、取消按钮
-        btn_layout = QtWidgets.QHBoxLayout()
-        ok_btn = QtWidgets.QPushButton('确定', dialog)
-        cancel_btn = QtWidgets.QPushButton('取消', dialog)
-        btn_layout.addStretch(1)
-        btn_layout.addWidget(ok_btn)
-        btn_layout.addWidget(cancel_btn)
-        layout.addLayout(btn_layout)
-
-        # 连接按钮信号
-        ok_btn.clicked.connect(dialog.accept)
-        cancel_btn.clicked.connect(dialog.reject)
-
-        # 2. 显示对话框并处理结果
-        if dialog.exec_() != QtWidgets.QDialog.Accepted:
-            return  # 用户取消
-
-        new_name = line_edit.text().strip()
-        if not new_name:
-            QtWidgets.QMessageBox.warning(self, '警告', '预设名称不能为空！')
-            return
-
-        # 3. 准备路径
-        presets_dir = settings_presets_path
-        ensure_directory(presets_dir)
-        src = os.path.join(settings_path, AMS_Config)
-        if not os.path.isfile(src):
-            QtWidgets.QMessageBox.critical(self, '错误', '当前配置文件不存在，无法创建预设！')
-            return
-
-        dst = os.path.join(presets_dir, new_name + ".json")
-        # 防止覆盖已有同名文件
-        if os.path.exists(dst):
-            reply = QtWidgets.QMessageBox.question(
-                self, '覆盖确认',
-                f'预设 "{new_name}" 已存在，是否覆盖？',
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            )
-            if reply != QtWidgets.QMessageBox.Yes:
-                return
-
-        # 4. 复制文件
-        try:
-            shutil.copy2(src, dst)
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, '错误', f'复制失败：{e}')
-            return
-
-        # 5. 在菜单中添加新的 QAction
-        action = QtWidgets.QAction(new_name, self)
-        self.settings_presets_menu.addAction(action)
-        action.triggered.connect(lambda *args, pf=new_name: self.load_settings_preset(pf))
-
-    def modify_settings_preset(self, preset_file_name):
-        """
-        修改预设名称：弹出对话框输入新名称，重命名磁盘上的 JSON 文件，
-        并更新菜单中对应 QAction 的文本和触发行为。
-        """
-        # 1. 找到对应的 QAction
-        target_action = None
-        for act in self.settings_presets_menu.actions():
-            if act.text() == preset_file_name:
-                target_action = act
-                break
-        if target_action is None:
-            return  # 找不到就退出
-
-        # 2. 弹出输入对话框
-        dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle('修改预设名称')
-        dialog.setModal(True)
-        layout = QtWidgets.QVBoxLayout(dialog)
-
-        line_edit = QtWidgets.QLineEdit(dialog)
-        line_edit.setText(preset_file_name)
-        layout.addWidget(line_edit)
-
-        btn_layout = QtWidgets.QHBoxLayout()
-        ok_btn = QtWidgets.QPushButton('确定', dialog)
-        cancel_btn = QtWidgets.QPushButton('取消', dialog)
-        btn_layout.addStretch(1)
-        btn_layout.addWidget(ok_btn)
-        btn_layout.addWidget(cancel_btn)
-        layout.addLayout(btn_layout)
-
-        ok_btn.clicked.connect(dialog.accept)
-        cancel_btn.clicked.connect(dialog.reject)
-
-        if dialog.exec_() != QtWidgets.QDialog.Accepted:
-            return
-
-        new_name = line_edit.text().strip()
-        if not new_name:
-            QtWidgets.QMessageBox.warning(self, '警告', '预设名称不能为空！')
-            return
-        if new_name == preset_file_name:
-            return  # 名称未改动
-
-        # 3. 文件重命名
-        presets_dir = settings_presets_path
-        old_path = os.path.join(presets_dir, preset_file_name + ".json")
-        new_path = os.path.join(presets_dir, new_name + ".json")
-        if not os.path.isfile(old_path):
-            QtWidgets.QMessageBox.critical(self, '错误', '原预设文件不存在！')
-            return
-        if os.path.exists(new_path):
-            reply = QtWidgets.QMessageBox.question(
-                self, '覆盖确认',
-                f'已存在同名预设 "{new_name}"，是否覆盖？',
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            )
-            if reply != QtWidgets.QMessageBox.Yes:
-                return
-            os.remove(new_path)
-        try:
-            os.rename(old_path, new_path)
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, '错误', f'重命名失败：{e}')
-            return
-
-        # 4. 更新 QAction
-        target_action.setText(new_name)
-        try:
-            target_action.triggered.disconnect()
-        except TypeError:
-            # 如果之前没有连接或无法断开，则忽略
-            pass
-        target_action.triggered.connect(lambda *args, pf=new_name: self.load_settings_preset(pf))
-
-    def delete_settings_preset(self, preset_file_name):
-        """
-        删除预设：从磁盘删除 JSON 文件，并从菜单中移除对应 QAction。
-        """
-        # 1. 用户确认
-        reply = QtWidgets.QMessageBox.question(
-            self, '删除预设',
-            f'确认要删除预设 "{preset_file_name}" 吗？此操作不可恢复。',
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-        )
-        if reply != QtWidgets.QMessageBox.Yes:
-            return
-
-        # 2. 删除文件
-        presets_dir = settings_presets_path
-        file_path = os.path.join(presets_dir, preset_file_name + ".json")
-        if os.path.isfile(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(self, '错误', f'删除文件失败：{e}')
-                return
-        else:
-            QtWidgets.QMessageBox.warning(self, '警告', '预设文件不存在，可能已被删除。')
-
-        # 3. 移除菜单项
-        for act in self.settings_presets_menu.actions():
-            if act.text() == preset_file_name:
-                self.settings_presets_menu.removeAction(act)
-                break
 
     def create_widgets(self):
         # 创建选项卡部件

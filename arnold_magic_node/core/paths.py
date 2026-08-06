@@ -11,13 +11,14 @@ from pathlib import Path
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = PACKAGE_ROOT.parent
 ICONS_ROOT = PROJECT_ROOT / "icons"
+CONFIG_ROOT = PROJECT_ROOT / "config"
+DEFAULT_SETTINGS_PATH = CONFIG_ROOT / "Arnold_Magic_Settings.json"
 RESOURCES_ROOT = PACKAGE_ROOT / "resources"
 LANGUAGES_ROOT = RESOURCES_ROOT / "i18n"
 
 USER_DATA_DIRNAME = "arnold_magic_node"
 SETTINGS_DIRNAME = "settings"
 PRESETS_DIRNAME = "presets"
-SETTINGS_PRESETS_DIRNAME = "settings"
 RENDER_PRESETS_DIRNAME = "render"
 LOGS_DIRNAME = "logs"
 AOV_CACHE_FILENAME = "aov_light_group_cache.json"
@@ -44,24 +45,14 @@ def user_presets_dir(user_root):
 
 
 def user_preset_dir(user_root, kind):
-    """Return a settings or render preset directory.
-
-    ``kind`` is deliberately limited to the two currently supported preset
-    categories so new callers cannot silently recreate the old flat folders.
-    """
-    preset_names = {
-        "settings": SETTINGS_PRESETS_DIRNAME,
-        "render": RENDER_PRESETS_DIRNAME,
-    }
-    try:
-        dirname = preset_names[kind]
-    except KeyError:
+    """Return the render preset directory."""
+    if kind != "render":
         raise ValueError("unsupported preset kind: {!r}".format(kind))
-    return user_presets_dir(user_root) / dirname
+    return user_presets_dir(user_root) / RENDER_PRESETS_DIRNAME
 
 
 def user_preset_path(user_root, kind, filename):
-    """Return a settings or render preset file path."""
+    """Return a render preset file path."""
     return user_preset_dir(user_root, kind) / filename
 
 

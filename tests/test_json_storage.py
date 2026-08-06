@@ -13,6 +13,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from arnold_magic_node.core.storage import load_json, save_json
 from arnold_magic_node.tools.runtime import DataManager
+from arnold_magic_node.tools.settings import ensure_user_settings, reset_settings
+
+
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "Arnold_Magic_Settings.json"
 
 
 class JsonStorageTests(unittest.TestCase):
@@ -116,41 +120,59 @@ class DataManagerIntegrationTests(unittest.TestCase):
 
 
 class DefaultConfigIntegrationTests(unittest.TestCase):
-    def test_complete_default_config_round_trips_through_json(self):
-        from arnold_magic_node.core import settings as default_config
+    def test_complete_default_config_is_a_bundled_json_resource(self):
+        default_config = load_json(DEFAULT_CONFIG_PATH)
+
+        self.assertIn("texture_filter_params", default_config)
+        self.assertIn("magic_conn_config", default_config)
+        self.assertIn("general_config", default_config)
+
+    def test_initializer_creates_and_repairs_only_the_main_config(self):
+        default_config = load_json(DEFAULT_CONFIG_PATH)
 
         with tempfile.TemporaryDirectory() as directory:
-            target = Path(directory) / "default.json"
-
-            save_json(target, default_config.Arnold_Magic_Settings)
-
-            self.assertEqual(
-                load_json(target),
-                default_config.Arnold_Magic_Settings,
+            ensure_user_settings(user_root=directory)
+            target = (
+                Path(directory)
+                / "settings"
+                / "Arnold_Magic_Settings.json"
             )
 
-    def test_initializer_creates_and_repairs_json_config(self):
-        from arnold_magic_node.core import settings as default_config
-
-        with tempfile.TemporaryDirectory() as directory:
-            data = {"setting": "默认值"}
-            default_config.detecting_initial_config_files(
-                directory,
-                "settings",
-                data,
-            )
-            target = Path(directory) / "settings.json"
-
-            self.assertEqual(load_json(target), data)
+            self.assertEqual(load_json(target), default_config)
+            self.assertFalse((Path(directory) / "presets" / "settings").exists())
 
             target.write_text("", encoding="utf-8")
-            default_config.detecting_initial_config_files(
-                directory,
-                "settings",
-                data,
-            )
+            ensure_user_settings(user_root=directory)
 
-            self.assertEqual(load_json(target), data)
+            self.assertEqual(load_json(target), default_config)
+
+    def test_initializer_preserves_an_existing_nonempty_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = (
+                Path(directory)
+                / "settings"
+                / "Arnold_Magic_Settings.json"
+            )
+            custom_config = {"custom": True}
+            save_json(target, custom_config)
+
+            result = ensure_user_settings(user_root=directory)
+
+            self.assertIsNone(result)
+            self.assertEqual(load_json(target), custom_config)
+
+    def test_reset_replaces_the_user_config_with_the_bundled_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = (
+                Path(directory)
+                / "settings"
+                / "Arnold_Magic_Settings.json"
+            )
+            save_json(target, {"custom": True})
+
+            reset_settings(user_root=directory)
+
+            self.assertEqual(load_json(target), load_json(DEFAULT_CONFIG_PATH))
 
 
 class JsonMigrationContractTests(unittest.TestCase):

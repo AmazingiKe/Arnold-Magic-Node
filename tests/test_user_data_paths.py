@@ -20,14 +20,13 @@ class UserDataPathTests(unittest.TestCase):
                 Path(directory) / "arnold_magic_node",
             )
 
-    def test_settings_and_presets_are_converged(self):
+    def test_settings_and_render_presets_are_converged(self):
         root = Path("maya-user") / "arnold_magic_node"
 
         self.assertEqual(
             user_settings_path(root, "Arnold_Magic_Settings.json"),
             root / "settings" / "Arnold_Magic_Settings.json",
         )
-        self.assertEqual(user_preset_dir(root, "settings"), root / "presets" / "settings")
         self.assertEqual(user_preset_dir(root, "render"), root / "presets" / "render")
 
     def test_single_file_runtime_data_is_not_wrapped_in_extra_directories(self):
@@ -38,8 +37,9 @@ class UserDataPathTests(unittest.TestCase):
         self.assertNotIn("cache", user_aov_cache_path(root).parts)
 
     def test_invalid_preset_kind_is_rejected(self):
-        with self.assertRaises(ValueError):
-            user_preset_dir(Path("maya-user"), "cache")
+        for kind in ("settings", "cache"):
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                user_preset_dir(Path("maya-user"), kind)
 
     def test_languages_are_bundled_read_only_resources(self):
         self.assertTrue((LANGUAGES_ROOT / "en_US.json").is_file())

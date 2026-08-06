@@ -100,6 +100,19 @@ class UiStructureTests(unittest.TestCase):
                 path.name,
             )
 
+    def test_settings_preset_menu_is_removed(self):
+        source = (UI_ROOT / "settings_dialog.py").read_text(encoding="utf-8-sig")
+        removed_names = {
+            "settings_presets_path",
+            "settings_presets_menu",
+            "load_settings_preset",
+            "add_settings_preset",
+            "modify_settings_preset",
+            "delete_settings_preset",
+        }
+        for name in removed_names:
+            self.assertNotIn(name, source)
+
 
 if __name__ == "__main__":
     unittest.main()

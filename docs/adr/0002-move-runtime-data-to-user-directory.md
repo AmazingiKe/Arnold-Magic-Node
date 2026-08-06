@@ -2,6 +2,7 @@
 
 - 状态：已采纳
 - 日期：2026-08-05
+- 修订：2026-08-06，删除设置预设功能，默认设置模板迁入根级 `config/`
 - 范围：Arnold Magic Node 运行时数据与资源路径
 - 关联：ADR-0001「规范化插件包结构」
 
@@ -13,7 +14,7 @@
 
 - `languages/`：随插件发布的中英文语言资源，目前是 Git 跟踪文件。
 - `settings/`：用户设置和语言选择，运行时会写入。
-- `settings_presets/`：用户设置预设。
+- `settings_presets/`：已删除功能的历史用户设置预设。
 - `render_presets/`：用户渲染预设。
 - `aov_light_group_manager/`：AOV 窗口缓存。
 - `execution_logs/`、`keys/`、`logs/`：运行时日志或状态数据。
@@ -48,7 +49,7 @@
 用户目录采用“有多个同类对象才建立分类目录”的规则，避免为单个文件或单个功能创建多层空壳：
 
 - `settings/` 保留，因为设置文件和语言选择文件属于同一稳定类别。
-- `presets/` 作为统一预设入口，当前包含 `settings/` 和 `render/` 两类预设；不再使用平级的 `settings_presets/` 与 `render_presets/`。
+- `presets/` 只保存仍在使用的 `render/` 渲染预设；设置预设功能已经删除。
 - 当前只有一种 AOV 缓存时，直接使用 `aov_light_group_cache.json`，不创建单独的 `cache/aov_light_group_manager/` 层级。
 - `logs/` 可以作为统一日志目录，但日志类型不再继续创建 `logs/execution/` 等单一用途子目录。
 - `keys` 只有在实际产生多个文件或明确需要命名空间时才创建；单个状态文件直接放在用户数据根目录。
@@ -64,7 +65,6 @@
 │  ├─ Arnold_Magic_Settings.json
 │  └─ language_config.json
 ├─ presets/
-│  ├─ settings/
 │  └─ render/
 ├─ aov_light_group_cache.json
 └─ logs/
@@ -77,7 +77,7 @@
 | `Datas/languages/` | `arnold_magic_node/resources/i18n/` | 插件只读资源 | 已迁移到包内资源，不放入用户目录 |
 | `Datas/settings/Arnold_Magic_Settings.json` | `<user-data>/settings/Arnold_Magic_Settings.json` | 用户设置 | 新版本不读取旧文件，首次运行创建默认值 |
 | `Datas/settings/language_config.json` | `<user-data>/settings/language_config.json` | 用户设置 | 新版本不读取旧文件，首次运行按 Maya 语言创建 |
-| `Datas/settings_presets/` | `<user-data>/presets/settings/` | 用户预设 | 收敛到统一预设目录，保留用户文件 |
+| `Datas/settings_presets/` | 无 | 已删除功能遗留 | 不迁移、不读取、不删除旧文件 |
 | `Datas/render_presets/` | `<user-data>/presets/render/` | 用户预设 | 收敛到统一预设目录，保留用户文件 |
 | `Datas/aov_light_group_manager/` | `<user-data>/aov_light_group_cache.json` | 运行时缓存 | 当前只有一种缓存，直接提升到用户数据根目录 |
 | `Datas/execution_logs/` | `<user-data>/logs/` | 运行日志 | 与其他日志合并，不创建单一用途子目录 |
@@ -87,7 +87,7 @@
 | `config/` | 仓库根级 `config/` | 插件只读配置 | 本 ADR 不迁移 |
 | `icons/` | 仓库根级 `icons/` | 插件只读资源 | 本 ADR 不迁移 |
 
-默认设置模板目前由 `default_config.py` 内置并在首次运行时写入用户目录；后续若模板需要独立维护，再迁入 `resources/defaults/`，不能把插件目录中的文件当作用户可写文件。
+默认设置模板位于只读的 `config/Arnold_Magic_Settings.json`，首次运行时由工具层复制到用户设置目录；插件目录中的模板不能作为用户可写文件。
 
 ## 路径职责
 
@@ -102,7 +102,7 @@
 ```text
 get_user_data_root() -> <Maya user application directory>/arnold_magic_node
 get_user_settings_path(name)
-get_user_preset_path(kind, name)
+get_user_render_preset_path(name)
 get_user_cache_path(name)
 get_user_log_path(name)
 ```
@@ -121,9 +121,9 @@ get_user_log_path(name)
 
 1. 为用户根目录解析、目录映射和“不自动迁移”行为补充普通 Python 测试。
 2. 在 Maya 适配层接入 `internalVar(userAppDir=True)`，并保持 `core` 不依赖 Maya。
-3. 将设置、预设、AOV 缓存和日志调用点切换到统一路径接口。
+3. 将设置、渲染预设、AOV 缓存和日志调用点切换到统一路径接口。
 4. 将 `languages/` 迁移到包内只读资源位置，并更新加载引用。
-5. 在全新 Maya 环境和已有旧 `Datas/` 环境分别验证启动、设置保存、预设读写和窗口功能；确认旧目录未被访问或修改。
+5. 在全新 Maya 环境和已有旧 `Datas/` 环境分别验证启动、设置保存、渲染预设读写和窗口功能；确认旧目录未被访问或修改。
 6. 经用户确认后，再单独处理仓库中遗留的旧 `Datas/` 空目录或本地文件。
 
 ## 验收标准
@@ -135,7 +135,7 @@ get_user_log_path(name)
 - 用户目录路径不依赖硬编码的 Windows 文档路径，并能在支持的 Maya 平台工作。
 - `core` 可以在普通 Python 环境中测试，不导入 Maya、Arnold、Qt 或 shiboken。
 - 语言资源、图标和只读配置仍随插件发布，用户目录不承担插件资源分发职责。
-- 删除或重新安装插件不会删除用户目录中的设置和预设。
+- 删除或重新安装插件不会删除用户目录中的设置和渲染预设。
 - 用户目录初始化失败有明确错误，并且不会让插件导入直接崩溃。
 - Maya 冒烟测试覆盖全新用户目录、已有旧 `Datas/` 数据保持不变、重复启动和重复打开设置窗口。
 
