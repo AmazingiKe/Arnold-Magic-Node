@@ -6,15 +6,19 @@ import os
 import maya.cmds as cmds
 import mtoa.aovs as aovs
 
-from ..application import (
-    SoftwareState,
-    SoftwareVersion,
-    aov_cache_path,
-    icon_path,
-)
-from ..arnold_magic_core import DataManager, FeedbackPrompt, GetNodeData
+from ..tools.feedback import FeedbackPrompt
+from ..tools.runtime import DataManager, SOFTWARE_STATE, SOFTWARE_VERSION, get_runtime_paths
+from ..tools.scene import SceneQueryTool
 from .qt import QtCore, QtGui, QtWidgets
 from .workspace import delete_window_if_existe, get_maya_main_window
+
+
+_runtime_paths = get_runtime_paths()
+SoftwareState = SOFTWARE_STATE
+SoftwareVersion = SOFTWARE_VERSION
+aov_cache_path = _runtime_paths.aov_cache_path
+icon_path = _runtime_paths.icon_path
+GetNodeData = SceneQueryTool
 
 
 @contextmanager

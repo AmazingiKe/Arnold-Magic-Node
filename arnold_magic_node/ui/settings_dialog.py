@@ -3,33 +3,43 @@
 import os
 import shutil
 
-from .. import default_config
-from ..application import (
-    AMS_Config,
+from ..tools.feedback import FeedbackPrompt
+from ..tools.runtime import (
+    AMS_CONFIG,
+    DataManager,
     MAYA_ALT_MODIFIER,
     SMALL_FONT_SIZE,
-    SoftwareState,
-    SoftwareVersion,
-    icon_path,
+    PLUGIN_FEEDBACK_URL,
+    PLUGIN_HELP_DOCUMENT_URL,
+    PLUGIN_HOME_URL,
+    PLUGIN_UPDATE_DOWNLOAD_URL,
+    SOFTWARE_STATE,
+    SOFTWARE_VERSION,
+    ensure_runtime_directory,
+    get_runtime_paths,
     is_modifier_pressed,
-    language_loading,
-    pluginFeedbackURL,
-    pluginHelpDocumentURL,
-    pluginHomeURL,
-    pluginUpdateDownloadURL,
-    settings_presets_path,
-    settings_path,
+    load_language,
 )
-from ..arnold_magic_core import (
-    DataManager,
-    FeedbackPrompt,
-    PathDetection,
-    process_sl_data,
-)
-from ..core.storage import ensure_directory
-from ..core.paths import LANGUAGES_ROOT
+from ..tools.selection import process_selected_nodes
+from ..tools.settings import reset_settings
 from .qt import QAction, QtCore, QtGui, QtWidgets
 from .workspace import delete_window_if_existe
+
+
+_runtime_paths = get_runtime_paths()
+AMS_Config = AMS_CONFIG
+SoftwareState = SOFTWARE_STATE
+SoftwareVersion = SOFTWARE_VERSION
+icon_path = _runtime_paths.icon_path
+language_loading = load_language
+pluginFeedbackURL = PLUGIN_FEEDBACK_URL
+pluginHelpDocumentURL = PLUGIN_HELP_DOCUMENT_URL
+pluginHomeURL = PLUGIN_HOME_URL
+pluginUpdateDownloadURL = PLUGIN_UPDATE_DOWNLOAD_URL
+settings_presets_path = _runtime_paths.settings_presets_path
+settings_path = _runtime_paths.settings_path
+ensure_directory = ensure_runtime_directory
+process_sl_data = process_selected_nodes
 
 
 class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
@@ -64,8 +74,6 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.dataM = DataManager()  # 数据管理模块
 
         self.feedback = FeedbackPrompt()  # 错误提示模块
-        self.pathD = PathDetection()  # 数据检测模块
-
         ### 初始化配置数据
         self.config = self.dataM.load_json(
            os.path.normpath(os.path.join(settings_path, AMS_Config)))
@@ -74,7 +82,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         self.language = language_loading()['ArnoldMagicNode']['AMNSP_WIN']
 
 
-        self.languages_folder_path = os.path.normpath(str(LANGUAGES_ROOT))  # 只读语言资源路径
+        self.languages_folder_path = _runtime_paths.languages_path  # 只读语言资源路径
 
     def initialize_window_config(self):
 
@@ -100,8 +108,7 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
         # 创建“重置数据”动作
         self.reset_data_action = QAction(self.language['create_menu']['reset_data_action'], self) # 重置设置数据
         # 连接“重置数据”动作的触发信号到对应的槽函数
-        self.reset_data_action.triggered.connect(lambda *args: (os.remove(os.path.join(settings_path, AMS_Config)),
-                                                          default_config.Main_program()))
+        self.reset_data_action.triggered.connect(lambda *args: reset_settings())
 
 
         self.settings_menu.addAction(self.reset_data_action)

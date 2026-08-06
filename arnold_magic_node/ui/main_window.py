@@ -5,37 +5,37 @@ import os
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
-from ..arnold_magic_core import DataManager, FeedbackPrompt, GetNodeData
-from ..core.storage import ensure_directory
-
-# 迁移期兼容层：主窗口仍调用 application.py 中尚未拆分的旧实现。
-# application.Main_program() 会在旧模块完整加载后延迟导入并重载 UI 模块。
-from ..application import (
-    AMS_Config,
-    AutoSet_TexColorSpace,
-    SceneNameOptimization,
-    SoftwareState,
-    SoftwareVersion,
-    ai_aov_switch_button,
+from ..tools.magic_connection import run_magic_connection
+from ..tools.materials import (
     all_convert_old_materials_to_arnold_button,
     all_intelligent_material_repair_button,
+    select_convert_old_materials_to_arnold_button,
+    select_intelligent_material_repair_button,
+)
+from ..tools.node_graph import (
+    intelligent_mix,
+    quick_connect_node_button,
+)
+from ..tools.path_detection import path_detection_connection_button
+from ..tools.rendering import ai_aov_switch_button, rendering_preset_menu
+from ..tools.runtime import (
+    AMS_CONFIG,
+    DataManager,
+    SOFTWARE_STATE,
+    SOFTWARE_VERSION,
+    ensure_runtime_directory,
+    get_runtime_paths,
+    load_language,
+)
+from ..tools.scene import SceneNameOptimization
+from ..tools.texture import (
+    AutoSet_TexColorSpace,
     auto_set_file_node_udim,
     color_space_preset_menu,
     direct_connection_button,
-    icon_path,
-    intelligent_mix,
-    language_loading,
-    path_detection_connection_button,
-    quick_connect_node_button,
-    render_preset_path,
-    rendering_preset_menu,
-    select_convert_old_materials_to_arnold_button,
-    select_intelligent_material_repair_button,
-    settings_path,
     unify_uv_node_button,
     uv_preset_menu,
 )
-from ..tools.magic_connection import run_magic_connection
 from .aov_dialog import AOVLightGroupManagerInstance
 from .qt import QtGui, QtWidgets, wrapInstance
 from .rendering_preset_dialog import (
@@ -44,6 +44,17 @@ from .rendering_preset_dialog import (
     rendering_preset_settings_button,
 )
 from .settings_dialog import ArnoldMagicNodeSettingsPanel
+
+
+_runtime_paths = get_runtime_paths()
+AMS_Config = AMS_CONFIG
+SoftwareState = SOFTWARE_STATE
+SoftwareVersion = SOFTWARE_VERSION
+ensure_directory = ensure_runtime_directory
+icon_path = _runtime_paths.icon_path
+language_loading = load_language
+render_preset_path = _runtime_paths.render_preset_path
+settings_path = _runtime_paths.settings_path
 
 
 class MainWindow(object):
@@ -81,7 +92,7 @@ class MainWindow(object):
         cmds.rowLayout(numberOfColumns=30)
 
         # 创建右键菜单
-        customMenu = cmds.popupMenu(button=3)
+        cmds.popupMenu(button=3)
         # # 贴图批量导入器选项
         # cmds.menuItem(
         #     label=self.language['create_widgets']['ttpldrq_menu'],
@@ -334,8 +345,6 @@ class MainWindow(object):
     def initial_global_config(self):
         # 初始化数据管理器
         self.dataM = DataManager()
-        self.feedback = FeedbackPrompt()  # 错误提示模块
-        self.getnodedata = GetNodeData()  # 获取节点数据模块
 
         # 加载语言配置
         self.language = language_loading()['ArnoldMagicNode']['AMDUI_WIN']
@@ -384,4 +393,4 @@ class MainWindow(object):
     # ______________________________________________________________________________>>> 实例化函数
     def scene_name_optimization_instance(self):
         SNO = SceneNameOptimization()
-        SNO.main()
+        SNO.run()

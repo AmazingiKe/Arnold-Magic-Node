@@ -4,8 +4,13 @@ import os
 
 import maya.cmds as cmds
 
-from ..application import language_loading, render_preset_path
-from ..arnold_magic_core import DataManager, FeedbackPrompt
+from ..tools.feedback import FeedbackPrompt
+from ..tools.runtime import DataManager, get_runtime_paths, load_language
+
+
+_runtime_paths = get_runtime_paths()
+render_preset_path = _runtime_paths.render_preset_path
+language_loading = load_language
 
 
 new_rendering_preset_name = {}
