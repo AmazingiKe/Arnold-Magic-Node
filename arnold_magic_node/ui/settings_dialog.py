@@ -20,6 +20,7 @@ from ..tools.runtime import (
 )
 from ..tools.selection import process_selected_nodes
 from ..tools.settings import reset_settings
+from .ai_settings_widget import AiSettingsWidget
 from ._qt_compat import QAction, QtCore, QtGui, QtWidgets
 from ._workspace import delete_window_if_exists
 
@@ -148,6 +149,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.create_path_matching_tab()
         self.node_connection_mixer_tab()
         self.create_optimized_scene_node_name_tab()
+        self.create_ai_settings_tab()
         self.create_configure_ui_layout_tab()
 
     def create_layouts(self):
@@ -1056,6 +1058,18 @@ class SettingsDialog(QtWidgets.QDialog):
 
         # 将选项卡添加到主选项卡部件
         self.tab_widget.addTab(optimized_scene_node_name_tab, '优化名称')
+
+    def create_ai_settings_tab(self):
+        ai_language = self.language['create_ai_settings_tab']
+        self.ai_settings_widget = AiSettingsWidget(
+            paths=_runtime_paths,
+            language=ai_language,
+            parent=self,
+        )
+        self.tab_widget.addTab(
+            self.ai_settings_widget,
+            ai_language['tab'],
+        )
 
     # 建界面与布局设置页面
     def create_configure_ui_layout_tab(self):

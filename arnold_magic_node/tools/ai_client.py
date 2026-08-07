@@ -277,6 +277,39 @@ def _is_loopback_host(hostname):
         return False
 
 
+def normalize_base_url(base_url):
+    """校验并标准化 AI 服务根 URL。"""
+
+    if not isinstance(base_url, str) or not base_url:
+        raise AiConfigurationError("base_url 不能为空")
+    if base_url != base_url.strip() or "\\" in base_url:
+        raise AiConfigurationError("base_url 格式无效")
+    if any(
+        character.isspace()
+        or ord(character) < 32
+        or ord(character) == 127
+        for character in base_url
+    ):
+        raise AiConfigurationError("base_url 包含空白或控制字符")
+
+    try:
+        parts = urlsplit(base_url)
+        port = parts.port
+    except ValueError as error:
+        raise AiConfigurationError("base_url 格式无效") from error
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise AiConfigurationError("base_url 必须是有效的 HTTP(S) URL")
+    if parts.username is not None or parts.password is not None:
+        raise AiConfigurationError("base_url 不得包含用户名或密码")
+    if parts.query or parts.fragment:
+        raise AiConfigurationError("base_url 不得包含 query 或 fragment")
+    if port is not None and port < 1:
+        raise AiConfigurationError("base_url 端口无效")
+    if parts.scheme == "http" and not _is_loopback_host(parts.hostname):
+        raise AiConfigurationError("远程 AI 接口必须使用 HTTPS")
+    return base_url.rstrip("/"), parts
+
+
 def _validate_number(value, name, minimum, maximum):
     if (
         isinstance(value, bool)
@@ -343,9 +376,12 @@ def _validate_ai_client_config(config):
         "max_completion_tokens",
     ):
         raise AiConfigurationError("Chat token 参数不受支持")
+    normalize_base_url(config.base_url)
 
 
-def _normalize_api_key(value):
+def normalize_api_key(value):
+    """返回去除首尾空白后的安全 API Key，空值返回 ``None``。"""
+
     if value is None:
         return None
     if not isinstance(value, str):
@@ -373,9 +409,7 @@ class OpenAICompatibleClient(object):
     ):
         self.config = AiClientConfig() if config is None else config
         self._validate_config()
-        self.base_url, self._url_parts = self._normalize_base_url(
-            self.config.base_url
-        )
+        self.base_url, self._url_parts = normalize_base_url(self.config.base_url)
         self._explicit_api_key = api_key
         self.environ = os.environ if environ is None else environ
         self.transport = transport or UrllibTransport()
@@ -394,8 +428,13 @@ class OpenAICompatibleClient(object):
             from .ai_settings import load_ai_settings
 
             settings = load_ai_settings(user_root=user_root, paths=paths)
+        config = AiClientConfig.from_mapping(settings)
+        if api_key is None:
+            from .ai_credentials import get_session_api_key
+
+            api_key = get_session_api_key(config.base_url)
         return cls(
-            config=AiClientConfig.from_mapping(settings),
+            config=config,
             api_key=api_key,
             transport=transport,
             environ=environ,
@@ -403,37 +442,6 @@ class OpenAICompatibleClient(object):
 
     def _validate_config(self):
         _validate_ai_client_config(self.config)
-
-    @staticmethod
-    def _normalize_base_url(base_url):
-        if not isinstance(base_url, str) or not base_url:
-            raise AiConfigurationError("base_url 不能为空")
-        if base_url != base_url.strip() or "\\" in base_url:
-            raise AiConfigurationError("base_url 格式无效")
-        if any(
-            character.isspace()
-            or ord(character) < 32
-            or ord(character) == 127
-            for character in base_url
-        ):
-            raise AiConfigurationError("base_url 包含空白或控制字符")
-
-        try:
-            parts = urlsplit(base_url)
-            port = parts.port
-        except ValueError as error:
-            raise AiConfigurationError("base_url 格式无效") from error
-        if parts.scheme not in ("http", "https") or not parts.hostname:
-            raise AiConfigurationError("base_url 必须是有效的 HTTP(S) URL")
-        if parts.username is not None or parts.password is not None:
-            raise AiConfigurationError("base_url 不得包含用户名或密码")
-        if parts.query or parts.fragment:
-            raise AiConfigurationError("base_url 不得包含 query 或 fragment")
-        if port is not None and port < 1:
-            raise AiConfigurationError("base_url 端口无效")
-        if parts.scheme == "http" and not _is_loopback_host(parts.hostname):
-            raise AiConfigurationError("远程 AI 接口必须使用 HTTPS")
-        return base_url.rstrip("/"), parts
 
     def _is_loopback(self):
         return _is_loopback_host(self._url_parts.hostname)
@@ -443,14 +451,14 @@ class OpenAICompatibleClient(object):
             return None
 
         if self._explicit_api_key is not None:
-            return _normalize_api_key(self._explicit_api_key)
+            return normalize_api_key(self._explicit_api_key)
 
         if (
             self.config.api_key_env == DEFAULT_API_KEY_ENV
             and self._url_parts.hostname.lower() != "api.openai.com"
         ):
             return None
-        return _normalize_api_key(
+        return normalize_api_key(
             self.environ.get(self.config.api_key_env)
         )
 
@@ -695,4 +703,6 @@ __all__ = [
     "OpenAICompatibleClient",
     "UrllibTransport",
     "create_openai_client",
+    "normalize_api_key",
+    "normalize_base_url",
 ]
