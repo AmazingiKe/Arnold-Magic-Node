@@ -12,6 +12,7 @@ CORE_STANDARD_LIBRARY = {
     "datetime",
     "difflib",
     "json",
+    "math",
     "os",
     "pathlib",
     "re",
