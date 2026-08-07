@@ -1,4 +1,5 @@
 import ast
+import json
 import unittest
 from pathlib import Path
 
@@ -130,6 +131,55 @@ class UiStructureTests(unittest.TestCase):
         }
         for name in removed_names:
             self.assertNotIn(name, source)
+
+    def test_settings_dialog_embeds_localized_ai_settings_widget(self):
+        source = (UI_ROOT / "settings_dialog.py").read_text(encoding="utf-8-sig")
+        self.assertIn("from .ai_settings_widget import AiSettingsWidget", source)
+        self.assertIn("self.create_ai_settings_tab()", source)
+        self.assertIn("def create_ai_settings_tab", source)
+        self.assertIn("AiSettingsWidget(", source)
+
+        required_keys = {
+            "tab",
+            "connection_section",
+            "api_style_label",
+            "responses_option",
+            "chat_completions_option",
+            "base_url_label",
+            "model_label",
+            "api_key_env_label",
+            "api_key_env_hint",
+            "limits_section",
+            "timeout_seconds_label",
+            "max_output_tokens_label",
+            "max_request_bytes_label",
+            "max_response_bytes_label",
+            "chat_token_parameter_label",
+            "session_key_section",
+            "session_key_label",
+            "session_key_placeholder",
+            "session_key_hint",
+            "session_target",
+            "local_key_disabled",
+            "session_configured",
+            "session_not_configured",
+            "environment_configured",
+            "environment_not_configured",
+            "save_button",
+            "clear_key_button",
+            "saved_message",
+            "cleared_message",
+            "error_prefix",
+        }
+        for language_name in ("zh_CN.json", "en_US.json"):
+            language_path = (
+                PACKAGE_ROOT / "resources" / "i18n" / language_name
+            )
+            language = json.loads(language_path.read_text(encoding="utf-8-sig"))
+            ai_language = language["ArnoldMagicNode"]["AMNSP_WIN"][
+                "create_ai_settings_tab"
+            ]
+            self.assertEqual(set(ai_language), required_keys, language_name)
 
 
 if __name__ == "__main__":

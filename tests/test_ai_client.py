@@ -30,6 +30,11 @@ from arnold_magic_node.tools.ai_settings import (
     ensure_ai_settings,
     load_ai_settings,
     save_ai_settings,
+    save_ai_settings_with_session_key,
+)
+from arnold_magic_node.tools.ai_credentials import (
+    clear_all_session_api_keys,
+    get_session_api_key,
 )
 
 
@@ -659,6 +664,9 @@ class UrllibTransportTests(unittest.TestCase):
 
 
 class AiSettingsTests(unittest.TestCase):
+    def tearDown(self):
+        clear_all_session_api_keys()
+
     def test_ai_settings_are_created_lazily_without_storing_a_key(self):
         with tempfile.TemporaryDirectory() as directory:
             user_root = Path(directory) / "user-data"
@@ -726,6 +734,106 @@ class AiSettingsTests(unittest.TestCase):
 
         self.assertEqual(client.generate_text("test", "graph").text, "ok")
 
+    def test_invalid_base_url_does_not_overwrite_existing_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            user_root = Path(directory) / "user-data"
+            settings = load_ai_settings(user_root=user_root)
+            settings["model"] = "preserved-model"
+            save_ai_settings(settings, user_root=user_root)
+            settings["base_url"] = "http://api.example.com/v1"
+
+            with self.assertRaises(AiConfigurationError):
+                save_ai_settings(settings, user_root=user_root)
+
+            persisted = load_ai_settings(user_root=user_root)
+
+        self.assertEqual(persisted["model"], "preserved-model")
+        self.assertEqual(
+            persisted["base_url"], "https://api.openai.com/v1"
+        )
+
+    def test_save_with_session_key_never_persists_key_and_clears_old_origin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            user_root = Path(directory) / "user-data"
+            settings = load_ai_settings(user_root=user_root)
+            previous_base_url = settings["base_url"]
+            save_ai_settings_with_session_key(
+                settings,
+                api_key="old-session-secret",
+                user_root=user_root,
+            )
+            self.assertEqual(
+                get_session_api_key(previous_base_url),
+                "old-session-secret",
+            )
+
+            settings["base_url"] = "https://compatible.example/v1"
+            settings["api_key_env"] = "COMPATIBLE_AI_KEY"
+            settings_path = save_ai_settings_with_session_key(
+                settings,
+                previous_base_url=previous_base_url,
+                api_key="new-session-secret",
+                user_root=user_root,
+            )
+            persisted_text = settings_path.read_text(encoding="utf-8")
+
+        self.assertNotIn("api_key", json.loads(persisted_text))
+        self.assertNotIn("new-session-secret", persisted_text)
+        self.assertIsNone(get_session_api_key(previous_base_url))
+        self.assertEqual(
+            get_session_api_key("https://compatible.example/v2"),
+            "new-session-secret",
+        )
+
+    def test_changing_origin_without_new_key_clears_old_session_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            user_root = Path(directory) / "user-data"
+            settings = load_ai_settings(user_root=user_root)
+            previous_base_url = settings["base_url"]
+            save_ai_settings_with_session_key(
+                settings,
+                api_key="old-session-secret",
+                user_root=user_root,
+            )
+            settings["base_url"] = "https://compatible.example/v1"
+            settings["api_key_env"] = "COMPATIBLE_AI_KEY"
+
+            save_ai_settings_with_session_key(
+                settings,
+                previous_base_url=previous_base_url,
+                user_root=user_root,
+            )
+
+        self.assertIsNone(get_session_api_key(previous_base_url))
+        self.assertIsNone(
+            get_session_api_key("https://compatible.example/v1")
+        )
+
+    def test_valid_settings_can_replace_an_invalid_legacy_base_url(self):
+        with tempfile.TemporaryDirectory() as directory:
+            user_root = Path(directory) / "user-data"
+            settings_path = ensure_ai_settings(user_root=user_root)
+            legacy_settings = load_ai_settings(user_root=user_root)
+            legacy_settings["base_url"] = "http://legacy.example/v1"
+            settings_path.write_text(
+                json.dumps(legacy_settings), encoding="utf-8"
+            )
+            updated_settings = load_ai_settings(user_root=user_root)
+            previous_base_url = updated_settings["base_url"]
+            updated_settings["base_url"] = "https://compatible.example/v1"
+
+            save_ai_settings_with_session_key(
+                updated_settings,
+                previous_base_url=previous_base_url,
+                user_root=user_root,
+            )
+
+            persisted = load_ai_settings(user_root=user_root)
+
+        self.assertEqual(
+            persisted["base_url"], "https://compatible.example/v1"
+        )
+
 
 class LightweightDependencyTests(unittest.TestCase):
     def test_ai_runtime_uses_no_third_party_http_or_openai_sdk(self):
@@ -735,6 +843,7 @@ class LightweightDependencyTests(unittest.TestCase):
         for relative_path in (
             "arnold_magic_node/core/ai_protocol.py",
             "arnold_magic_node/tools/ai_client.py",
+            "arnold_magic_node/tools/ai_credentials.py",
             "arnold_magic_node/tools/ai_settings.py",
         ):
             source = (project_root / relative_path).read_text(encoding="utf-8")
