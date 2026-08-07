@@ -16,7 +16,7 @@ language_loading = load_language
 
 new_rendering_preset_name = {}
 
-class rendering_preset_settings_button():
+class RenderingPresetDialog:
 
     def __init__(self, menu_name, capture_tool=None):
 
@@ -316,5 +316,5 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
             )))
 
 def modify_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name, menu_name):
-    rendering_preset_settings_button(menu_name)
+    RenderingPresetDialog(menu_name)
     delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name)

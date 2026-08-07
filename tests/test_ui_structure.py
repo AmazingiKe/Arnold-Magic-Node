@@ -40,7 +40,7 @@ def maya_command_calls(path):
 
 class UiStructureTests(unittest.TestCase):
     def test_ui_modules_use_tools_not_application_or_legacy_core(self):
-        excluded = {"__init__.py", "qt.py", "workspace.py", "texture_batch_importer.py"}
+        excluded = {"__init__.py", "_qt_compat.py", "_workspace.py", "texture_batch_importer_dialog.py"}
         for path in UI_ROOT.glob("*.py"):
             imports = all_imported_modules(path)
             self.assertNotIn("application", imports, path.name)
@@ -64,11 +64,29 @@ class UiStructureTests(unittest.TestCase):
         imports = [node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
         self.assertEqual(imports, [])
 
+    def test_dialog_modules_match_their_primary_class_names(self):
+        expected_dialogs = {
+            "settings_dialog.py": "SettingsDialog",
+            "aov_light_group_dialog.py": "AovLightGroupDialog",
+            "rendering_preset_dialog.py": "RenderingPresetDialog",
+            "texture_batch_importer_dialog.py": "TextureBatchImporterDialog",
+        }
+        actual_dialogs = {path.name for path in UI_ROOT.glob("*_dialog.py")}
+        self.assertEqual(actual_dialogs, set(expected_dialogs))
+
+        for filename, class_name in expected_dialogs.items():
+            classes = {
+                node.name
+                for node in ast.walk(module_tree(UI_ROOT / filename))
+                if isinstance(node, ast.ClassDef)
+            }
+            self.assertIn(class_name, classes, filename)
+
     def test_qt_compatibility_imports_are_centralized(self):
-        qt_source = (UI_ROOT / "qt.py").read_text(encoding="utf-8-sig")
+        qt_source = (UI_ROOT / "_qt_compat.py").read_text(encoding="utf-8-sig")
         self.assertIn("PySide", qt_source)
         for path in UI_ROOT.glob("*.py"):
-            if path.name == "qt.py":
+            if path.name == "_qt_compat.py":
                 continue
             source = path.read_text(encoding="utf-8-sig")
             self.assertNotIn("from PySide", source, path.name)

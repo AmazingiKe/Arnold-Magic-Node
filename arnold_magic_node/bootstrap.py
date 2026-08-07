@@ -23,11 +23,11 @@ def main():
     detecting_language()
     ensure_user_settings()
 
-    from .ui import workspace
+    from .ui import _workspace
     from .ui.main_window import MainWindow
 
-    workspace.delete_window_if_existe("ArnoldMagicNodeSettingsPanel")
-    workspace.delete_window_if_existe("AOVLightGroupManager")
+    _workspace.delete_window_if_exists("SettingsDialog")
+    _workspace.delete_window_if_exists("AovLightGroupDialog")
     if cmds.window("import_name_win", exists=True):
         cmds.deleteUI("import_name_win")
 

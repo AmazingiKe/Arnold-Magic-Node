@@ -20,8 +20,8 @@ from ..tools.runtime import (
 )
 from ..tools.selection import process_selected_nodes
 from ..tools.settings import reset_settings
-from .qt import QAction, QtCore, QtGui, QtWidgets
-from .workspace import delete_window_if_existe
+from ._qt_compat import QAction, QtCore, QtGui, QtWidgets
+from ._workspace import delete_window_if_exists
 
 
 _runtime_paths = get_runtime_paths()
@@ -38,9 +38,9 @@ settings_path = _runtime_paths.settings_path
 process_sl_data = process_selected_nodes
 
 
-class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
+class SettingsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(ArnoldMagicNodeSettingsPanel, self).__init__(parent)
+        super(SettingsDialog, self).__init__(parent)
 
         # 0. 初始化全局配置
         self.initial_global_config()
@@ -84,9 +84,9 @@ class ArnoldMagicNodeSettingsPanel(QtWidgets.QDialog):
 
         WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}"  # Win名称
 
-        delete_window_if_existe('ArnoldMagicNodeSettingsPanel')
+        delete_window_if_exists('SettingsDialog')
 
-        self.setObjectName('ArnoldMagicNodeSettingsPanel')
+        self.setObjectName('SettingsDialog')
         self.setWindowTitle(WINDOWS_NAME)
         self.setWindowIcon(QtGui.QIcon(icon_path + "\\Logo_B.svg"))
 

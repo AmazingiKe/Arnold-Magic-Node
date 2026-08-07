@@ -3,9 +3,9 @@
 import maya.cmds as cmds
 
 
-class TextureBatchImporterWin:
+class TextureBatchImporterDialog:
     def __init__(self):
-        WIN_TITLE = "TextureBatchImporterWin  Beta:1.0"
+        WIN_TITLE = "TextureBatchImporterDialog  Beta:1.0"
 
         # 判断窗口是否存在，如果存在则删除
         if cmds.window(WIN_TITLE, exists=True):

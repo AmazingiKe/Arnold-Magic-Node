@@ -7,8 +7,8 @@ from ..tools.aovs import AovLightGroupTool
 from ..tools.feedback import FeedbackPrompt
 from ..tools.runtime import DataManager, SOFTWARE_STATE, SOFTWARE_VERSION, get_runtime_paths
 from ..tools.scene import SceneQueryTool
-from .qt import QtCore, QtGui, QtWidgets
-from .workspace import delete_window_if_existe, get_maya_main_window
+from ._qt_compat import QtCore, QtGui, QtWidgets
+from ._workspace import delete_window_if_exists, get_maya_main_window
 
 
 _runtime_paths = get_runtime_paths()
@@ -217,11 +217,11 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
             parent = parent.parent()
         return depth
 
-class AOVLightGroupManager(QtWidgets.QDialog):
+class AovLightGroupDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=get_maya_main_window(), aov_tool=None):
 
-        super(AOVLightGroupManager, self).__init__(parent)
+        super(AovLightGroupDialog, self).__init__(parent)
 
         # 创建实例类
         self.feedback = FeedbackPrompt()  # 错误提示模块
@@ -234,9 +234,9 @@ class AOVLightGroupManager(QtWidgets.QDialog):
 
 
         # 判断窗口是否存在，如果存在则删除
-        delete_window_if_existe('AOVLightGroupManager')
+        delete_window_if_exists('AovLightGroupDialog')
 
-        self.setObjectName('AOVLightGroupManager')
+        self.setObjectName('AovLightGroupDialog')
         self.setWindowTitle(self.WINDOWS_NAME)
 
         # ...窗口长宽
@@ -815,6 +815,6 @@ class AOVLightGroupManager(QtWidgets.QDialog):
         # 使用 Qt 的定时器单次调用机制来延迟执行保存操作
         QtCore.QTimer.singleShot(0, lambda *args: modify_cache())
 
-def  AOVLightGroupManagerInstance():
-    aov_light_group_manager = AOVLightGroupManager()
-    aov_light_group_manager.show()
+def show_aov_light_group_dialog():
+    dialog = AovLightGroupDialog()
+    dialog.show()

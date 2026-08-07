@@ -32,9 +32,9 @@ class ApplicationRemovalTests(unittest.TestCase):
 
             if path.name not in {
                 "__init__.py",
-                "qt.py",
-                "workspace.py",
-                "texture_batch_importer.py",
+                "_qt_compat.py",
+                "_workspace.py",
+                "texture_batch_importer_dialog.py",
             }:
                 self.assertTrue(
                     any(module and module.startswith("tools") for _, module in modules),

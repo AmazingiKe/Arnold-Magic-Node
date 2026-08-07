@@ -86,11 +86,11 @@ Arnold-Magic-Node/
 │  │
 │  ├─ ui/
 │  │  ├─ __init__.py
-│  │  ├─ qt.py
-│  │  ├─ workspace.py
+│  │  ├─ _qt_compat.py
+│  │  ├─ _workspace.py
 │  │  ├─ main_window.py
 │  │  ├─ settings_dialog.py
-│  │  ├─ aov_dialog.py
+│  │  ├─ aov_light_group_dialog.py
 │  │  └─ rendering_preset_dialog.py
 │  │
 │  └─ resources/
@@ -124,14 +124,15 @@ arnold_magic_node/
 ├─ default_config.py       # 未拆分的默认数据与初始化逻辑
 ├─ ui/
 │  ├─ __init__.py
-│  ├─ qt.py                # PySide/shiboken 兼容导入
-│  ├─ workspace.py         # Maya 主窗口获取和窗口清理辅助
+│  ├─ _qt_compat.py        # PySide/shiboken 兼容导入
+│  ├─ _workspace.py        # Maya 主窗口获取和窗口清理辅助
 │  ├─ main_window.py       # 主窗口，暂时调用 application
 │  ├─ settings_dialog.py   # 设置窗口，类体原样迁移
-│  ├─ aov_dialog.py        # AOV 窗口、树组件和启动函数
+│  ├─ aov_light_group_dialog.py
+│  │                         # AOV 灯光组窗口、树组件和启动函数
 │  ├─ rendering_preset_dialog.py
 │  │                       # 渲染预设输入窗口及其迁移期共享状态
-│  └─ texture_batch_importer.py
+│  └─ texture_batch_importer_dialog.py
 │                          # 休眠的批量导入窗口，不恢复入口
 └─ core/
    ├─ __init__.py
@@ -151,12 +152,12 @@ arnold_magic_node/
 | `storage.py` | `arnold_magic_node/core/storage.py` |
 | `arnold_magic_matching.py` | `arnold_magic_node/core/matching.py` |
 | `application.py` 中的 `MainWindow` | `arnold_magic_node/ui/main_window.py` |
-| `application.py` 中的 Qt/shiboken 兼容导入 | `arnold_magic_node/ui/qt.py` |
-| `application.py` 中的窗口辅助函数 | `arnold_magic_node/ui/workspace.py` |
+| `application.py` 中的 Qt/shiboken 兼容导入 | `arnold_magic_node/ui/_qt_compat.py` |
+| `application.py` 中的窗口辅助函数 | `arnold_magic_node/ui/_workspace.py` |
 | `application.py` 中的设置窗口 | `arnold_magic_node/ui/settings_dialog.py` |
-| `application.py` 中的 AOV 窗口组 | `arnold_magic_node/ui/aov_dialog.py` |
+| `application.py` 中的 AOV 窗口组 | `arnold_magic_node/ui/aov_light_group_dialog.py` |
 | `application.py` 中的渲染预设输入窗口组 | `arnold_magic_node/ui/rendering_preset_dialog.py` |
-| `application.py` 中的休眠批量导入窗口 | `arnold_magic_node/ui/texture_batch_importer.py` |
+| `application.py` 中的休眠批量导入窗口 | `arnold_magic_node/ui/texture_batch_importer_dialog.py` |
 
 旧版根级 `startup.py` 兼容入口已经删除，唯一公开入口为 `arnold_magic_node.show()`。已安装的旧 Shelf 命令不会自动更新；升级包位置后必须重新运行 Installer 并重启 Maya，避免旧命令或 `sys.modules` 缓存继续指向已删除的 `scripts/` 路径。
 
@@ -223,9 +224,9 @@ arnold_magic_node/
 - 调用工具编排层。
 - 展示结果、警告和错误。
 
-业务判断、文件扫描和 Maya 节点网络创建不得直接实现于 UI 类中。PySide2、PySide6 和 shiboken 的兼容导入统一放在 `ui/qt.py`。旧 `application.py` 的过渡例外已经取消。
+业务判断、文件扫描和 Maya 节点网络创建不得直接实现于 UI 类中。PySide2、PySide6 和 shiboken 的兼容导入统一放在 `ui/_qt_compat.py`。旧 `application.py` 的过渡例外已经取消。
 
-`settings_dialog.py`、`aov_dialog.py` 和 `rendering_preset_dialog.py` 已将配置、AOV 与渲染场景操作委托给 `tools`；UI 只保留窗口构建、输入采集和结果展示。`texture_batch_importer.py` 仅保存无活动入口的遗留窗口，不得重新接入菜单。
+`settings_dialog.py`、`aov_light_group_dialog.py` 和 `rendering_preset_dialog.py` 已将配置、AOV 与渲染场景操作委托给 `tools`；UI 只保留窗口构建、输入采集和结果展示。`texture_batch_importer_dialog.py` 仅保存无活动入口的遗留窗口，不得重新接入菜单。
 
 ### `bootstrap`
 
@@ -282,7 +283,7 @@ Maya 用户目录由 `maya/environment.py` 查询，再由 `bootstrap` 传给设
 
 - `ui.main_window → application`
 - `ui.settings_dialog → application`
-- `ui.aov_dialog → application`
+- `ui.aov_light_group_dialog → application`
 - `ui.rendering_preset_dialog → application`
 
 窗口模块还曾直接使用 `arnold_magic_core`，`settings_dialog` 也调用过旧 `default_config`。上述反向依赖、通配导入和生产热重载已经随职责迁入 `core`、`maya` 和 `tools` 全部删除。窗口生命周期现由 `bootstrap` 统一组装和清理。
@@ -342,7 +343,7 @@ arnold_magic_node/
 8. 依次迁移小型节点工具、Magic Connection、Path Detection、材质转换与修复，并将渲染预设、AOV 和设置窗口中的非 UI 逻辑下沉到对应层。
 9. 清除所有 UI 模块对 `application` 的过渡依赖，并完成主窗口与各子窗口的职责拆分。
 10. 删除 `application.py`、`arnold_magic_core.py` 和根级 `default_config.py`，增加自动化分层依赖检查。
-11. Texture Manager 在基础结构稳定后单独重新设计；休眠的 `TextureBatchImporterWin` 是否保留另行决策。
+11. Texture Manager 在基础结构稳定后单独重新设计；休眠的 `TextureBatchImporterDialog` 是否保留另行决策。
 
 每个功能分为两个步骤：
 
@@ -380,7 +381,7 @@ Maya 集成行为必须在支持的 Maya 环境中另行执行冒烟测试，普
 - `application.py` 不再包含 Qt/shiboken、OpenMayaUI、mtoa AOV 界面依赖或顶层窗口构建代码；未迁移的业务类、函数、默认配置和可观察执行顺序保持不变。
 - UI 对 `application` 的反向依赖严格限制在已记录的四条白名单；`application` 仅在 `Main_program()` 中延迟加载并按记录顺序重载活动 UI 模块。
 - 入口会清理 `reload(application)` 遗留的旧 UI 名称，活动调用只指向新模块。
-- `TextureBatchImporterWin` 只移动且保持无活动入口，不得恢复已删除的 Texture Manager。
+- `TextureBatchImporterDialog` 只移动且保持无活动入口，不得恢复已删除的 Texture Manager。
 - Maya 冒烟测试必须分别连续打开主窗口、设置窗口和 AOV 窗口两次，并验证渲染预设的新增、修改和删除入口；普通 Python 测试不能替代该项。
 - 根级 `config/` 和 `icons/` 的实际路径保持不变；旧 `Datas/` 不自动迁移、不读取、不写入，用户数据改由 ADR-0002 定义的 Maya 用户目录承载。
 - 根级 `icon/` 已规范为仓库根级 `icons/`，所有活动图标引用均指向新目录。

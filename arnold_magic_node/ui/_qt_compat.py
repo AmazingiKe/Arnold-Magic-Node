@@ -1,4 +1,5 @@
 """PySide 与 shiboken 兼容导入。"""
+# 兼容2022往后的所有版本
 
 try:
     from PySide6 import QtCore, QtWidgets, QtGui

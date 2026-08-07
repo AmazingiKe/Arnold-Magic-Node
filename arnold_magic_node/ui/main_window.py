@@ -46,14 +46,14 @@ from ..tools.texture import (
     unify_uv_node_button,
     uv_preset_menu,
 )
-from .aov_dialog import AOVLightGroupManagerInstance
-from .qt import QtGui, QtWidgets, wrapInstance
+from .aov_light_group_dialog import show_aov_light_group_dialog
+from ._qt_compat import QtGui, QtWidgets, wrapInstance
 from .rendering_preset_dialog import (
     delete_rendering_preset_menuItem,
     modify_rendering_preset_menuItem,
-    rendering_preset_settings_button,
+    RenderingPresetDialog,
 )
-from .settings_dialog import ArnoldMagicNodeSettingsPanel
+from .settings_dialog import SettingsDialog
 
 
 _runtime_paths = get_runtime_paths()
@@ -106,7 +106,7 @@ class MainWindow(object):
         # # 贴图批量导入器选项
         # cmds.menuItem(
         #     label=self.language['create_widgets']['ttpldrq_menu'],
-        #     c=lambda *args: TextureBatchImporterWin(),
+        #     c=lambda *args: TextureBatchImporterDialog(),
         #     i=icon_path + "\\RenderToTextureShelf_200.png"
         # )
 
@@ -116,7 +116,7 @@ class MainWindow(object):
         # 添加渲染预设选项
         cmds.menuItem(
             label="AOV灯光组管理器",
-            c=lambda *args: AOVLightGroupManagerInstance(),
+            c=lambda *args: show_aov_light_group_dialog(),
             i=os.path.join(icon_path,"LightManagerShelf_200.png")
         )
 
@@ -126,7 +126,7 @@ class MainWindow(object):
         # 添加渲染预设选项
         cmds.menuItem(
             label=self.language['create_widgets']['tjxrys_menu'],
-            c=lambda *args: rendering_preset_settings_button(self.rendering_preset)
+            c=lambda *args: RenderingPresetDialog(self.rendering_preset)
         )
 
         # 修改渲染预设选项
@@ -232,7 +232,7 @@ class MainWindow(object):
         # 设置面板选项
         cmds.menuItem(
             label=self.language['create_widgets']['sz_menu'],
-            c=lambda *args: ArnoldMagicNodeSettingsPanel()
+            c=lambda *args: SettingsDialog()
         )
 
         # 空白文本
