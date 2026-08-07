@@ -1,12 +1,31 @@
 {
-  "schema_version": 1,
-  "api_style": "responses",
-  "base_url": "https://api.openai.com/v1",
-  "model": "gpt-5.6-terra",
-  "api_key_env": "OPENAI_API_KEY",
-  "timeout_seconds": 60,
-  "max_output_tokens": 4096,
-  "max_request_bytes": 1048576,
-  "max_response_bytes": 2097152,
-  "chat_token_parameter": "max_tokens"
+  "schema_version": 3,
+  "models": [
+    {
+      "id": "model_001",
+      "model": "gpt-5.6-terra",
+      "base_url": "https://api.openai.com/v1",
+      "api_style": "responses",
+      "api_key": "",
+      "timeout_seconds": 60,
+      "max_output_tokens": 4096,
+      "max_request_bytes": 1048576,
+      "max_response_bytes": 2097152,
+      "chat_token_parameter": "max_tokens"
+    },
+    {
+      "id": "model_002",
+      "model": "gpt-5.6-sol",
+      "base_url": "https://api.openai.com/v1",
+      "api_style": "responses",
+      "api_key": "",
+      "timeout_seconds": 60,
+      "max_output_tokens": 4096,
+      "max_request_bytes": 1048576,
+      "max_response_bytes": 2097152,
+      "chat_token_parameter": "max_tokens"
+    }
+  ],
+  "fast_model_id": "model_001",
+  "complex_model_id": "model_002"
 }

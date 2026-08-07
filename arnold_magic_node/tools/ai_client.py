@@ -9,6 +9,7 @@ import socket
 import ssl
 import uuid
 from dataclasses import dataclass, fields
+from http.client import HTTPException
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (
@@ -24,6 +25,7 @@ from ..core.ai_protocol import (
     SUPPORTED_API_STYLES,
     AiError,
     AiProtocolError,
+    AiStreamAccumulator,
     build_request_payload,
     load_json_strict,
     parse_json_output,
@@ -101,6 +103,68 @@ class HttpResponse:
     headers: dict
 
 
+class HttpEventStream(object):
+    """有累计大小上限的 UTF-8 Server-Sent Events 数据流。"""
+
+    def __init__(self, raw_stream, max_response_bytes):
+        self.raw_stream = raw_stream
+        self.max_response_bytes = max_response_bytes
+        self.status_code = raw_stream.getcode()
+        self.headers = _headers_dict(raw_stream.headers)
+        self._closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception, traceback):
+        self.close()
+        return False
+
+    def close(self):
+        if not self._closed:
+            self._closed = True
+            self.raw_stream.close()
+
+    @staticmethod
+    def _decode_data_lines(data_lines):
+        try:
+            return b"\n".join(data_lines).decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise AiProtocolError("AI 流事件不是有效的 UTF-8") from error
+
+    def __iter__(self):
+        total_bytes = 0
+        data_lines = []
+        try:
+            while True:
+                remaining = self.max_response_bytes - total_bytes
+                line = self.raw_stream.readline(remaining + 1)
+                if len(line) > remaining:
+                    raise AiResponseTooLargeError("AI 响应超过大小限制")
+                total_bytes += len(line)
+                if not line:
+                    if data_lines:
+                        yield self._decode_data_lines(data_lines)
+                    break
+
+                line = line.rstrip(b"\r\n")
+                if not line:
+                    if data_lines:
+                        yield self._decode_data_lines(data_lines)
+                        data_lines = []
+                    continue
+                if line.startswith(b":"):
+                    continue
+                field, separator, value = line.partition(b":")
+                if not separator or field != b"data":
+                    continue
+                if value.startswith(b" "):
+                    value = value[1:]
+                data_lines.append(value)
+        finally:
+            self.close()
+
+
 @dataclass(frozen=True)
 class AiResult:
     """统一的 AI 响应结果。"""
@@ -133,9 +197,7 @@ class AiClientConfig:
         if not isinstance(values, dict):
             raise AiConfigurationError("AI 设置根节点必须是 JSON 对象")
         known_fields = {field.name for field in fields(cls)}
-        unknown_fields = [
-            key for key in values if key not in known_fields
-        ]
+        unknown_fields = [key for key in values if key not in known_fields]
         if unknown_fields:
             raise AiConfigurationError(
                 "未知 AI 设置字段：{}".format(
@@ -143,11 +205,7 @@ class AiClientConfig:
                 )
             )
         return cls(
-            **{
-                key: value
-                for key, value in values.items()
-                if key in known_fields
-            }
+            **{key: value for key, value in values.items() if key in known_fields}
         )
 
     def validate(self):
@@ -156,9 +214,7 @@ class AiClientConfig:
 
 
 class _RejectRedirectHandler(HTTPRedirectHandler):
-    def redirect_request(
-        self, request, file_pointer, code, message, headers, new_url
-    ):
+    def redirect_request(self, request, file_pointer, code, message, headers, new_url):
         raise HTTPError(
             request.full_url,
             code,
@@ -182,6 +238,18 @@ def _header_value(headers, name):
         if str(key).lower() == wanted:
             return value
     return None
+
+
+def _sanitize_external_value(value, api_key=None, max_length=512):
+    """压平服务端元数据并移除当前请求凭据。"""
+
+    if value is None:
+        return None
+    text = str(value)
+    if api_key:
+        text = text.replace(api_key, "[REDACTED]")
+    text = " ".join(text.split())[:max_length]
+    return text or None
 
 
 def _read_bounded(stream, headers, limit):
@@ -233,11 +301,7 @@ class UrllibTransport(object):
             request.add_unredirected_header("Authorization", authorization)
 
         hostname = urlsplit(url).hostname
-        opener = (
-            self.loopback_opener
-            if _is_loopback_host(hostname)
-            else self.opener
-        )
+        opener = self.loopback_opener if _is_loopback_host(hostname) else self.opener
         try:
             with opener.open(request, timeout=timeout) as response:
                 response_headers = _headers_dict(response.headers)
@@ -265,6 +329,69 @@ class UrllibTransport(object):
             finally:
                 error.close()
 
+    def open_stream(
+        self,
+        url,
+        headers,
+        body,
+        timeout,
+        max_response_bytes,
+    ):
+        """打开 SSE 响应；HTTP 错误仍转换为有限大小的普通响应。"""
+
+        request_headers = {
+            key: value
+            for key, value in headers.items()
+            if key.lower() != "authorization"
+        }
+        request = Request(
+            url,
+            data=body,
+            headers=request_headers,
+            method="POST",
+        )
+        authorization = _header_value(headers, "authorization")
+        if authorization:
+            request.add_unredirected_header("Authorization", authorization)
+
+        hostname = urlsplit(url).hostname
+        opener = self.loopback_opener if _is_loopback_host(hostname) else self.opener
+        try:
+            response = opener.open(request, timeout=timeout)
+        except HTTPError as error:
+            try:
+                response_headers = _headers_dict(error.headers)
+                response_body = _read_bounded(
+                    error,
+                    response_headers,
+                    min(max_response_bytes, MAX_ERROR_BODY_BYTES),
+                )
+                return HttpResponse(
+                    status_code=error.code,
+                    body=response_body,
+                    headers=response_headers,
+                )
+            finally:
+                error.close()
+
+        status_code = response.getcode()
+        if status_code < 200 or status_code >= 300:
+            try:
+                response_headers = _headers_dict(response.headers)
+                response_body = _read_bounded(
+                    response,
+                    response_headers,
+                    min(max_response_bytes, MAX_ERROR_BODY_BYTES),
+                )
+                return HttpResponse(
+                    status_code=status_code,
+                    body=response_body,
+                    headers=response_headers,
+                )
+            finally:
+                response.close()
+        return HttpEventStream(response, max_response_bytes)
+
 
 def _is_loopback_host(hostname):
     if not hostname:
@@ -285,9 +412,7 @@ def normalize_base_url(base_url):
     if base_url != base_url.strip() or "\\" in base_url:
         raise AiConfigurationError("base_url 格式无效")
     if any(
-        character.isspace()
-        or ord(character) < 32
-        or ord(character) == 127
+        character.isspace() or ord(character) < 32 or ord(character) == 127
         for character in base_url
     ):
         raise AiConfigurationError("base_url 包含空白或控制字符")
@@ -331,9 +456,7 @@ def _validate_integer(value, name, minimum, maximum):
         or value > maximum
     ):
         raise AiConfigurationError(
-            "{} 必须是 {} 到 {} 之间的整数".format(
-                name, minimum, maximum
-            )
+            "{} 必须是 {} 到 {} 之间的整数".format(name, minimum, maximum)
         )
 
 
@@ -343,9 +466,7 @@ def _validate_ai_client_config(config):
     if isinstance(config.schema_version, bool) or config.schema_version != 1:
         raise AiConfigurationError("不支持的 AI 设置 schema_version")
     if config.api_style not in SUPPORTED_API_STYLES:
-        raise AiConfigurationError(
-            "不支持的 API 风格：{}".format(config.api_style)
-        )
+        raise AiConfigurationError("不支持的 API 风格：{}".format(config.api_style))
     if not isinstance(config.model, str) or not config.model.strip():
         raise AiConfigurationError("AI 模型名称不能为空")
     if not isinstance(config.api_key_env, str) or not re.match(
@@ -390,8 +511,7 @@ def normalize_api_key(value):
     if not key:
         return None
     if len(key) > MAX_API_KEY_LENGTH or any(
-        character.isspace() or ord(character) == 127
-        for character in key
+        ord(character) < 33 or ord(character) > 126 for character in key
     ):
         raise AiConfigurationError("API Key 格式无效")
     return key
@@ -428,11 +548,15 @@ class OpenAICompatibleClient(object):
             from .ai_settings import load_ai_settings
 
             settings = load_ai_settings(user_root=user_root, paths=paths)
-        config = AiClientConfig.from_mapping(settings)
-        if api_key is None:
-            from .ai_credentials import get_session_api_key
+        from .ai_routing import AiRoutingConfig
 
-            api_key = get_session_api_key(config.base_url)
+        routing_config = AiRoutingConfig.from_mapping(settings)
+        profile = routing_config.model_for_mode("fast")
+        config = profile.client_config()
+        if api_key is None:
+            # v3 的每个模型都携带自己的明文凭据。即使配置中为空，也要
+            # 显式传入空字符串，避免意外回退到进程环境中的其他密钥。
+            api_key = profile.api_key
         return cls(
             config=config,
             api_key=api_key,
@@ -458,9 +582,7 @@ class OpenAICompatibleClient(object):
             and self._url_parts.hostname.lower() != "api.openai.com"
         ):
             return None
-        return normalize_api_key(
-            self.environ.get(self.config.api_key_env)
-        )
+        return normalize_api_key(self.environ.get(self.config.api_key_env))
 
     def _endpoint_url(self):
         endpoint = (
@@ -470,9 +592,9 @@ class OpenAICompatibleClient(object):
         )
         return self.base_url + "/" + endpoint
 
-    def _request_headers(self, api_key):
+    def _request_headers(self, api_key, stream=False):
         headers = {
-            "Accept": "application/json",
+            "Accept": "text/event-stream" if stream else "application/json",
             "Accept-Encoding": "identity",
             "Content-Type": "application/json; charset=utf-8",
             "X-Client-Request-Id": str(uuid.uuid4()),
@@ -490,11 +612,7 @@ class OpenAICompatibleClient(object):
     ):
         api_key = self._resolve_api_key()
         if not api_key and not self._is_loopback():
-            raise AiConfigurationError(
-                "未配置 API Key；请设置环境变量 {}".format(
-                    self.config.api_key_env
-                )
-            )
+            raise AiConfigurationError("当前模型未配置 API Key")
 
         payload = build_request_payload(
             api_style=self.config.api_style,
@@ -527,19 +645,19 @@ class OpenAICompatibleClient(object):
                 self.config.timeout_seconds,
                 self.config.max_response_bytes,
             )
-        except (socket.timeout, TimeoutError) as error:
-            raise AiTimeoutError("AI 请求超时") from error
-        except ssl.SSLError as error:
-            raise AiTlsError("AI 接口 TLS 校验失败") from error
+        except (socket.timeout, TimeoutError):
+            raise AiTimeoutError("AI 请求超时") from None
+        except ssl.SSLError:
+            raise AiTlsError("AI 接口 TLS 校验失败") from None
         except URLError as error:
             reason = getattr(error, "reason", None)
             if isinstance(reason, (socket.timeout, TimeoutError)):
-                raise AiTimeoutError("AI 请求超时") from error
+                raise AiTimeoutError("AI 请求超时") from None
             if isinstance(reason, ssl.SSLError):
-                raise AiTlsError("AI 接口 TLS 校验失败") from error
-            raise AiTransportError("无法连接 AI 接口") from error
-        except OSError as error:
-            raise AiTransportError("无法连接 AI 接口") from error
+                raise AiTlsError("AI 接口 TLS 校验失败") from None
+            raise AiTransportError("无法连接 AI 接口") from None
+        except (HTTPException, OSError):
+            raise AiTransportError("无法连接 AI 接口") from None
 
         if not isinstance(response, HttpResponse):
             raise AiTransportError("AI 传输层返回了无效响应")
@@ -569,7 +687,9 @@ class OpenAICompatibleClient(object):
         return payload
 
     def _raise_http_error(self, response, api_key):
-        request_id = _header_value(response.headers, "x-request-id")
+        request_id = _sanitize_external_value(
+            _header_value(response.headers, "x-request-id"), api_key
+        )
         error_code = None
         message = "服务端未提供错误详情"
         try:
@@ -582,18 +702,19 @@ class OpenAICompatibleClient(object):
             error_data = payload.get("error")
             if isinstance(error_data, dict):
                 message = str(
-                    error_data.get("message")
-                    or error_data.get("type")
-                    or message
+                    error_data.get("message") or error_data.get("type") or message
                 )
                 error_code = error_data.get("code")
             elif isinstance(error_data, str):
                 message = error_data
 
-        if api_key:
-            message = message.replace(api_key, "[REDACTED]")
-        message = " ".join(message.split())[:2048]
-        retry_after = _header_value(response.headers, "retry-after")
+        message = _sanitize_external_value(message, api_key, 2048)
+        if message is None:
+            message = "服务端未提供错误详情"
+        error_code = _sanitize_external_value(error_code, api_key)
+        retry_after = _sanitize_external_value(
+            _header_value(response.headers, "retry-after"), api_key
+        )
         error_type = AiHttpError
         if response.status_code in (401, 403):
             error_type = AiAuthenticationError
@@ -606,6 +727,123 @@ class OpenAICompatibleClient(object):
             error_code=error_code,
             retry_after=retry_after,
         )
+
+    @staticmethod
+    def _raise_stream_transport_error(error):
+        if isinstance(error, (socket.timeout, TimeoutError)):
+            raise AiTimeoutError("AI 流式请求超时") from None
+        if isinstance(error, ssl.SSLError):
+            raise AiTlsError("AI 接口 TLS 校验失败") from None
+        if isinstance(error, URLError):
+            reason = getattr(error, "reason", None)
+            if isinstance(reason, (socket.timeout, TimeoutError)):
+                raise AiTimeoutError("AI 流式请求超时") from None
+            if isinstance(reason, ssl.SSLError):
+                raise AiTlsError("AI 接口 TLS 校验失败") from None
+        raise AiTransportError("AI 流式连接中断") from None
+
+    def stream_text(
+        self,
+        instructions,
+        input_data,
+        response_schema=None,
+        schema_name="structured_output",
+    ):
+        """以 SSE 增量形式返回模型可见文本。"""
+
+        api_key = self._resolve_api_key()
+        if not api_key and not self._is_loopback():
+            raise AiConfigurationError("当前模型未配置 API Key")
+
+        payload = build_request_payload(
+            api_style=self.config.api_style,
+            model=self.config.model,
+            instructions=instructions,
+            input_data=input_data,
+            response_schema=response_schema,
+            schema_name=schema_name,
+            max_output_tokens=self.config.max_output_tokens,
+            chat_token_parameter=self.config.chat_token_parameter,
+            stream=True,
+        )
+        try:
+            body = json.dumps(
+                payload,
+                ensure_ascii=False,
+                allow_nan=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        except (TypeError, ValueError, RecursionError) as error:
+            raise AiProtocolError("AI 请求无法编码为 JSON") from error
+        if len(body) > self.config.max_request_bytes:
+            raise AiConfigurationError("AI 请求超过大小限制")
+
+        headers = self._request_headers(api_key, stream=True)
+        try:
+            stream_response = self.transport.open_stream(
+                self._endpoint_url(),
+                headers,
+                body,
+                self.config.timeout_seconds,
+                self.config.max_response_bytes,
+            )
+        except (
+            socket.timeout,
+            TimeoutError,
+            ssl.SSLError,
+            URLError,
+            HTTPException,
+            OSError,
+        ) as error:
+            self._raise_stream_transport_error(error)
+
+        if isinstance(stream_response, HttpResponse):
+            if stream_response.status_code < 200 or stream_response.status_code >= 300:
+                self._raise_http_error(stream_response, api_key)
+            raise AiProtocolError("AI 流式传输层返回了无效响应")
+        if not isinstance(stream_response, HttpEventStream):
+            raise AiProtocolError("AI 流式传输层返回了无效响应")
+
+        accumulator = AiStreamAccumulator(self.config.api_style)
+        try:
+            with stream_response:
+                content_encoding = _header_value(
+                    stream_response.headers, "content-encoding"
+                )
+                if content_encoding and content_encoding.lower() not in (
+                    "identity",
+                    "none",
+                ):
+                    raise AiProtocolError("AI 响应使用了不支持的压缩编码")
+                content_type = _header_value(stream_response.headers, "content-type")
+                if content_type and not content_type.lower().startswith(
+                    "text/event-stream"
+                ):
+                    raise AiProtocolError("AI 流式响应不是 text/event-stream")
+
+                for raw_data in stream_response:
+                    delta = accumulator.consume(raw_data)
+                    if delta:
+                        yield delta
+                    if accumulator.is_terminal:
+                        break
+                text, final_payload = accumulator.finalize()
+        except (
+            socket.timeout,
+            TimeoutError,
+            ssl.SSLError,
+            URLError,
+            HTTPException,
+            OSError,
+        ) as error:
+            self._raise_stream_transport_error(error)
+
+        response = HttpResponse(
+            status_code=stream_response.status_code,
+            body=b"",
+            headers=stream_response.headers,
+        )
+        return self._result(response, final_payload, text, None)
 
     def generate_text(
         self,
@@ -699,6 +937,7 @@ __all__ = [
     "AiTimeoutError",
     "AiTlsError",
     "AiTransportError",
+    "HttpEventStream",
     "HttpResponse",
     "OpenAICompatibleClient",
     "UrllibTransport",

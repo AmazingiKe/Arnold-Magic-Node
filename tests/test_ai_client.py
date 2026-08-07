@@ -4,7 +4,9 @@ import json
 import socket
 import ssl
 import tempfile
+import traceback
 import unittest
+from http.client import IncompleteRead
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
@@ -30,11 +32,6 @@ from arnold_magic_node.tools.ai_settings import (
     ensure_ai_settings,
     load_ai_settings,
     save_ai_settings,
-    save_ai_settings_with_session_key,
-)
-from arnold_magic_node.tools.ai_credentials import (
-    clear_all_session_api_keys,
-    get_session_api_key,
 )
 
 
@@ -163,7 +160,9 @@ class OpenAICompatibleClientTests(unittest.TestCase):
         self.assertEqual(call["url"], "https://api.openai.com/v1/responses")
         self.assertEqual(call["headers"]["Authorization"], "Bearer secret-token")
         self.assertEqual(call["timeout"], 12)
-        self.assertEqual(json.loads(call["body"].decode("utf-8"))["model"], "test-model")
+        self.assertEqual(
+            json.loads(call["body"].decode("utf-8"))["model"], "test-model"
+        )
 
     def test_calls_chat_completions_without_auth_for_local_service(self):
         transport = FakeTransport(
@@ -200,16 +199,12 @@ class OpenAICompatibleClientTests(unittest.TestCase):
 
         self.assertEqual(result.data, {"summary": "local"})
         call = transport.calls[0]
-        self.assertEqual(
-            call["url"], "http://127.0.0.1:1234/v1/chat/completions"
-        )
+        self.assertEqual(call["url"], "http://127.0.0.1:1234/v1/chat/completions")
         self.assertNotIn("Authorization", call["headers"])
         request_payload = json.loads(call["body"].decode("utf-8"))
         self.assertEqual(request_payload["max_completion_tokens"], 128)
         self.assertNotIn("max_tokens", request_payload)
-        self.assertEqual(
-            request_payload["response_format"]["type"], "json_schema"
-        )
+        self.assertEqual(request_payload["response_format"]["type"], "json_schema")
 
     def test_rejects_insecure_remote_url_and_embedded_credentials(self):
         for base_url in (
@@ -337,9 +332,7 @@ class OpenAICompatibleClientTests(unittest.TestCase):
                 self.assertEqual(len(client.transport.calls), 1)
                 self.assertEqual(
                     raised.exception.error_code,
-                    "invalid_api_key"
-                    if response.status_code == 401
-                    else "rate_limit",
+                    "invalid_api_key" if response.status_code == 401 else "rate_limit",
                 )
                 if response.status_code == 401:
                     self.assertIn("[REDACTED]", str(raised.exception))
@@ -372,6 +365,7 @@ class OpenAICompatibleClientTests(unittest.TestCase):
             (URLError(socket.timeout("timed out")), AiTimeoutError),
             (URLError(ssl.SSLError("bad certificate")), AiTlsError),
             (URLError("private host details"), AiTransportError),
+            (IncompleteRead(b"private partial body"), AiTransportError),
             (OSError("private socket details"), AiTransportError),
         ]
         for transport_error, expected_error in cases:
@@ -383,6 +377,47 @@ class OpenAICompatibleClientTests(unittest.TestCase):
                 with self.assertRaises(expected_error) as raised:
                     client.generate_text("test", "graph")
                 self.assertNotIn("private", str(raised.exception))
+                formatted = "".join(
+                    traceback.format_exception(
+                        type(raised.exception),
+                        raised.exception,
+                        raised.exception.__traceback__,
+                    )
+                )
+                self.assertNotIn("private", formatted)
+
+    def test_redacts_api_key_from_all_http_error_metadata(self):
+        api_key = "metadata-secret"
+        response = json_response(
+            {
+                "error": {
+                    "message": "failed " + api_key,
+                    "code": "code-" + api_key,
+                }
+            },
+            status_code=429,
+            headers={
+                "x-request-id": "request-" + api_key,
+                "retry-after": "retry-" + api_key,
+            },
+        )
+        client = OpenAICompatibleClient(
+            api_key=api_key,
+            transport=FakeTransport([response]),
+            environ={},
+        )
+
+        with self.assertRaises(AiRateLimitError) as raised:
+            client.generate_text("test", "graph")
+
+        error = raised.exception
+        for value in (
+            str(error),
+            error.request_id,
+            error.error_code,
+            error.retry_after,
+        ):
+            self.assertNotIn(api_key, value)
 
     def test_rejects_response_larger_than_configured_limit(self):
         response = HttpResponse(
@@ -486,7 +521,7 @@ class OpenAICompatibleClientTests(unittest.TestCase):
                     )
 
     def test_rejects_invalid_api_key_value(self):
-        for api_key in ("unsafe\r\nheader", object(), "x" * 9000):
+        for api_key in ("unsafe\r\nheader", "非ASCII密钥", object(), "x" * 9000):
             with self.subTest(api_key=api_key):
                 client = OpenAICompatibleClient(
                     api_key=api_key,
@@ -518,9 +553,7 @@ class OpenAICompatibleClientTests(unittest.TestCase):
                     environ={"OPENAI_API_KEY": "secret"},
                 )
                 with self.assertRaises(AiProtocolError):
-                    client.generate_json(
-                        "test", "graph", RESPONSE_SCHEMA, "result"
-                    )
+                    client.generate_json("test", "graph", RESPONSE_SCHEMA, "result")
 
 
 class UrllibTransportTests(unittest.TestCase):
@@ -544,20 +577,15 @@ class UrllibTransportTests(unittest.TestCase):
         )
 
         request, timeout = opener.calls[0]
-        normal_headers = {
-            key.lower(): value for key, value in request.headers.items()
-        }
+        normal_headers = {key.lower(): value for key, value in request.headers.items()}
         unredirected_headers = {
-            key.lower(): value
-            for key, value in request.unredirected_hdrs.items()
+            key.lower(): value for key, value in request.unredirected_hdrs.items()
         }
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.data, b"{}")
         self.assertEqual(timeout, 15)
         self.assertNotIn("authorization", normal_headers)
-        self.assertEqual(
-            unredirected_headers["authorization"], "Bearer secret"
-        )
+        self.assertEqual(unredirected_headers["authorization"], "Bearer secret")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.body, b'{"output_text":"ok"}')
         self.assertEqual(url_response.read_sizes, [129])
@@ -572,9 +600,7 @@ class UrllibTransportTests(unittest.TestCase):
             {"Retry-After": "2"},
             error_stream,
         )
-        transport = UrllibTransport(
-            opener=FakeOpener(error=http_error)
-        )
+        transport = UrllibTransport(opener=FakeOpener(error=http_error))
 
         response = transport.post(
             "https://api.openai.com/v1/responses",
@@ -664,10 +690,12 @@ class UrllibTransportTests(unittest.TestCase):
 
 
 class AiSettingsTests(unittest.TestCase):
-    def tearDown(self):
-        clear_all_session_api_keys()
+    @staticmethod
+    def _profile(settings, model_id=None):
+        wanted = model_id or settings["fast_model_id"]
+        return next(item for item in settings["models"] if item["id"] == wanted)
 
-    def test_ai_settings_are_created_lazily_without_storing_a_key(self):
+    def test_ai_settings_are_created_lazily_with_v3_model_profiles(self):
         with tempfile.TemporaryDirectory() as directory:
             user_root = Path(directory) / "user-data"
             settings_path = ensure_ai_settings(user_root=user_root)
@@ -678,44 +706,105 @@ class AiSettingsTests(unittest.TestCase):
                 user_root / "settings" / "AI_Settings.json",
             )
             self.assertTrue(settings_path.is_file())
-            self.assertNotIn("api_key", settings)
-            self.assertEqual(settings["api_key_env"], "OPENAI_API_KEY")
+            self.assertEqual(settings["schema_version"], 3)
+            self.assertTrue(settings["models"])
+            self.assertIn("api_key", settings["models"][0])
+            self.assertEqual(settings["models"][0]["api_key"], "")
+            self.assertIn(
+                settings["fast_model_id"], {item["id"] for item in settings["models"]}
+            )
+            self.assertIn(
+                settings["complex_model_id"],
+                {item["id"] for item in settings["models"]},
+            )
 
-    def test_ai_settings_can_be_updated_independently(self):
+    def test_legacy_single_model_settings_migrate_only_in_memory_until_save(self):
+        legacy = {
+            "schema_version": 1,
+            "api_style": "responses",
+            "base_url": "https://api.openai.com/v1",
+            "model": "legacy-model",
+            "api_key_env": "OPENAI_API_KEY",
+            "timeout_seconds": 60,
+            "max_output_tokens": 4096,
+            "max_request_bytes": 1048576,
+            "max_response_bytes": 2097152,
+            "chat_token_parameter": "max_tokens",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            user_root = Path(directory) / "user-data"
+            settings_path = ensure_ai_settings(user_root=user_root)
+            settings_path.write_text(json.dumps(legacy), encoding="utf-8")
+
+            migrated = load_ai_settings(user_root=user_root)
+
+            self.assertEqual(migrated["schema_version"], 3)
+            self.assertEqual(
+                [item["model"] for item in migrated["models"]], ["legacy-model"]
+            )
+            self.assertEqual(migrated["models"][0]["api_key"], "")
+            self.assertEqual(
+                json.loads(settings_path.read_text(encoding="utf-8"))["schema_version"],
+                1,
+            )
+
+            save_ai_settings(migrated, user_root=user_root)
+            persisted = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(persisted["schema_version"], 3)
+        self.assertNotIn("model", persisted)
+
+    def test_ai_settings_persist_each_model_url_key_and_order_in_plain_json(self):
         with tempfile.TemporaryDirectory() as directory:
             user_root = Path(directory) / "user-data"
             settings = load_ai_settings(user_root=user_root)
-            settings["base_url"] = "http://localhost:1234/v1"
-            save_ai_settings(settings, user_root=user_root)
+            original_models = [item["model"] for item in settings["models"]]
+            first = self._profile(settings)
+            first["base_url"] = "https://first.example/v1"
+            first["api_key"] = "first-plain-secret"
+            second = dict(first)
+            second.update(
+                {
+                    "id": "second-id",
+                    "model": "second-model",
+                    "base_url": "https://second.example/v1",
+                    "api_key": "second-plain-secret",
+                }
+            )
+            settings["models"].insert(0, second)
+            settings["fast_model_id"] = "second-id"
+            settings_path = save_ai_settings(settings, user_root=user_root)
             reloaded = load_ai_settings(user_root=user_root)
+            persisted_text = settings_path.read_text(encoding="utf-8")
 
-        self.assertEqual(reloaded["base_url"], "http://localhost:1234/v1")
+        self.assertEqual(
+            [item["model"] for item in reloaded["models"]],
+            ["second-model"] + original_models,
+        )
+        self.assertEqual(reloaded["models"][0]["base_url"], "https://second.example/v1")
+        self.assertEqual(reloaded["models"][0]["api_key"], "second-plain-secret")
+        self.assertIn("first-plain-secret", persisted_text)
+        self.assertIn("second-plain-secret", persisted_text)
 
-    def test_existing_ai_settings_are_preserved_and_secrets_are_rejected(self):
+    def test_existing_ai_settings_are_preserved_and_invalid_root_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             user_root = Path(directory) / "user-data"
             settings = load_ai_settings(user_root=user_root)
-            settings["model"] = "custom-model"
+            self._profile(settings)["model"] = "custom-model"
             settings_path = save_ai_settings(settings, user_root=user_root)
 
+            self.assertEqual(ensure_ai_settings(user_root=user_root), settings_path)
             self.assertEqual(
-                ensure_ai_settings(user_root=user_root), settings_path
-            )
-            self.assertEqual(
-                load_ai_settings(user_root=user_root)["model"],
-                "custom-model",
-            )
-            with self.assertRaises(ValueError):
-                save_ai_settings(
-                    {"api_key": "must-not-be-saved"},
-                    user_root=user_root,
-                )
-            self.assertEqual(
-                load_ai_settings(user_root=user_root)["model"],
+                self._profile(load_ai_settings(user_root=user_root))["model"],
                 "custom-model",
             )
             with self.assertRaises(TypeError):
                 save_ai_settings([], user_root=user_root)
+            with self.assertRaises(AiConfigurationError):
+                save_ai_settings(
+                    {"schema_version": 3, "api_key": "wrong-level"},
+                    user_root=user_root,
+                )
 
     def test_factory_accepts_in_memory_settings_without_touching_maya(self):
         transport = FakeTransport(
@@ -734,105 +823,112 @@ class AiSettingsTests(unittest.TestCase):
 
         self.assertEqual(client.generate_text("test", "graph").text, "ok")
 
+    def test_factory_uses_fast_profile_and_its_stored_key(self):
+        transport = FakeTransport(
+            [json_response({"status": "completed", "output_text": "ok"})]
+        )
+        settings = {
+            "schema_version": 3,
+            "models": [
+                {
+                    "id": "fast-id",
+                    "model": "fast-model",
+                    "base_url": "https://fast.example/v1",
+                    "api_style": "responses",
+                    "api_key": "stored-fast-secret",
+                    "timeout_seconds": 12,
+                    "max_output_tokens": 128,
+                    "max_request_bytes": 4096,
+                    "max_response_bytes": 8192,
+                    "chat_token_parameter": "max_tokens",
+                }
+            ],
+            "fast_model_id": "fast-id",
+            "complex_model_id": "fast-id",
+        }
+
+        client = create_openai_client(
+            settings=settings,
+            transport=transport,
+            environ={},
+        )
+        result = client.generate_text(None, "graph")
+
+        self.assertEqual(result.text, "ok")
+        self.assertEqual(transport.calls[0]["url"], "https://fast.example/v1/responses")
+        self.assertEqual(
+            transport.calls[0]["headers"]["Authorization"],
+            "Bearer stored-fast-secret",
+        )
+
     def test_invalid_base_url_does_not_overwrite_existing_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             user_root = Path(directory) / "user-data"
             settings = load_ai_settings(user_root=user_root)
-            settings["model"] = "preserved-model"
+            self._profile(settings)["model"] = "preserved-model"
             save_ai_settings(settings, user_root=user_root)
-            settings["base_url"] = "http://api.example.com/v1"
+            self._profile(settings)["base_url"] = "http://api.example.com/v1"
 
             with self.assertRaises(AiConfigurationError):
                 save_ai_settings(settings, user_root=user_root)
 
             persisted = load_ai_settings(user_root=user_root)
 
-        self.assertEqual(persisted["model"], "preserved-model")
+        self.assertEqual(self._profile(persisted)["model"], "preserved-model")
         self.assertEqual(
-            persisted["base_url"], "https://api.openai.com/v1"
-        )
-
-    def test_save_with_session_key_never_persists_key_and_clears_old_origin(self):
-        with tempfile.TemporaryDirectory() as directory:
-            user_root = Path(directory) / "user-data"
-            settings = load_ai_settings(user_root=user_root)
-            previous_base_url = settings["base_url"]
-            save_ai_settings_with_session_key(
-                settings,
-                api_key="old-session-secret",
-                user_root=user_root,
-            )
-            self.assertEqual(
-                get_session_api_key(previous_base_url),
-                "old-session-secret",
-            )
-
-            settings["base_url"] = "https://compatible.example/v1"
-            settings["api_key_env"] = "COMPATIBLE_AI_KEY"
-            settings_path = save_ai_settings_with_session_key(
-                settings,
-                previous_base_url=previous_base_url,
-                api_key="new-session-secret",
-                user_root=user_root,
-            )
-            persisted_text = settings_path.read_text(encoding="utf-8")
-
-        self.assertNotIn("api_key", json.loads(persisted_text))
-        self.assertNotIn("new-session-secret", persisted_text)
-        self.assertIsNone(get_session_api_key(previous_base_url))
-        self.assertEqual(
-            get_session_api_key("https://compatible.example/v2"),
-            "new-session-secret",
-        )
-
-    def test_changing_origin_without_new_key_clears_old_session_key(self):
-        with tempfile.TemporaryDirectory() as directory:
-            user_root = Path(directory) / "user-data"
-            settings = load_ai_settings(user_root=user_root)
-            previous_base_url = settings["base_url"]
-            save_ai_settings_with_session_key(
-                settings,
-                api_key="old-session-secret",
-                user_root=user_root,
-            )
-            settings["base_url"] = "https://compatible.example/v1"
-            settings["api_key_env"] = "COMPATIBLE_AI_KEY"
-
-            save_ai_settings_with_session_key(
-                settings,
-                previous_base_url=previous_base_url,
-                user_root=user_root,
-            )
-
-        self.assertIsNone(get_session_api_key(previous_base_url))
-        self.assertIsNone(
-            get_session_api_key("https://compatible.example/v1")
+            self._profile(persisted)["base_url"],
+            "https://api.openai.com/v1",
         )
 
     def test_valid_settings_can_replace_an_invalid_legacy_base_url(self):
         with tempfile.TemporaryDirectory() as directory:
             user_root = Path(directory) / "user-data"
             settings_path = ensure_ai_settings(user_root=user_root)
-            legacy_settings = load_ai_settings(user_root=user_root)
-            legacy_settings["base_url"] = "http://legacy.example/v1"
-            settings_path.write_text(
-                json.dumps(legacy_settings), encoding="utf-8"
-            )
+            legacy_settings = {
+                "schema_version": 1,
+                "api_style": "responses",
+                "base_url": "http://legacy.example/v1",
+                "model": "legacy-model",
+                "api_key_env": "OPENAI_API_KEY",
+                "timeout_seconds": 60,
+                "max_output_tokens": 4096,
+                "max_request_bytes": 1048576,
+                "max_response_bytes": 2097152,
+                "chat_token_parameter": "max_tokens",
+            }
+            settings_path.write_text(json.dumps(legacy_settings), encoding="utf-8")
             updated_settings = load_ai_settings(user_root=user_root)
-            previous_base_url = updated_settings["base_url"]
-            updated_settings["base_url"] = "https://compatible.example/v1"
-
-            save_ai_settings_with_session_key(
-                updated_settings,
-                previous_base_url=previous_base_url,
-                user_root=user_root,
+            self._profile(updated_settings)["base_url"] = (
+                "https://compatible.example/v1"
             )
+
+            save_ai_settings(updated_settings, user_root=user_root)
 
             persisted = load_ai_settings(user_root=user_root)
 
         self.assertEqual(
-            persisted["base_url"], "https://compatible.example/v1"
+            self._profile(persisted)["base_url"],
+            "https://compatible.example/v1",
         )
+
+    def test_malformed_v3_settings_fail_with_configuration_error_on_load(self):
+        with tempfile.TemporaryDirectory() as directory:
+            user_root = Path(directory) / "user-data"
+            settings_path = ensure_ai_settings(user_root=user_root)
+            settings_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 3,
+                        "models": [],
+                        "fast_model_id": "missing",
+                        "complex_model_id": "missing",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(AiConfigurationError):
+                load_ai_settings(user_root=user_root)
 
 
 class LightweightDependencyTests(unittest.TestCase):
@@ -844,6 +940,7 @@ class LightweightDependencyTests(unittest.TestCase):
             "arnold_magic_node/core/ai_protocol.py",
             "arnold_magic_node/tools/ai_client.py",
             "arnold_magic_node/tools/ai_credentials.py",
+            "arnold_magic_node/tools/ai_routing.py",
             "arnold_magic_node/tools/ai_settings.py",
         ):
             source = (project_root / relative_path).read_text(encoding="utf-8")

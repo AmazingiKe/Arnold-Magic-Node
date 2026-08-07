@@ -61,9 +61,7 @@ class AiCredentialStoreTests(unittest.TestCase):
             get_session_api_key("https://api.openai.com:443/v2"),
             "session-secret",
         )
-        self.assertIsNone(
-            get_session_api_key("https://compatible.example/v1")
-        )
+        self.assertIsNone(get_session_api_key("https://compatible.example/v1"))
 
     def test_session_key_rejects_local_http_and_can_be_cleared(self):
         with self.assertRaises(AiConfigurationError):
@@ -74,9 +72,7 @@ class AiCredentialStoreTests(unittest.TestCase):
 
         set_session_api_key("https://ai.example.com/v1", "secret")
         self.assertTrue(clear_session_api_key("https://ai.example.com/v2"))
-        self.assertIsNone(
-            get_session_api_key("https://ai.example.com/v1")
-        )
+        self.assertIsNone(get_session_api_key("https://ai.example.com/v1"))
         self.assertFalse(clear_session_api_key("https://ai.example.com/v1"))
 
     def test_environment_status_never_returns_the_secret(self):
@@ -85,17 +81,11 @@ class AiCredentialStoreTests(unittest.TestCase):
             "INVALID_AI_KEY": "unsafe\nsecret",
         }
 
-        self.assertTrue(
-            has_environment_api_key("VALID_AI_KEY", environ=environment)
-        )
-        self.assertFalse(
-            has_environment_api_key("INVALID_AI_KEY", environ=environment)
-        )
-        self.assertFalse(
-            has_environment_api_key("MISSING_AI_KEY", environ=environment)
-        )
+        self.assertTrue(has_environment_api_key("VALID_AI_KEY", environ=environment))
+        self.assertFalse(has_environment_api_key("INVALID_AI_KEY", environ=environment))
+        self.assertFalse(has_environment_api_key("MISSING_AI_KEY", environ=environment))
 
-    def test_factory_only_uses_session_key_for_matching_origin(self):
+    def test_factory_does_not_use_legacy_session_key_for_model_profiles(self):
         set_session_api_key(
             "https://api.openai.com/v1",
             "origin-bound-secret",
@@ -112,11 +102,9 @@ class AiCredentialStoreTests(unittest.TestCase):
             environ={},
         )
 
-        self.assertEqual(client.generate_text("test", "graph").text, "ok")
-        self.assertEqual(
-            matching_transport.calls[0]["headers"]["Authorization"],
-            "Bearer origin-bound-secret",
-        )
+        with self.assertRaises(AiConfigurationError):
+            client.generate_text("test", "graph")
+        self.assertEqual(matching_transport.calls, [])
 
         other_transport = FakeTransport()
         other_client = create_openai_client(

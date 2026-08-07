@@ -7,12 +7,8 @@ import re
 
 API_STYLE_RESPONSES = "responses"
 API_STYLE_CHAT_COMPLETIONS = "chat_completions"
-SUPPORTED_API_STYLES = frozenset(
-    (API_STYLE_RESPONSES, API_STYLE_CHAT_COMPLETIONS)
-)
-SUPPORTED_CHAT_TOKEN_PARAMETERS = frozenset(
-    ("max_tokens", "max_completion_tokens")
-)
+SUPPORTED_API_STYLES = frozenset((API_STYLE_RESPONSES, API_STYLE_CHAT_COMPLETIONS))
+SUPPORTED_CHAT_TOKEN_PARAMETERS = frozenset(("max_tokens", "max_completion_tokens"))
 MAX_JSON_INTEGER_DIGITS = 4300
 
 
@@ -22,6 +18,10 @@ class AiError(Exception):
 
 class AiProtocolError(AiError):
     """请求或响应不符合预期的 AI JSON 协议。"""
+
+
+class AiRetryableStreamError(AiProtocolError):
+    """流在完整输出前因临时服务故障或意外 EOF 中断。"""
 
 
 class AiRefusalError(AiProtocolError):
@@ -105,9 +105,7 @@ def _validate_schema(response_schema, schema_name):
     if not isinstance(schema_name, str) or not re.match(
         r"^[A-Za-z0-9_-]{1,64}$", schema_name
     ):
-        raise AiProtocolError(
-            "schema_name 只能包含字母、数字、下划线和连字符"
-        )
+        raise AiProtocolError("schema_name 只能包含字母、数字、下划线和连字符")
 
 
 def _validate_max_output_tokens(max_output_tokens):
@@ -130,12 +128,15 @@ def build_request_payload(
     schema_name="structured_output",
     max_output_tokens=None,
     chat_token_parameter="max_tokens",
+    stream=False,
 ):
     """构造 Responses 或 Chat Completions 的 REST 请求体。"""
 
     _validate_common_request(api_style, model, instructions)
     _validate_schema(response_schema, schema_name)
     _validate_max_output_tokens(max_output_tokens)
+    if not isinstance(stream, bool):
+        raise AiProtocolError("stream 必须是布尔值")
     input_text = _serialize_input(input_data)
 
     if api_style == API_STYLE_RESPONSES:
@@ -157,6 +158,8 @@ def build_request_payload(
                     "schema": response_schema,
                 }
             }
+        if stream:
+            payload["stream"] = True
         return payload
 
     messages = []
@@ -180,6 +183,8 @@ def build_request_payload(
                 "schema": response_schema,
             },
         }
+    if stream:
+        payload["stream"] = True
     return payload
 
 
@@ -206,9 +211,7 @@ def _parse_responses_text(payload):
         )
     if status != "completed":
         raise AiProtocolError(
-            "Responses 状态不是 completed：{}".format(
-                status or "missing"
-            )
+            "Responses 状态不是 completed：{}".format(status or "missing")
         )
 
     top_level_text = payload.get("output_text")
@@ -229,12 +232,8 @@ def _parse_responses_text(payload):
             if not isinstance(part, dict):
                 continue
             if part.get("type") == "refusal":
-                raise AiRefusalError(
-                    str(part.get("refusal") or "模型拒绝了本次请求")
-                )
-            if part.get("type") == "output_text" and isinstance(
-                part.get("text"), str
-            ):
+                raise AiRefusalError(str(part.get("refusal") or "模型拒绝了本次请求"))
+            if part.get("type") == "output_text" and isinstance(part.get("text"), str):
                 text_parts.append(part["text"])
 
     if isinstance(top_level_text, str) and top_level_text:
@@ -279,9 +278,7 @@ def _parse_chat_completions_text(payload):
         raise AiRefusalError("Chat Completions 输出被内容过滤器阻止")
     if finish_reason != "stop":
         raise AiProtocolError(
-            "Chat Completions 未返回最终文本：{}".format(
-                finish_reason or "missing"
-            )
+            "Chat Completions 未返回最终文本：{}".format(finish_reason or "missing")
         )
 
     message = choice.get("message")
@@ -306,6 +303,247 @@ def parse_response_text(api_style, payload):
     if api_style == API_STYLE_RESPONSES:
         return _parse_responses_text(payload)
     return _parse_chat_completions_text(payload)
+
+
+class AiStreamAccumulator(object):
+    """累积 OpenAI SSE 事件，并只返回可见文本增量。"""
+
+    def __init__(self, api_style):
+        if api_style not in SUPPORTED_API_STYLES:
+            raise AiProtocolError("不支持的 API 风格：{}".format(api_style))
+        self.api_style = api_style
+        self._text_parts = []
+        self._payload = {}
+        self._completed = False
+        self._done_marker = False
+        self._finish_reason = None
+        self._response_text_parts = {}
+        self._response_done_parts = set()
+        self._response_part_indexing = None
+
+    @property
+    def is_terminal(self):
+        """当前流是否已经收到协议定义的最终事件。"""
+
+        return self._completed or self._done_marker
+
+    @staticmethod
+    def _event_payload(raw_data):
+        payload = load_json_strict(raw_data)
+        if not isinstance(payload, dict):
+            raise AiProtocolError("AI 流事件根节点必须是 JSON 对象")
+        return payload
+
+    @staticmethod
+    def _stream_error_code(payload):
+        candidates = [payload]
+        if isinstance(payload, dict):
+            response = payload.get("response")
+            if isinstance(response, dict):
+                candidates.append(response)
+        for candidate in tuple(candidates):
+            error = candidate.get("error") if isinstance(candidate, dict) else None
+            if isinstance(error, dict):
+                candidates.append(error)
+        retryable_codes = frozenset(
+            (
+                "internal_error",
+                "model_not_found",
+                "model_unavailable",
+                "overloaded",
+                "rate_limit_exceeded",
+                "request_timeout",
+                "server_error",
+                "timeout",
+            )
+        )
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            for field in ("code", "type"):
+                value = candidate.get(field)
+                if isinstance(value, str) and len(value) <= 128:
+                    normalized = value.lower()
+                    if normalized in retryable_codes:
+                        return normalized
+        return None
+
+    @classmethod
+    def _raise_event_error(cls, payload, fallback):
+        # 流事件可能由兼容服务生成，错误正文不应进入日志、UI 或异常链。
+        if cls._stream_error_code(payload):
+            raise AiRetryableStreamError(fallback)
+        raise AiProtocolError(fallback)
+
+    def _response_text_part_key(self, payload):
+        output_index = payload.get("output_index")
+        content_index = payload.get("content_index")
+        if output_index is None and content_index is None:
+            part_key = (None, None)
+            uses_indices = False
+        else:
+            for label, value in (
+                ("output_index", output_index),
+                ("content_index", content_index),
+            ):
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    raise AiProtocolError(
+                        "Responses 文本事件的 {} 格式错误".format(label)
+                    )
+            part_key = (output_index, content_index)
+            uses_indices = True
+        if self._response_part_indexing is None:
+            self._response_part_indexing = uses_indices
+        elif self._response_part_indexing != uses_indices:
+            raise AiProtocolError("Responses 文本事件不能混用有索引和无索引格式")
+        return part_key
+
+    def consume(self, raw_data):
+        """消费一个 SSE data 字段，返回可选的文本 delta。"""
+
+        if self._completed or self._done_marker:
+            raise AiProtocolError("AI 流在终止事件后仍返回数据")
+        if raw_data == "[DONE]":
+            if self.api_style != API_STYLE_CHAT_COMPLETIONS:
+                raise AiProtocolError("Responses 流不应使用 [DONE] 终止")
+            self._done_marker = True
+            return None
+
+        payload = self._event_payload(raw_data)
+        if self.api_style == API_STYLE_RESPONSES:
+            return self._consume_responses(payload)
+        return self._consume_chat(payload)
+
+    def _consume_responses(self, payload):
+        event_type = payload.get("type")
+        if not isinstance(event_type, str) or not event_type:
+            raise AiProtocolError("Responses 流事件缺少 type")
+
+        if event_type == "error":
+            self._raise_event_error(payload, "AI 流返回错误")
+        if event_type in ("response.refusal.delta", "response.refusal.done"):
+            raise AiRefusalError("模型拒绝了本次请求")
+        if event_type == "response.incomplete":
+            response = payload.get("response") or {}
+            details = (
+                response.get("incomplete_details")
+                if isinstance(response, dict)
+                else None
+            ) or {}
+            reason = details.get("reason") if isinstance(details, dict) else None
+            if reason not in ("content_filter", "max_output_tokens"):
+                reason = "unknown"
+            raise AiIncompleteResponseError(
+                "Responses 输出不完整：{}".format(reason or "unknown")
+            )
+        if event_type == "response.failed":
+            self._raise_event_error(payload, "Responses 流生成失败")
+        if event_type == "response.output_text.delta":
+            delta = payload.get("delta")
+            if not isinstance(delta, str):
+                raise AiProtocolError("Responses 文本 delta 格式错误")
+            part_key = self._response_text_part_key(payload)
+            if part_key in self._response_done_parts:
+                raise AiProtocolError("Responses 文本片段完成后仍返回 delta")
+            if not delta:
+                return None
+            self._text_parts.append(delta)
+            self._response_text_parts.setdefault(part_key, []).append(delta)
+            return delta
+        if event_type == "response.output_text.done":
+            text = payload.get("text")
+            if not isinstance(text, str):
+                raise AiProtocolError("Responses 完成文本格式错误")
+            part_key = self._response_text_part_key(payload)
+            if part_key in self._response_done_parts:
+                raise AiProtocolError("Responses 文本片段重复完成")
+            delta_text = "".join(self._response_text_parts.get(part_key, ()))
+            if text != delta_text:
+                raise AiProtocolError("Responses 文本片段增量与完成文本不一致")
+            self._response_done_parts.add(part_key)
+            return None
+        if event_type == "response.completed":
+            response = payload.get("response")
+            if not isinstance(response, dict):
+                raise AiProtocolError("Responses completed 事件缺少 response")
+            if response.get("status") != "completed":
+                raise AiProtocolError("Responses 流没有成功完成")
+            self._payload = response
+            self._completed = True
+        return None
+
+    def _consume_chat(self, payload):
+        provider_error = _provider_error_message(payload)
+        if provider_error:
+            self._raise_event_error(payload, "AI 流返回错误")
+
+        for key in ("id", "model", "created", "system_fingerprint"):
+            if key in payload:
+                self._payload[key] = payload[key]
+        usage = payload.get("usage")
+        if isinstance(usage, dict):
+            self._payload["usage"] = usage
+
+        choices = payload.get("choices")
+        if choices == []:
+            return None
+        if not isinstance(choices, list) or not choices:
+            raise AiProtocolError("Chat 流事件缺少 choices")
+        choice = choices[0]
+        if not isinstance(choice, dict):
+            raise AiProtocolError("Chat 流 choice 格式错误")
+        delta_data = choice.get("delta")
+        if not isinstance(delta_data, dict):
+            raise AiProtocolError("Chat 流 delta 格式错误")
+
+        refusal = delta_data.get("refusal")
+        if refusal:
+            raise AiRefusalError("模型拒绝了本次请求")
+
+        finish_reason = choice.get("finish_reason")
+        if finish_reason == "length":
+            raise AiIncompleteResponseError("Chat Completions 输出达到长度上限")
+        if finish_reason == "content_filter":
+            raise AiRefusalError("Chat Completions 输出被内容过滤器阻止")
+        if finish_reason not in (None, "stop"):
+            raise AiProtocolError("Chat Completions 流异常终止")
+        if finish_reason == "stop":
+            self._finish_reason = finish_reason
+
+        content = delta_data.get("content")
+        if content is None or content == "":
+            return None
+        if not isinstance(content, str):
+            raise AiProtocolError("Chat 流文本 delta 格式错误")
+        self._text_parts.append(content)
+        return content
+
+    def finalize(self):
+        """验证流终止状态并返回完整文本与最终响应元数据。"""
+
+        text = "".join(self._text_parts)
+        if self.api_style == API_STYLE_RESPONSES:
+            if not self._completed:
+                raise AiRetryableStreamError("Responses 流意外结束")
+            if not text:
+                raise AiProtocolError("Responses 流中没有文本内容")
+            if _provider_error_message(self._payload):
+                raise AiProtocolError("Responses 最终响应返回错误")
+            try:
+                final_text = parse_response_text(API_STYLE_RESPONSES, self._payload)
+            except AiRefusalError:
+                raise AiRefusalError("模型拒绝了本次请求") from None
+            if final_text != text:
+                raise AiProtocolError("Responses 流增量与最终响应不一致")
+            return text, self._payload
+
+        if not self._done_marker:
+            raise AiRetryableStreamError("Chat Completions 流意外结束")
+        if self._finish_reason != "stop":
+            raise AiProtocolError("Chat Completions 流缺少停止原因")
+        if not text:
+            raise AiProtocolError("Chat Completions 流中没有文本内容")
+        return text, dict(self._payload)
 
 
 def parse_json_output(text):
@@ -339,9 +577,7 @@ def _matches_json_type(value, expected_type):
             and not isinstance(value, bool)
             and (not isinstance(value, float) or math.isfinite(value))
         )
-    raise AiProtocolError(
-        "本地 schema 校验不支持 type：{}".format(expected_type)
-    )
+    raise AiProtocolError("本地 schema 校验不支持 type：{}".format(expected_type))
 
 
 def _validate_schema_value(value, schema, path):
@@ -359,8 +595,7 @@ def _validate_schema_value(value, schema, path):
         ):
             raise AiProtocolError("schema type 必须是字符串或非空字符串数组")
         if not any(
-            _matches_json_type(value, expected_type)
-            for expected_type in expected_types
+            _matches_json_type(value, expected_type) for expected_type in expected_types
         ):
             _schema_error(path, "类型不匹配")
 
@@ -379,15 +614,12 @@ def _validate_schema_value(value, schema, path):
         additional = schema.get("additionalProperties", True)
         if not isinstance(properties, dict):
             raise AiProtocolError("schema properties 必须是 JSON 对象")
-        if (
-            not isinstance(required, list)
-            or not all(isinstance(item, str) for item in required)
+        if not isinstance(required, list) or not all(
+            isinstance(item, str) for item in required
         ):
             raise AiProtocolError("schema required 必须是字符串数组")
         if not isinstance(additional, (bool, dict)):
-            raise AiProtocolError(
-                "schema additionalProperties 必须是布尔值或对象"
-            )
+            raise AiProtocolError("schema additionalProperties 必须是布尔值或对象")
 
         for property_name in required:
             if property_name not in value:
@@ -441,6 +673,8 @@ __all__ = [
     "AiIncompleteResponseError",
     "AiProtocolError",
     "AiRefusalError",
+    "AiRetryableStreamError",
+    "AiStreamAccumulator",
     "SUPPORTED_API_STYLES",
     "build_request_payload",
     "load_json_strict",

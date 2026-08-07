@@ -41,7 +41,12 @@ def maya_command_calls(path):
 
 class UiStructureTests(unittest.TestCase):
     def test_ui_modules_use_tools_not_application_or_legacy_core(self):
-        excluded = {"__init__.py", "_qt_compat.py", "_workspace.py", "texture_batch_importer_dialog.py"}
+        excluded = {
+            "__init__.py",
+            "_qt_compat.py",
+            "_workspace.py",
+            "texture_batch_importer_dialog.py",
+        }
         for path in UI_ROOT.glob("*.py"):
             imports = all_imported_modules(path)
             self.assertNotIn("application", imports, path.name)
@@ -54,15 +59,24 @@ class UiStructureTests(unittest.TestCase):
     def test_main_window_actions_are_backed_by_tools(self):
         imports = imported_modules(UI_ROOT / "main_window.py")
         expected = {
-            "tools.magic_connection", "tools.materials", "tools.node_graph",
-            "tools.path_detection", "tools.rendering", "tools.runtime",
-            "tools.scene", "tools.texture",
+            "tools.magic_connection",
+            "tools.materials",
+            "tools.node_graph",
+            "tools.path_detection",
+            "tools.rendering",
+            "tools.runtime",
+            "tools.scene",
+            "tools.texture",
         }
         self.assertTrue(expected.issubset(imports))
 
     def test_ui_package_stays_lazy(self):
         tree = module_tree(UI_ROOT / "__init__.py")
-        imports = [node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
+        imports = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Import, ast.ImportFrom))
+        ]
         self.assertEqual(imports, [])
 
     def test_dialog_modules_match_their_primary_class_names(self):
@@ -103,8 +117,16 @@ class UiStructureTests(unittest.TestCase):
 
     def test_ui_only_uses_maya_for_window_construction(self):
         forbidden_commands = {
-            "connectAttr", "delete", "getAttr", "listConnections", "ls",
-            "nodeType", "objExists", "rename", "select", "setAttr",
+            "connectAttr",
+            "delete",
+            "getAttr",
+            "listConnections",
+            "ls",
+            "nodeType",
+            "objExists",
+            "rename",
+            "select",
+            "setAttr",
             "shadingNode",
         }
         for path in UI_ROOT.glob("*.py"):
@@ -115,7 +137,9 @@ class UiStructureTests(unittest.TestCase):
             )
             imports = imported_modules(path)
             self.assertFalse(
-                any(module == "mtoa" or module.startswith("mtoa.") for module in imports),
+                any(
+                    module == "mtoa" or module.startswith("mtoa.") for module in imports
+                ),
                 path.name,
             )
 
@@ -141,40 +165,40 @@ class UiStructureTests(unittest.TestCase):
 
         required_keys = {
             "tab",
-            "connection_section",
+            "models_section",
+            "model_name_header",
+            "model_input_placeholder",
+            "add_model_button",
+            "remove_model_button",
+            "move_up_button",
+            "move_down_button",
+            "test_model_button",
+            "model_test_hint",
+            "test_pending",
+            "test_success",
+            "test_failed",
+            "selection_section",
+            "fast_model_label",
+            "complex_model_label",
+            "editor_section",
+            "model_name_label",
             "api_style_label",
             "responses_option",
             "chat_completions_option",
             "base_url_label",
-            "model_label",
-            "api_key_env_label",
-            "api_key_env_hint",
-            "limits_section",
+            "api_key_label",
+            "api_key_hint",
             "timeout_seconds_label",
             "max_output_tokens_label",
             "max_request_bytes_label",
             "max_response_bytes_label",
             "chat_token_parameter_label",
-            "session_key_section",
-            "session_key_label",
-            "session_key_placeholder",
-            "session_key_hint",
-            "session_target",
-            "local_key_disabled",
-            "session_configured",
-            "session_not_configured",
-            "environment_configured",
-            "environment_not_configured",
             "save_button",
-            "clear_key_button",
             "saved_message",
-            "cleared_message",
             "error_prefix",
         }
         for language_name in ("zh_CN.json", "en_US.json"):
-            language_path = (
-                PACKAGE_ROOT / "resources" / "i18n" / language_name
-            )
+            language_path = PACKAGE_ROOT / "resources" / "i18n" / language_name
             language = json.loads(language_path.read_text(encoding="utf-8-sig"))
             ai_language = language["ArnoldMagicNode"]["AMNSP_WIN"][
                 "create_ai_settings_tab"
