@@ -35,6 +35,61 @@
 - 渲染统计报告
 - 内存优化工具
 
+## 🤖 AI 接入层（开发接口）
+
+项目已内置一个不依赖 `openai`、`requests` 或 `httpx` 的轻量客户端，直接使用 Python 标准库 `urllib` 调用 JSON HTTP 接口。当前支持：
+
+- OpenAI Responses API（默认）
+- OpenAI-compatible Chat Completions API
+- JSON Schema 结构化输出与本地基础结构校验
+- OpenAI、远程 HTTPS 兼容服务，以及无鉴权的本机回环服务
+
+在启动 Maya 前给当前进程配置密钥，密钥不会写入插件设置：
+
+```powershell
+$env:OPENAI_API_KEY = "你的 API Key"
+```
+
+在 Maya Python 中调用：
+
+```python
+from arnold_magic_node.core.ai_protocol import AiError
+from arnold_magic_node.tools.ai_client import create_openai_client
+
+node_feature_schema = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "node_types": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    },
+    "required": ["summary", "node_types"],
+    "additionalProperties": False,
+}
+
+try:
+    client = create_openai_client()
+    result = client.generate_json(
+        instructions="提取节点网络特征，只返回约定结构。",
+        input_data={"nodes": [], "connections": []},
+        response_schema=node_feature_schema,
+        schema_name="node_features",
+    )
+    print(result.data)
+except AiError as error:
+    print("AI 调用失败：{}".format(error))
+```
+
+第一次实际创建客户端时，会按需生成用户配置：
+
+```text
+<Maya userAppDir>/arnold_magic_node/settings/AI_Settings.json
+```
+
+连接其他兼容服务时修改 `base_url`、`model` 和 `api_style`。远程服务必须使用 HTTPS，并建议把专用密钥放入自定义的 `api_key_env`；本地服务可使用 `http://127.0.0.1:<端口>/v1`。客户端不会自动重试或在两种协议间自动降级，以免一次操作被重复计费。接口为同步调用，接入 UI 时应放到工作线程，避免阻塞 Maya 主线程。
+
 欢迎通过以下方式参与项目：
 1. 提交Issue报告问题
 2. 发起Pull Request改进代码
