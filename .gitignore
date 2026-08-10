@@ -18,6 +18,9 @@ __pycache__/
 /venv/
 /env/
 
+# 本地第三方库
+/libs/
+
 # 插件临时文件
 /Temp/
 
