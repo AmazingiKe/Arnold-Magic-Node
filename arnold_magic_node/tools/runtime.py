@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from arnold_magic_node.core.paths import (
     ICONS_ROOT,
     LANGUAGES_ROOT,
+    PROJECT_ROOT,
+    VERSION_FILENAME,
     user_aov_cache_path,
     user_preset_dir,
     user_settings_dir,
@@ -19,7 +21,9 @@ from arnold_magic_node.maya.environment import MayaEnvironmentAdapter
 
 
 SOFTWARE_STATE = "Release"
-SOFTWARE_VERSION = "1.2.02"
+SOFTWARE_VERSION = (PROJECT_ROOT / VERSION_FILENAME).read_text(
+    encoding="utf-8"
+).strip()
 
 PLUGIN_HOME_URL = (
     "https://flowus.cn/amazingike/share/"
