@@ -1,6 +1,6 @@
 """Magic Connection 的 Maya 适配和节点网络执行器。"""
 
-from ..core.magic_connection import GRAY_CHANNELS
+from arnold_magic_node.core.magic_connection import GRAY_CHANNELS
 from .scene import MayaSceneAdapter
 from .textures import MayaTextureAdapter
 
@@ -28,17 +28,6 @@ class MayaMagicConnectionAdapter(MayaTextureAdapter, MayaSceneAdapter):
     def __init__(self, cmds_module=None):
         super(MayaMagicConnectionAdapter, self).__init__(cmds_module)
 
-    def selected_nodes_by_type(self):
-        selected = self.cmds.ls(sl=True) or []
-        result = {}
-        for node_name in selected:
-            node_type = self.cmds.nodeType(node_name)
-            result.setdefault(node_type, []).append(node_name)
-        return result
-
-    def file_texture_path(self, node_name):
-        return super(MayaMagicConnectionAdapter, self).file_texture_path(node_name)
-
     def is_shift_pressed(self):
         return bool(self.cmds.getModifiers() & 1)
 
@@ -60,23 +49,6 @@ class MayaMagicConnectionAdapter(MayaTextureAdapter, MayaSceneAdapter):
             return True
         except Exception:
             return False
-
-    def set_udim(self, node_name, enabled):
-        return super(MayaMagicConnectionAdapter, self).set_udim(node_name, enabled)
-
-    def set_color_space(self, node_name, color_space):
-        return super(MayaMagicConnectionAdapter, self).set_color_space(
-            node_name, color_space
-        )
-
-    def rename_node(self, old_name, new_name):
-        return self.rename(old_name, new_name)
-
-    def report(self, message, warning=False):
-        if warning:
-            self.warning(message)
-        else:
-            self.warning(message)
 
 
 class MayaMagicConnectionExecutor:

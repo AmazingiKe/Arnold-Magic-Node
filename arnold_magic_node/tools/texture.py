@@ -1,11 +1,11 @@
 """贴图、UV 与直接节点连接工具。"""
 
-from ..core.magic_connection import (
+from arnold_magic_node.core.magic_connection import (
     contains_udim_number,
     match_texture_channels,
     normalize_texture_name,
 )
-from ..maya.textures import MayaTextureAdapter
+from arnold_magic_node.maya.textures import MayaTextureAdapter
 from .feedback import FeedbackPrompt
 from .runtime import (
     load_config,
@@ -46,7 +46,7 @@ def apply_texture_color_spaces(
             continue
         adapter.set_color_space(node_name, color_space)
         if feedback is not None:
-            feedback.CP(
+            feedback.print_message(
                 "{} 设置为色彩空间 <{}>".format(node_name, color_space)
             )
     return matching_channels
@@ -62,7 +62,7 @@ def apply_file_udim(node_list, adapter, feedback=None):
         adapter.set_udim(node_name, enabled)
         result[node_name] = enabled
         if feedback is not None:
-            feedback.CP("{} {} UDIM".format(node_name, "启用" if enabled else "关闭"))
+            feedback.print_message("{} {} UDIM".format(node_name, "启用" if enabled else "关闭"))
     return result
 
 
@@ -104,12 +104,12 @@ def set_uv_preset(uv_preset, adapter=None):
     feedback = FeedbackPrompt(adapter)
     language = load_language()["ArnoldMagicNode"]
     widget_language = language["AMDUI_WIN"]["create_widgets"]
-    tool_language = language["UVPM"]
+    tool_language = language["uv_preset_menu"]
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
     if selected is None:
         return
     if "file" not in selected:
-        feedback.CPW(tool_language["04"])
+        feedback.warn(tool_language["04"])
         return
 
     mode_values = {
@@ -126,13 +126,13 @@ def set_uv_preset(uv_preset, adapter=None):
     try:
         for node_name in selected["file"]:
             adapter.set_attr(node_name + ".uvTilingMode", mode)
-            feedback.CP(
+            feedback.print_message(
                 "{}<{}>{}{}".format(
                     tool_language["01"], node_name, tool_language["02"], mode
                 )
             )
     except Exception as error:
-        feedback.CPW("{} :{}".format(tool_language["03"], error))
+        feedback.warn("{} :{}".format(tool_language["03"], error))
 
 
 def set_color_space_preset(color_space_preset, adapter=None):
@@ -141,18 +141,18 @@ def set_color_space_preset(color_space_preset, adapter=None):
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
-    language = load_language()["ArnoldMagicNode"]["CSPM"]
+    language = load_language()["ArnoldMagicNode"]["color_space_preset_menu"]
     if selected is None:
         return
     if "file" not in selected:
-        feedback.CPW(language["01"])
+        feedback.warn(language["01"])
         return
 
     for node_name in selected["file"]:
         adapter.set_attr(
             node_name + ".colorSpace", color_space_preset, value_type="string"
         )
-        feedback.CP(
+        feedback.print_message(
             "{}<{}>{}<{}>".format(
                 language["02"], node_name, language["02"], color_space_preset
             )
@@ -164,13 +164,13 @@ def auto_set_texture_color_space(adapter=None):
 
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
-    language = load_language()["ArnoldMagicNode"]["ASTCS"]
+    language = load_language()["ArnoldMagicNode"]["auto_set_texture_color_space"]
     config = load_config()
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
     if selected is None:
         return
     if "file" not in selected:
-        feedback.CP(language["01"])
+        feedback.print_message(language["01"])
         return
 
     return apply_texture_color_spaces(
@@ -188,11 +188,11 @@ def auto_set_file_node_udim(adapter=None):
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
-    language = load_language()["ArnoldMagicNode"]["ASFNU"]
+    language = load_language()["ArnoldMagicNode"]["auto_set_file_node_udim"]
     if selected is None:
         return
     if "file" not in selected:
-        feedback.CP(language["01"])
+        feedback.print_message(language["01"])
         return
     return apply_file_udim(selected["file"], adapter, feedback)
 
@@ -205,7 +205,7 @@ class DirectConnectionTool(object):
 
         self.adapter = adapter or MayaTextureAdapter()
         self.feedback = FeedbackPrompt(self.adapter)
-        self.language = load_language()["ArnoldMagicNode"]["DC_Button"]
+        self.language = load_language()["ArnoldMagicNode"]["direct_connection_tool"]
         self.selected = process_selected_nodes(
             adapter=self.adapter, feedback=self.feedback
         )
@@ -215,13 +215,13 @@ class DirectConnectionTool(object):
         shading_engines = self.selected.get("shadingEngine") or []
         if shading_engines:
             _direct_output_node = shading_engines[0]
-            self.feedback.CP(
+            self.feedback.print_message(
                 "{}<{}>".format(self.language["__init__"]["01"], _direct_output_node)
             )
             return
 
         if _direct_output_node is None:
-            self.feedback.CP(self.language["__init__"]["02"])
+            self.feedback.print_message(self.language["__init__"]["02"])
             return
 
         self.connect()
@@ -252,7 +252,7 @@ class DirectConnectionTool(object):
                         )
                         return
                     except Exception:
-                        self.feedback.CPW(
+                        self.feedback.warn(
                             "{}<{}:{}>{}<{}:shadingEngine>{}".format(
                                 language["01"],
                                 node_name,
@@ -281,28 +281,15 @@ def unify_uv_nodes(adapter=None):
     return unify_uv_nodes_for_files(selected["file"], uv_nodes, adapter)
 
 
-# 旧 UI 与 Shelf 调用的兼容名称；新代码使用上方 snake_case API。
-uv_preset_menu = set_uv_preset
-color_space_preset_menu = set_color_space_preset
-AutoSet_TexColorSpace = auto_set_texture_color_space
-direct_connection_button = connect_directly
-unify_uv_node_button = unify_uv_nodes
-
-
 __all__ = [
-    "AutoSet_TexColorSpace",
     "DirectConnectionTool",
     "apply_file_udim",
     "apply_texture_color_spaces",
     "auto_set_file_node_udim",
     "auto_set_texture_color_space",
-    "color_space_preset_menu",
     "connect_directly",
-    "direct_connection_button",
     "set_color_space_preset",
     "set_uv_preset",
-    "unify_uv_node_button",
     "unify_uv_nodes_for_files",
     "unify_uv_nodes",
-    "uv_preset_menu",
 ]

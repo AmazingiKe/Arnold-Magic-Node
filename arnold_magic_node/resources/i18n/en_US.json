@@ -5,16 +5,16 @@
 
     "AMDUI_WIN": {
       "create_widgets": {
-        "ttpldrq_menu": "Batch Texture Importer",
-        "xryssz_menu": "Render Preset Settings",
-        "tjxrys_menu": "Add Render Preset",
-        "xgxrys_menu": "Edit Render Preset",
-        "scxrys_menu": "Delete Render Preset",
-        "dkxryswjj_menu": "Open Render Preset Folder",
+        "batch_texture_importer_menu": "Batch Texture Importer",
+        "render_preset_settings_menu": "Render Preset Settings",
+        "add_render_preset_menu": "Add Render Preset",
+        "edit_render_preset_menu": "Edit Render Preset",
+        "delete_render_preset_menu": "Delete Render Preset",
+        "open_render_preset_folder_menu": "Open Render Preset Folder",
         "default_rendering_properties_options": "Export Default Parameters",
         "rendering_properties_options": "Export Arnold Parameters",
         "aov_properties_properties_options": "Export AOV Parameters",
-        "sz_menu": "Settings",
+        "settings_menu": "Settings",
         "magic_connection": "Magic Connection",
         "intelligent_mix": "Intelligent Blend",
         "mask_node_mix": "Mask Node Blend",
@@ -22,8 +22,8 @@
         "direct_connection": "Direct Connection",
         "unify_uv_node": "Unify UV",
         "uv_preset": ["Disabled", "Type 0 (ZBrush)", "Type 1 (Mudbox)", "UDIM (Mari)", "Show Tiling"],
-        "zdsckj_button": "Auto Color Space",
-        "zdudim_button": "Auto UDIM",
+        "auto_color_space_button": "Auto Color Space",
+        "auto_udim_button": "Auto UDIM",
         "ai_aov_switch": "AOV Toggle"
       }
     },
@@ -42,52 +42,52 @@
         "plugin_home": "Plugin Homepage"
       },
       "create_magic_connection_tab": {
-        "mfljsz_label": "Magic Connection Settings",
+        "magic_connection_settings_label": "Magic Connection Settings",
         "auto_color_space_connection": "Auto-Adjust Color Space on Connect",
         "magic_change_material_name_options": "Rename Material on Connect",
-        "zdyljdtt_label": "Custom Textures to Connect",
-        "zdyglmz_label": "Custom Match Weight Names",
-        "mflj_tab": "Magic Connection",
+        "custom_connected_textures_label": "Custom Textures to Connect",
+        "custom_weight_names_label": "Custom Match Weight Names",
+        "magic_connection_tab": "Magic Connection",
         "magic_change_udim_options": "Auto-Enable UDIM on Connect"
       },
       "create_color_space_tab": {
-        "zdysckj_label": "Custom Color Spaces",
-        "zdszsckj_label": "Auto-Set Color Space",
-        "sckj_label": "Color Space"
+        "custom_color_space_label": "Custom Color Spaces",
+        "auto_set_color_space_label": "Auto-Set Color Space",
+        "color_space_label": "Color Space"
       },
       "create_node_connection_tab": {
-        "zdljcljdsz_label": "Auto-Connect Node Settings",
-        "cljdsz_list": "Node Processing Settings",
-        "jdlj_tab": "Node Connection"
+        "auto_connect_node_settings_label": "Auto-Connect Node Settings",
+        "processing_node_settings_list": "Node Processing Settings",
+        "node_connection_tab": "Node Connection"
       },
       "create_path_matching_tab": {
-        "ljsxgsz_label": "Connection-Related Settings",
+        "connection_related_settings_label": "Connection-Related Settings",
         "path_matching_checkbox": "Auto-Adjust Color Space on Connect",
         "path_matching_change_udim_checkbox": "Auto-Enable UDIM on Connect",
         "path_matching_change_material_name_options": "Rename Material on Connect",
         "path_disable_feedback_options": "Disable Feedback",
-        "sxgczpchywzdwj_label": "Exclude Files with Text During Filtering",
-        "zjxxsdjcsyczfczdtdnc_label": "Remove Specific Substrings During Similarity Check",
-        "ppsxgsz_label": "Match-Related Settings",
+        "exclude_files_with_text_label": "Exclude Files with Text During Filtering",
+        "remove_substrings_during_similarity_label": "Remove Specific Substrings During Similarity Check",
+        "match_related_settings_label": "Match-Related Settings",
         "auto_max_val_checkbox": "Auto-Select Best Match",
         "auto_max_val_checkbox_tip": "If selected, the highest similarity score is used as the threshold automatically.",
-        "ppysqz_label": "Match Element Weights",
-        "mzqz_label": "Name Weight",
-        "fblqz_label": "Resolution Weight",
-        "gsqz_label": "Format Weight",
-        "cjsjqz_label": "Creation Time Weight",
-        "xsdjs_label": "Similarity Calculation",
+        "match_element_weights_label": "Match Element Weights",
+        "name_weight_label": "Name Weight",
+        "resolution_weight_label": "Resolution Weight",
+        "format_weight_label": "Format Weight",
+        "creation_time_weight_label": "Creation Time Weight",
+        "similarity_calculation_label": "Similarity Calculation",
         "similarity_max_slider_label": "Custom Similarity Threshold:",
         "similarity_max_slider_tip": "Enter a threshold (0.0–1.0). Matches above this value are accepted.",
         "similarity_range_slider_label": "Similarity Tolerance Range",
         "similarity_range_slider_tip": "Set tolerance (0.0–1.0) around the threshold.",
         "day_range_slider_label": "Creation Date Tolerance (Days):",
-        "jdljpp_tab": "Node Path Matching"
+        "node_path_matching_tab": "Node Path Matching"
       },
       "create_configure_ui_layout_tab": {
-        "yyszd_label": "Language & More",
-        "yy_label": "Language:",
-        "jmybjsz_tab": "UI & Layout Settings"
+        "language_settings_label": "Language & More",
+        "language_label": "Language:",
+        "ui_layout_tab": "UI & Layout Settings"
       },
       "create_ai_settings_tab": {
         "tab": "AI Settings",
@@ -125,24 +125,24 @@
       }
     },
 
-    "UVPM": {
+    "uv_preset_menu": {
       "01": "Set UV tiling mode for",
       "02": "node to:",
       "03": "Error setting:",
       "04": "Please select a texture node"
     },
 
-    "CSPM": {
+    "color_space_preset_menu": {
       "01": "Please select a texture node!",
       "02": "Set",
       "03": "to"
     },
 
-    "ASTCS": {
+    "auto_set_texture_color_space": {
       "01": "Please select a texture node!"
     },
 
-    "DC_Button": {
+    "direct_connection_tool": {
       "__init__": {
         "01": "Node configured successfully",
         "02": "Please select an output node first"
@@ -154,11 +154,11 @@
       }
     },
 
-    "ASFNU": {
+    "auto_set_file_node_udim": {
       "01": "Please select a texture node"
     },
 
-    "RenderPM": {
+    "rendering_preset_menu": {
       "__init__": {
         "01": "| Default render properties written successfully",
         "02": "| Error writing default render properties:",
@@ -172,7 +172,7 @@
       }
     },
 
-    "RenderPSB": {
+    "rendering_preset_dialog": {
       "import_name_win": {
         "01": "Enter your preset name",
         "02": "OK",
@@ -180,7 +180,7 @@
       }
     },
 
-    "PDC": {
+    "path_detection_connection": {
       "main": {
         "01": "Please select a texture node!"
       },
@@ -200,42 +200,13 @@
 
   "ArnoldMagicNodeLibs": {
 
-    "PathD": {
-      "DPC": {
-        "01": "Cannot access directory",
-        "02": "Detailed error",
-        "03": "Cannot open or verify as image file",
-        "04": "No permission to access file; detailed error"
-      },
-      "CN": {
-        "01": "Cannot connect path:"
-      },
-      "GFI": {
-        "01": "Error querying texture metadata: "
-      }
-    },
-
-    "NodeP": {
-      "CTFNTPN": {
-        "01": "Material channel at:"
-      },
-      "ASTCS": {
-        "01": "Node set to",
-        "02": "color space"
-      },
-      "ASU": {
-        "01": "UV tiling mode set to <UDIM>",
-        "02": "UV tiling mode set to <Disabled>"
-      }
-    },
-
     "FeedbackPrompt": {
       "01": "@Arnold Tool Plugin Alert",
       "02": "Warning – see error below",
       "03": "Critical error; contact developer to fix; contact:"
     },
 
-    "process_sl_data": {
+    "process_selected_nodes": {
       "01": "Please select the corresponding node first!"
     }
 

@@ -4,12 +4,16 @@ import os
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from ..core.magic_connection import (
+from arnold_magic_node.core.magic_connection import (
     build_magic_connection_plan,
     clean_material_name,
     contains_udim_number,
 )
-from ..maya.magic_connection import MayaMagicConnectionExecutor
+from arnold_magic_node.maya.magic_connection import (
+    MayaMagicConnectionAdapter,
+    MayaMagicConnectionExecutor,
+)
+from .feedback import FeedbackPrompt
 
 
 MATERIAL_TYPES = ("aiStandardSurface", "standardSurface", "aiOpenPBRSurface")
@@ -56,12 +60,10 @@ class MagicConnectionTool:
 
     def __init__(self, config=None, adapter=None, feedback=None, config_path=None):
         self.config = config or self._load_config(config_path)
-        self.feedback = feedback
         if adapter is None:
-            from ..maya.magic_connection import MayaMagicConnectionAdapter
-
             adapter = MayaMagicConnectionAdapter()
         self.adapter = adapter
+        self.feedback = feedback or FeedbackPrompt(adapter)
 
     def run(self, shift_pressed=None):
         selection = self.adapter.selected_nodes_by_type() or {}
@@ -112,7 +114,7 @@ class MagicConnectionTool:
                     first_file, config["texture_filter_params"]
                 )
                 if new_name:
-                    renamed_material_name = self.adapter.rename_node(
+                    renamed_material_name = self.adapter.rename(
                         material_name, new_name
                     )
                     self._report(
@@ -155,16 +157,10 @@ class MagicConnectionTool:
         return None
 
     def _report(self, message, warning=False):
-        if self.feedback is not None:
-            method_name = "CPW" if warning else "CP"
-            method = getattr(self.feedback, method_name, None)
-            if method is not None:
-                method(message)
-                return
-
-        report = getattr(self.adapter, "report", None)
-        if report is not None:
-            report(message, warning=warning)
+        if warning:
+            self.feedback.warn(message)
+        else:
+            self.feedback.print_message(message)
 
     @staticmethod
     def _result(matched_channels, material_name, renamed_material_name, created):
@@ -177,9 +173,9 @@ class MagicConnectionTool:
 
     @staticmethod
     def _load_config(config_path=None):
-        from ..core.paths import user_settings_dir
-        from ..core.storage import load_json
-        from ..maya.environment import get_user_data_root
+        from arnold_magic_node.core.paths import user_settings_dir
+        from arnold_magic_node.core.storage import load_json
+        from arnold_magic_node.maya.environment import get_user_data_root
 
         if config_path is None:
             config_path = os.path.join(
@@ -192,8 +188,6 @@ class MagicConnectionTool:
 def run_magic_connection(config=None, adapter=None, feedback=None, config_path=None):
     """执行一次 Magic Connection，供 Qt 和调试脚本直接调用。"""
 
-    print("debug run_magic_connection()")
-
     return MagicConnectionTool(
         config=config,
         adapter=adapter,
@@ -202,14 +196,9 @@ def run_magic_connection(config=None, adapter=None, feedback=None, config_path=N
     ).run()
 
 
-# 旧主窗口按钮入口的语义别名。
-magic_connection_button = run_magic_connection
-
-
 __all__ = [
     "MagicConnectionResult",
     "MagicConnectionTool",
     "connect_texture_nodes",
-    "magic_connection_button",
     "run_magic_connection",
 ]

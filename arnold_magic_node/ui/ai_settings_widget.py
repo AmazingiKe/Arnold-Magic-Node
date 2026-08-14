@@ -4,9 +4,9 @@ import copy
 import threading
 import uuid
 
-from ..tools.ai_client import AiError
-from ..tools.ai_routing import AiRoutingConfig, MAX_MODELS, test_ai_model
-from ..tools.ai_settings import load_ai_settings, save_ai_settings
+from arnold_magic_node.tools.ai_client import AiError
+from arnold_magic_node.tools.ai_routing import AiRoutingConfig, MAX_MODELS, test_ai_model
+from arnold_magic_node.tools.ai_settings import load_ai_settings, save_ai_settings
 from ._qt_compat import QtCore, QtWidgets
 
 

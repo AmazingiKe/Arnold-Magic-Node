@@ -2,41 +2,31 @@
 
 import os
 
-from ..tools.feedback import FeedbackPrompt
-from ..tools.runtime import (
+from arnold_magic_node.tools.feedback import FeedbackPrompt
+from arnold_magic_node.tools.runtime import (
     AMS_CONFIG,
-    DataManager,
     MAYA_ALT_MODIFIER,
-    SMALL_FONT_SIZE,
     PLUGIN_FEEDBACK_URL,
     PLUGIN_HELP_DOCUMENT_URL,
     PLUGIN_HOME_URL,
     PLUGIN_UPDATE_DOWNLOAD_URL,
+    SMALL_FONT_SIZE,
     SOFTWARE_STATE,
     SOFTWARE_VERSION,
     get_runtime_paths,
     is_modifier_pressed,
+    load_json,
     load_language,
+    save_json,
 )
-from ..tools.selection import process_selected_nodes
-from ..tools.settings import reset_settings
+from arnold_magic_node.tools.selection import process_selected_nodes
+from arnold_magic_node.tools.settings import reset_settings
 from .ai_settings_widget import AiSettingsWidget
 from ._qt_compat import QAction, QtCore, QtGui, QtWidgets
 from ._workspace import delete_window_if_exists
 
 
 _runtime_paths = get_runtime_paths()
-AMS_Config = AMS_CONFIG
-SoftwareState = SOFTWARE_STATE
-SoftwareVersion = SOFTWARE_VERSION
-icon_path = _runtime_paths.icon_path
-language_loading = load_language
-pluginFeedbackURL = PLUGIN_FEEDBACK_URL
-pluginHelpDocumentURL = PLUGIN_HELP_DOCUMENT_URL
-pluginHomeURL = PLUGIN_HOME_URL
-pluginUpdateDownloadURL = PLUGIN_UPDATE_DOWNLOAD_URL
-settings_path = _runtime_paths.settings_path
-process_sl_data = process_selected_nodes
 
 
 class SettingsDialog(QtWidgets.QDialog):
@@ -66,30 +56,24 @@ class SettingsDialog(QtWidgets.QDialog):
 
 
     def initial_global_config(self):
-        ### 实例各种模块
+        self.feedback = FeedbackPrompt()
+        self.config = load_json(
+           os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG)))
 
-        self.dataM = DataManager()  # 数据管理模块
-
-        self.feedback = FeedbackPrompt()  # 错误提示模块
-        ### 初始化配置数据
-        self.config = self.dataM.load_json(
-           os.path.normpath(os.path.join(settings_path, AMS_Config)))
-
-        # 加载语言配置
-        self.language = language_loading()['ArnoldMagicNode']['AMNSP_WIN']
+        self.language = load_language()['ArnoldMagicNode']['AMNSP_WIN']
 
 
         self.languages_folder_path = _runtime_paths.languages_path  # 只读语言资源路径
 
     def initialize_window_config(self):
 
-        WINDOWS_NAME = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SoftwareState} : {SoftwareVersion}"  # Win名称
+        win_name = f"{self.language['initialize_window_config']['WINDOWS_NAME']}  {SOFTWARE_STATE} : {SOFTWARE_VERSION}"
 
         delete_window_if_exists('SettingsDialog')
 
         self.setObjectName('SettingsDialog')
-        self.setWindowTitle(WINDOWS_NAME)
-        self.setWindowIcon(QtGui.QIcon(icon_path + "\\Logo_B.svg"))
+        self.setWindowTitle(win_name)
+        self.setWindowIcon(QtGui.QIcon(os.path.join(_runtime_paths.icon_path, "Logo_B.svg")))
 
         #...窗口长宽
         self.setMinimumHeight(800)
@@ -115,21 +99,21 @@ class SettingsDialog(QtWidgets.QDialog):
         # 创建 插件主页菜单
         self.plugin_home = QAction(self.language['create_menu']['plugin_home'], self) # 插件主页
         self.plugin_home.triggered.connect(
-            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHomeURL)))
+            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(PLUGIN_HOME_URL)))
 
         # 创建 帮助/反馈菜单
         self.contact_feedback_action = QAction(self.language['create_menu']['contact_feedback_action'], self) # 联系/反馈
         self.contact_feedback_action.triggered.connect(
-            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginFeedbackURL)))
+            lambda *args:  QtGui.QDesktopServices.openUrl(QtCore.QUrl(PLUGIN_FEEDBACK_URL)))
 
         # 创建“帮助文档”动作并连接到打开帮助文档的槽函数
         self.help_document_action = QAction(self.language['create_menu']['help_document_action'], self) # 帮助文档
         self.help_document_action.triggered.connect(
-            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginHelpDocumentURL)))
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(PLUGIN_HELP_DOCUMENT_URL)))
 
         self.plugin_update_download_action = QAction(self.language['create_menu']['plugin_update_download_action'], self) # 插件更新下载
         self.plugin_update_download_action.triggered.connect(
-            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(pluginUpdateDownloadURL)))
+            lambda *args: QtGui.QDesktopServices.openUrl(QtCore.QUrl(PLUGIN_UPDATE_DOWNLOAD_URL)))
 
         # 将动作添加到关于菜单
         self.about_menu.addAction(self.plugin_home)
@@ -177,7 +161,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(content_widget)
 
         # _______________________________________________________________>>> [1] 连接设置
-        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['mfljsz_label'])  # "魔法连接设置"
+        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['magic_connection_settings_label'])  # "魔法连接设置"
 
         # 智能修改色彩空间选项
         self.auto_color_space_connection = QtWidgets.QCheckBox(
@@ -225,7 +209,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.magic_change_material_name_options)
 
         # _______________________________________________________________>>> [2] 自定义连接的贴图
-        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['zdyljdtt_label'])  # 自定义连接的贴图
+        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['custom_connected_textures_label'])  # 自定义连接的贴图
 
         # 创建列表控件
         self.tex_first_filter_options_list = QtWidgets.QListWidget()
@@ -248,7 +232,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.tex_first_filter_options_list)
 
         # _______________________________________________________________>>> [3] 自定义过滤名字
-        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['zdyglmz_label'])  # 自定义过滤名字
+        self.add_line_with_text(layout, self.language['create_magic_connection_tab']['custom_weight_names_label'])  # 自定义过滤名字
 
         self.texture_filter_fields = {}
 
@@ -282,7 +266,7 @@ class SettingsDialog(QtWidgets.QDialog):
         tab_layout.addWidget(scroll_area)  # 将滚动区域添加到选项卡布局中
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(magic_connection_tab, self.language['create_magic_connection_tab']['mflj_tab'])  # 魔法连接
+        self.tab_widget.addTab(magic_connection_tab, self.language['create_magic_connection_tab']['magic_connection_tab'])  # 魔法连接
 
     # 颜色空间的标签页面
     def create_color_space_tab(self):
@@ -299,7 +283,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(content_widget)
 
         # [1] 自定义色彩空间
-        self.add_line_with_text(layout, self.language['create_color_space_tab']['zdysckj_label'])  # 自定义色彩空间标签
+        self.add_line_with_text(layout, self.language['create_color_space_tab']['custom_color_space_label'])  # 自定义色彩空间标签
 
         self.color_space_text = QtWidgets.QPlainTextEdit()
 
@@ -324,12 +308,12 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.color_space_text)
 
         # [2] 自动设置色彩空间
-        self.add_line_with_text(layout, self.language['create_color_space_tab']['zdszsckj_label'])  # 自动设置色彩空间标签
+        self.add_line_with_text(layout, self.language['create_color_space_tab']['auto_set_color_space_label'])  # 自动设置色彩空间标签
 
         self.auto_color_space_options = {}
 
         # 用来存储图标变量
-        AutoSetColorSpaceMenuName = {}
+        color_space_combos = {}
 
         channels = config['params']  # 示例通道列表
 
@@ -340,22 +324,22 @@ class SettingsDialog(QtWidgets.QDialog):
             label.setStyleSheet("font-weight: bold;")  # 设置标签字体加粗
 
             # 创建并设置下拉框
-            AutoSetColorSpaceMenuName[channel] = QtWidgets.QComboBox()
-            AutoSetColorSpaceMenuName[channel].addItems(config['config'])
+            color_space_combos[channel] = QtWidgets.QComboBox()
+            color_space_combos[channel].addItems(config['config'])
 
             # 设置默认值
-            AutoSetColorSpaceMenuName[channel].setCurrentText(config['params'][channel])
+            color_space_combos[channel].setCurrentText(config['params'][channel])
 
             # 设置激活函数，连接信号槽
-            AutoSetColorSpaceMenuName[channel].currentIndexChanged.connect(
+            color_space_combos[channel].currentIndexChanged.connect(
                 lambda _, ch=channel: self.modify_nested_config(
                     key_path=['color_space_params', 'params', ch],
-                    cont=AutoSetColorSpaceMenuName[ch].currentText()
+                    cont=color_space_combos[ch].currentText()
                 )
             )
 
             h_layout.addWidget(label)
-            h_layout.addWidget(AutoSetColorSpaceMenuName[channel])
+            h_layout.addWidget(color_space_combos[channel])
             layout.addLayout(h_layout)
 
         # 创建一个 QScrollArea，并将内容部件添加进去
@@ -369,7 +353,7 @@ class SettingsDialog(QtWidgets.QDialog):
         tab_layout.addWidget(scroll_area)
 
         # 将选项卡添加到 tab_widget
-        self.tab_widget.addTab(color_space_tab, self.language['create_color_space_tab']['sckj_label'])  # 颜色空间选项卡
+        self.tab_widget.addTab(color_space_tab, self.language['create_color_space_tab']['color_space_label'])  # 颜色空间选项卡
 
     # 节点连接的标签页面
     def create_node_connection_tab(self):
@@ -392,7 +376,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(scroll_content_widget)
 
         # [1] 自定义连接的节点
-        self.add_line_with_text(layout, self.language['create_node_connection_tab']['zdljcljdsz_label'])  # 自动连接处理节点设置标签
+        self.add_line_with_text(layout, self.language['create_node_connection_tab']['auto_connect_node_settings_label'])  # 自动连接处理节点设置标签
 
         self.auto_node_connection_list = QtWidgets.QListWidget()
         self.auto_node_connection_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
@@ -416,7 +400,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.auto_node_connection_list)
 
         # [2] 处理节点设置
-        self.add_line_with_text(layout, self.language['create_node_connection_tab']['cljdsz_list'])  # 处理节点设置标签
+        self.add_line_with_text(layout, self.language['create_node_connection_tab']['processing_node_settings_list'])  # 处理节点设置标签
 
         input_port_combo = {}
         output_port_combo = {}
@@ -485,7 +469,7 @@ class SettingsDialog(QtWidgets.QDialog):
         node_connection_layout.addWidget(scroll_area)
 
         # 添加到选项卡
-        self.tab_widget.addTab(node_connection_widget, self.language['create_node_connection_tab']['jdlj_tab'])  # 添加节点连接选项卡
+        self.tab_widget.addTab(node_connection_widget, self.language['create_node_connection_tab']['node_connection_tab'])  # 添加节点连接选项卡
 
     # 节点路径匹配页面
     def create_path_matching_tab(self):
@@ -498,8 +482,8 @@ class SettingsDialog(QtWidgets.QDialog):
         font.setBold(True)  # 设置加粗
 
         #_______________________________________________________________>>> 加载路径检测配置
-        path_detection_config = self.dataM.load_json(
-            os.path.normpath(os.path.join(settings_path, AMS_Config)))['path_detection_params']
+        path_detection_config = load_json(
+            os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG)))['path_detection_params']
 
         # 创建节点路径匹配选项卡
         scroll_area = QtWidgets.QScrollArea()
@@ -508,7 +492,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(path_matching_widget)
 
         # [0] 连接时相关设置
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ljsxgsz_label'])  # 连接时相关设置标签
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['connection_related_settings_label'])  # 连接时相关设置标签
 
         # 创建复选框并绑定配置修改函数
         self.path_matching_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['path_matching_checkbox'])
@@ -560,7 +544,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
 
         # [2] 排除名称
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['sxgczpchywzdwj_label'])  # 排除含有文字的文件标签
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['exclude_files_with_text_label'])  # 排除含有文字的文件标签
 
         self.exclude_list_text = QtWidgets.QPlainTextEdit()
         self.exclude_list_text.setPlainText(str(config['exclude']).
@@ -574,7 +558,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.exclude_list_text)
 
         # [3] 格式名称
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['zjxxsdjcsyczfczdtdnc_label'])  # 移除字符串中特定内容标签
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['remove_substrings_during_similarity_label'])  # 移除字符串中特定内容标签
 
         self.detection_excluded_list = QtWidgets.QPlainTextEdit()
         self.detection_excluded_list.setPlainText(str(config['detection_excluded']).
@@ -588,7 +572,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.detection_excluded_list)
 
         # [4] 匹配时相关设置
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ppsxgsz_label'])  # 匹配时相关设置标签
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['match_related_settings_label'])  # 匹配时相关设置标签
 
         self.auto_max_val_checkbox = QtWidgets.QCheckBox(self.language['create_path_matching_tab']['auto_max_val_checkbox'])
         self.auto_max_val_checkbox.setChecked(config['auto_max_val'])
@@ -598,7 +582,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addWidget(self.auto_max_val_checkbox)
         self.auto_max_val_checkbox.setToolTip(self.language['create_path_matching_tab']['auto_max_val_checkbox_tip'])
 
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['ppysqz_label'])  # 匹配元素权重标签
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['match_element_weights_label'])  # 匹配元素权重标签
 
         # 初始化滑杆的权重值
         slider_values = {
@@ -648,7 +632,7 @@ class SettingsDialog(QtWidgets.QDialog):
             self.modify_nested_config(key_path= ['path_detection_params','creation_time_weight'], cont =slider_values['creation_time_weight'], )
 
         # 创建权重滑杆和标签
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['mzqz_label']))  # 名字权重标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['name_weight_label']))  # 名字权重标签
         name_weight_layout = QtWidgets.QHBoxLayout()
         self.name_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.name_weight_slider.setMinimum(0)
@@ -660,7 +644,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addLayout(name_weight_layout)
         self.name_weight_slider.valueChanged.connect(lambda value: update_weight('name_weight', value))
 
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['fblqz_label']))  # 分辨率权重标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['resolution_weight_label']))  # 分辨率权重标签
         resolution_weight_layout = QtWidgets.QHBoxLayout()
         self.resolution_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.resolution_weight_slider.setMinimum(0)
@@ -672,7 +656,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addLayout(resolution_weight_layout)
         self.resolution_weight_slider.valueChanged.connect(lambda value: update_weight('resolution_weight', value))
 
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['gsqz_label']))  # 格式权重标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['format_weight_label']))  # 格式权重标签
         format_weight_layout = QtWidgets.QHBoxLayout()
         self.format_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.format_weight_slider.setMinimum(0)
@@ -684,7 +668,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addLayout(format_weight_layout)
         self.format_weight_slider.valueChanged.connect(lambda value: update_weight('format_weight', value))
 
-        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['cjsjqz_label']))  # 创建时间权重标签
+        layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['creation_time_weight_label']))  # 创建时间权重标签
         creation_time_weight_layout = QtWidgets.QHBoxLayout()
         self.creation_time_weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.creation_time_weight_slider.setMinimum(0)
@@ -696,7 +680,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.addLayout(creation_time_weight_layout)
         self.creation_time_weight_slider.valueChanged.connect(lambda value: update_weight('creation_time_weight', value))
 
-        self.add_line_with_text(layout, self.language['create_path_matching_tab']['xsdjs_label'])  # 相似度的计算标签
+        self.add_line_with_text(layout, self.language['create_path_matching_tab']['similarity_calculation_label'])  # 相似度的计算标签
 
         # 创建相似度最大值滑杆和标签
         layout.addWidget(QtWidgets.QLabel(self.language['create_path_matching_tab']['similarity_max_slider_label']))  # 相似度阈值标签
@@ -760,7 +744,7 @@ class SettingsDialog(QtWidgets.QDialog):
         scroll_area.setWidget(path_matching_widget)
 
         # 添加到选项卡
-        self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['jdljpp_tab'])  # 节点路径匹配选项卡
+        self.tab_widget.addTab(scroll_area, self.language['create_path_matching_tab']['node_path_matching_tab'])  # 节点路径匹配选项卡
 
     # 节点连接混合器页面
     def node_connection_mixer_tab(self):
@@ -770,8 +754,8 @@ class SettingsDialog(QtWidgets.QDialog):
         font.setBold(True)
 
         # _______________________________________________________________>>> 加载路径检测配置
-        config = self.dataM.load_json(
-            os.path.normpath(os.path.join(settings_path, AMS_Config))
+        config = load_json(
+            os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG))
         )['node_connection_mixer_config']
 
         # 外层容器
@@ -1090,8 +1074,8 @@ class SettingsDialog(QtWidgets.QDialog):
         layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
 
         # 添加标题文本
-        self.add_line_with_text(layout, configure_ui_layout_lang['yyszd_label'])
-        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['yy_label']))
+        self.add_line_with_text(layout, configure_ui_layout_lang['language_settings_label'])
+        layout.addWidget(QtWidgets.QLabel(configure_ui_layout_lang['language_label']))
 
         # 创建语言切换菜单
         self.language_combo_box = QtWidgets.QComboBox()
@@ -1109,13 +1093,13 @@ class SettingsDialog(QtWidgets.QDialog):
         )
 
         # 加载语言配置文件并设置默认语言
-        lang_config_path = os.path.join(settings_path, 'language_config.json')
-        lang_config = self.dataM.load_json(lang_config_path)
+        lang_config_path = os.path.join(_runtime_paths.settings_path, 'language_config.json')
+        lang_config = load_json(lang_config_path)
 
         # 检查配置并设置语言菜单默认值
         for file_name in os.listdir(self.languages_folder_path):
             if lang_config['language_config'] == file_name.replace('.json', ''):
-                lang = self.dataM.load_json(os.path.join(self.languages_folder_path, file_name))
+                lang = load_json(os.path.join(self.languages_folder_path, file_name))
                 self.language_combo_box.setCurrentText(lang['language_type'])
 
         layout.addWidget(self.language_combo_box)
@@ -1125,7 +1109,7 @@ class SettingsDialog(QtWidgets.QDialog):
         configure_ui_layout_layout.addWidget(scroll_area)
 
         # 添加选项卡到界面
-        self.tab_widget.addTab(configure_ui_layout_widget, configure_ui_layout_lang['jmybjsz_tab'])
+        self.tab_widget.addTab(configure_ui_layout_widget, configure_ui_layout_lang['ui_layout_tab'])
 
     # 创建标签
     def create_section_label(self, text):
@@ -1187,56 +1171,39 @@ class SettingsDialog(QtWidgets.QDialog):
     # --------------------保存设置内容的函数 开始
 
     # -----通用
-    def modify_config(self, key, cont, file_name = AMS_Config):
+    def modify_config(self, key, cont, file_name = AMS_CONFIG):
 
-        config = self.dataM.load_json(
-            os.path.join(settings_path, file_name))
+        config = load_json(
+            os.path.join(_runtime_paths.settings_path, file_name))
 
         config[key] = cont
 
-        self.dataM.save_json(
-            os.path.join(settings_path, file_name), config)
+        save_json(
+            os.path.join(_runtime_paths.settings_path, file_name), config)
 
-        ### 初始化配置数据
-        self.config = self.dataM.load_json(
-           os.path.normpath(os.path.join(settings_path, AMS_Config)))
+        self.config = load_json(
+           os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG)))
 
     def modify_nested_config(self, key_path, cont):
-        """
-        修改配置文件的特定键值。
+        """按键路径修改配置并写回用户设置文件。"""
 
-        参数:
-        value -- 要设置的新值
-        key_path -- 包含要修改的键的路径，以列表形式传递，例如 ["ProcSet_Options", "MagicConnectionSetColorSpace"]
-
-        功能:
-        1. 加载配置数据。
-        2. 根据提供的键路径找到并修改对应的值。
-        3. 保存修改后的配置数据。
-        """
-
-        # 加载 JSON 配置数据
-        config = self.dataM.load_json(
-            os.path.normpath(os.path.join(settings_path, AMS_Config))
+        config = load_json(
+            os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG))
         )
 
-        # 根据给定的键路径逐层访问数据
         current_level = config
-        for key in key_path[:-1]:  # 遍历到倒数第二个键
-            current_level = current_level[key]  # 进入下一层级
+        for key in key_path[:-1]:
+            current_level = current_level[key]
 
-        # 设置最终键的值为新值
         current_level[key_path[-1]] = cont
 
-        # 保存修改后的配置数据
-        self.dataM.save_json(
-            os.path.normpath(os.path.join(settings_path, AMS_Config)),
+        save_json(
+            os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG)),
             config
         )
 
-        ### 初始化配置数据
-        self.config = self.dataM.load_json(
-           os.path.normpath(os.path.join(settings_path, AMS_Config)))
+        self.config = load_json(
+           os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG)))
 
         # --------------------保存设置内容的函数
     # -----通用
@@ -1357,9 +1324,9 @@ class SettingsDialog(QtWidgets.QDialog):
         else:
             # 获取选择到的节点
             try:
-                select_node = list(process_sl_data().keys())[0]
+                select_node = list(process_selected_nodes().keys())[0]
             except AttributeError:
-                return self.feedback.CP('添加到处理节点输入框 ->无法获取选择节点数据')
+                return self.feedback.print_message('添加到处理节点输入框 ->无法获取选择节点数据')
 
             output_list = self.config["proc_node_config"]["params"][channel]["NodeList"]
             output_list.append(select_node)
@@ -1387,7 +1354,7 @@ class SettingsDialog(QtWidgets.QDialog):
         # 遍历文件夹中的所有JSON文件
         for file_name in os.listdir(folder_path):
 
-            lang = self.dataM.load_json(os.path.join(folder_path, file_name))
+            lang = load_json(os.path.join(folder_path, file_name))
             languages_list.append(lang['language_type'])
 
         return languages_list
@@ -1399,19 +1366,19 @@ class SettingsDialog(QtWidgets.QDialog):
         selected_lang = self.language_combo_box.currentText()
 
         # 语言配置路径
-        lang_config_path = os.path.join(settings_path, 'language_config.json')
+        lang_config_path = os.path.join(_runtime_paths.settings_path, 'language_config.json')
 
         # 加载语言配置文件
-        lang_config = self.dataM.load_json(lang_config_path)
+        lang_config = load_json(lang_config_path)
 
         # 遍历文件夹中的所有JSON文件
         for file_name in os.listdir(language_folder):
-            lang = self.dataM.load_json(os.path.join(language_folder, file_name))
+            lang = load_json(os.path.join(language_folder, file_name))
             if selected_lang == lang['language_type']:
                 # 修改语言文件
                 lang_config['language_config'] = file_name.replace('.json', '')
 
-                self.feedback.CP(f'语言已修改成:{lang["language_type"]}')
+                self.feedback.print_message(f'语言已修改成:{lang["language_type"]}')
 
         # 保存修改过后的语言文件
-        self.dataM.save_json(lang_config_path, lang_config)
+        save_json(lang_config_path, lang_config)

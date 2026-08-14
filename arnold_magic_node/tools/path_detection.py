@@ -2,10 +2,10 @@
 
 import os
 
-from ..core.magic_connection import clean_material_name
-from ..core.path_detection import collect_file_info, process_file_names, scan_directory
-from ..core.similarity import calculate_similarity, select_matches
-from ..maya.magic_connection import MayaMagicConnectionAdapter
+from arnold_magic_node.core.magic_connection import clean_material_name
+from arnold_magic_node.core.path_detection import collect_file_info, process_file_names, scan_directory
+from arnold_magic_node.core.similarity import calculate_similarity, select_matches
+from arnold_magic_node.maya.magic_connection import MayaMagicConnectionAdapter
 from .feedback import FeedbackPrompt
 from .magic_connection import connect_texture_nodes
 from .runtime import (
@@ -43,13 +43,13 @@ class PathDetectionConnectionTool(object):
             process_selected_nodes(adapter=self.adapter, feedback=self.feedback)
             if selected_nodes is None else selected_nodes
         )
-        self.language = language or load_language()["ArnoldMagicNode"]["PDC"]
+        self.language = language or load_language()["ArnoldMagicNode"]["path_detection_connection"]
 
     def run(self):
         if self.selected_nodes is None:
             return
         if "file" not in self.selected_nodes:
-            return self.feedback.CPW(self.language["main"]["01"])
+            return self.feedback.warn(self.language["main"]["01"])
 
         modifiers = self.adapter.modifiers()
         matches = self.detect_and_calculate_similarity()
@@ -105,8 +105,6 @@ class PathDetectionConnectionTool(object):
                 )
         return matches
 
-    main = run
-
     def detect_and_calculate_similarity(self):
         completed = {}
         for node_name in self.selected_nodes["file"]:
@@ -121,7 +119,7 @@ class PathDetectionConnectionTool(object):
                     self.path_detection_data["exclude_formats"],
                 )
             except OSError as error:
-                self.feedback.CP("无法读取目录 {}: {}".format(directory, error))
+                self.feedback.print_message("无法读取目录 {}: {}".format(directory, error))
                 directory_files = {}
             directory_info = collect_file_info(
                 directory_files, self.adapter.image_dimensions
@@ -159,9 +157,9 @@ class PathDetectionConnectionTool(object):
 
     def feedback_prompt(self, similarity_dict, matching_list, original_name):
         language = self.language["feedback_prompt"]
-        self.feedback.CP(language["01"])
+        self.feedback.print_message(language["01"])
         for texture_name, similarity in similarity_dict.items():
-            self.feedback.CP(
+            self.feedback.print_message(
                 "{} {},{}{},{}{}".format(
                     language["02"],
                     original_name,
@@ -171,10 +169,10 @@ class PathDetectionConnectionTool(object):
                     "{:.5f}".format(similarity),
                 )
             )
-        self.feedback.CP(language["05"])
-        self.feedback.CP("{}{}".format(language["06"], original_name))
+        self.feedback.print_message(language["05"])
+        self.feedback.print_message("{}{}".format(language["06"], original_name))
         for target, similarity in matching_list:
-            self.feedback.CP(
+            self.feedback.print_message(
                 "{} {},{}{}".format(
                     language["07"], target, language["08"], "{:.5f}".format(similarity)
                 )
@@ -219,14 +217,7 @@ def run_path_detection_connection(**kwargs):
     return PathDetectionConnectionTool(**kwargs).run()
 
 
-# 兼容旧类与按钮入口。
-Path_Detection_Connection = PathDetectionConnectionTool
-path_detection_connection_button = run_path_detection_connection
-
-
 __all__ = [
     "PathDetectionConnectionTool",
-    "Path_Detection_Connection",
-    "path_detection_connection_button",
     "run_path_detection_connection",
 ]

@@ -3,9 +3,9 @@
 import os
 import re
 
-from ..maya.nodes import MayaNodeAdapter
+from arnold_magic_node.maya.nodes import MayaNodeAdapter
 from .feedback import FeedbackPrompt
-from .runtime import DataManager, get_runtime_paths, load_config, load_language
+from .runtime import get_runtime_paths, load_config, load_json, load_language
 
 
 ATTRIBUTE_TYPES = ("bool", "int", "float", "string")
@@ -34,7 +34,7 @@ class RenderingCaptureTool(object):
 
     def driver_and_filter_nodes(self, aov_node):
         if not self.adapter.object_exists(aov_node):
-            self.feedback.CP("节点 {} 不存在".format(aov_node))
+            self.feedback.print_message("节点 {} 不存在".format(aov_node))
             return None, None
         driver_name = None
         filter_name = None
@@ -55,13 +55,13 @@ class RenderingCaptureTool(object):
         filter_attributes,
     ):
         if not self.adapter.object_exists("defaultArnoldRenderOptions"):
-            self.feedback.CPW("没检测到阿诺德渲染器节点，无法写入阿诺德内容")
+            self.feedback.warn("没检测到阿诺德渲染器节点，无法写入阿诺德内容")
             return None
         aov_nodes = self.adapter.list_connections(
             "defaultArnoldRenderOptions.aovList", source=True
         )
         if not aov_nodes:
-            self.feedback.CP("还没有设置AOV，将不会写入AOV")
+            self.feedback.print_message("还没有设置AOV，将不会写入AOV")
             return None
 
         result = {}
@@ -101,16 +101,15 @@ class RenderingPresetTool(object):
     def __init__(self, preset_name, adapter=None, feedback=None):
         self.adapter = adapter or MayaNodeAdapter()
         self.feedback = feedback or FeedbackPrompt(self.adapter)
-        self.data_manager = DataManager()
         self.paths = get_runtime_paths()
         self.preset_name = preset_name
-        self.render_settings = self.data_manager.load_json(
+        self.render_settings = load_json(
             os.path.normpath(
                 os.path.join(self.paths.render_preset_path, preset_name + ".json")
             )
         )
         self.config = load_config(self.paths)["render_preset_params"]
-        self.language = load_language(self.paths)["ArnoldMagicNode"]["RenderPM"]
+        self.language = load_language(self.paths)["ArnoldMagicNode"]["rendering_preset_menu"]
 
     def apply(self):
         """依照配置选择性写入默认渲染、Arnold 和 AOV 参数。"""
@@ -118,32 +117,32 @@ class RenderingPresetTool(object):
         if self.config["default_rendering_properties_write_options"]:
             try:
                 self.set_default_rendering_properties()
-                self.feedback.CP(
+                self.feedback.print_message(
                     "<{}> {}".format(
                         self.preset_name, self.language["__init__"]["01"]
                     )
                 )
             except Exception as error:
-                self.feedback.CP(
+                self.feedback.print_message(
                     "<{}> {} {}".format(
                         self.preset_name, self.language["__init__"]["02"], error
                     )
                 )
 
         if not self.adapter.object_exists("defaultArnoldRenderOptions"):
-            self.feedback.CPW(self.language["__init__"]["03"])
+            self.feedback.warn(self.language["__init__"]["03"])
             return
 
         if self.config.get("rendering_properties_write_options"):
             try:
                 self.set_rendering_properties()
-                self.feedback.CP(
+                self.feedback.print_message(
                     "<{}> {}".format(
                         self.preset_name, self.language["__init__"]["04"]
                     )
                 )
             except Exception as error:
-                self.feedback.CP(
+                self.feedback.print_message(
                     "<{}> {} {}".format(
                         self.preset_name, self.language["__init__"]["05"], error
                     )
@@ -153,7 +152,7 @@ class RenderingPresetTool(object):
             try:
                 self.delete_original_aovs()
             except Exception as error:
-                self.feedback.CP(
+                self.feedback.print_message(
                     "<{}> {} {}".format(
                         self.preset_name, self.language["__init__"]["06"], error
                     )
@@ -163,19 +162,19 @@ class RenderingPresetTool(object):
                 aov_properties = self.render_settings.get("AOV_properties")
                 if aov_properties:
                     self.set_aovs()
-                    self.feedback.CP(
+                    self.feedback.print_message(
                         "<{}> {}".format(
                             self.preset_name, self.language["__init__"]["07"]
                         )
                     )
                 else:
-                    self.feedback.CP(
+                    self.feedback.print_message(
                         "<{}> {}".format(
                             self.preset_name, self.language["__init__"]["08"]
                         )
                     )
             except Exception as error:
-                self.feedback.CP(
+                self.feedback.print_message(
                     "<{}> {} {}".format(
                         self.preset_name, self.language["__init__"]["09"], error
                     )
@@ -314,27 +313,20 @@ def toggle_aovs(adapter=None, feedback=None):
     adapter = adapter or MayaNodeAdapter()
     feedback = feedback or FeedbackPrompt(adapter)
     if not adapter.object_exists("defaultArnoldRenderOptions.aovList"):
-        return feedback.CPW("未创建AOV")
+        return feedback.warn("未创建AOV")
     connections = adapter.list_connections(
         "defaultArnoldRenderOptions.aovList", source=True
     )
     if not connections:
-        return feedback.CPW("未创建AOV")
+        return feedback.warn("未创建AOV")
     for aov_node in connections:
         enabled = adapter.get_attr(aov_node + ".enabled")
         adapter.set_attr(aov_node + ".enabled", 0 if enabled == 1 else 1)
 
 
-# 旧调用名称，便于现有 Shelf 命令平滑切换。
-rendering_preset_menu = apply_rendering_preset
-ai_aov_switch_button = toggle_aovs
-
-
 __all__ = [
     "RenderingCaptureTool",
     "RenderingPresetTool",
-    "ai_aov_switch_button",
     "apply_rendering_preset",
-    "rendering_preset_menu",
     "toggle_aovs",
 ]

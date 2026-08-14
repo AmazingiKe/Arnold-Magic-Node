@@ -1,7 +1,8 @@
 """场景查询与节点名称优化工具。"""
 
-from ..core.naming import replacement_name
-from ..maya.scene import MayaSceneAdapter
+from arnold_magic_node.core.naming import replacement_name
+from arnold_magic_node.maya.scene import MayaSceneAdapter
+from .feedback import FeedbackPrompt
 from .runtime import load_config
 from .selection import get_scene_nodes_by_type
 
@@ -28,7 +29,7 @@ class SceneQueryTool(object):
 
 
 class SceneNodeRenameTool(object):
-    """保留旧场景重命名辅助类的单节点入口。"""
+    """场景节点重命名单节点入口。"""
 
     def __init__(self, adapter=None):
         self.adapter = adapter or MayaSceneAdapter()
@@ -42,6 +43,7 @@ class SceneNameOptimizationTool(object):
 
     def __init__(self, adapter=None, scene_nodes=None, config=None):
         self.adapter = adapter or MayaSceneAdapter()
+        self.feedback = FeedbackPrompt(self.adapter)
         self.scene_nodes = (
             get_scene_nodes_by_type(adapter=self.adapter) or {}
             if scene_nodes is None else scene_nodes
@@ -66,33 +68,24 @@ class SceneNameOptimizationTool(object):
                             continue
                         try:
                             self.adapter.rename(part_name, new_name)
-                            print("已重命名: {} -> {}".format(part_name, new_name))
+                            self.feedback.print_message(
+                                "已重命名: {} -> {}".format(part_name, new_name)
+                            )
                         except Exception as error:
-                            print(
+                            self.feedback.warn(
                                 "重命名失败: {} -> {}, 错误: {}".format(
                                     part_name, new_name, error
                                 )
                             )
-
-    main = run
 
 
 def optimize_scene_names():
     return SceneNameOptimizationTool().run()
 
 
-# 兼容旧名称。
-GetNodeData = SceneQueryTool
-Scene_Name_optimization = SceneNodeRenameTool
-SceneNameOptimization = SceneNameOptimizationTool
-
-
 __all__ = [
-    "GetNodeData",
-    "SceneNameOptimization",
     "SceneNameOptimizationTool",
     "SceneNodeRenameTool",
     "SceneQueryTool",
-    "Scene_Name_optimization",
     "optimize_scene_names",
 ]

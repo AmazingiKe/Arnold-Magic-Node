@@ -7,15 +7,15 @@
 import os
 from dataclasses import dataclass
 
-from ..core.paths import (
+from arnold_magic_node.core.paths import (
     ICONS_ROOT,
     LANGUAGES_ROOT,
     user_aov_cache_path,
     user_preset_dir,
     user_settings_dir,
 )
-from ..core.storage import ensure_directory, load_json, save_json
-from ..maya.environment import MayaEnvironmentAdapter, get_user_data_root
+from arnold_magic_node.core.storage import ensure_directory, load_json, save_json
+from arnold_magic_node.maya.environment import MayaEnvironmentAdapter, get_user_data_root
 
 
 SOFTWARE_STATE = "Release"
@@ -78,16 +78,6 @@ def get_runtime_paths(user_root=None):
     )
 
 
-class DataManager(object):
-    """旧 UI 所需的 JSON 读写兼容接口，委托给 ``core.storage``。"""
-
-    def load_json(self, file_path):
-        return load_json(file_path)
-
-    def save_json(self, file_path, data):
-        return save_json(file_path, data)
-
-
 def load_config(paths=None):
     """读取用户 Arnold Magic Node 配置。"""
 
@@ -144,15 +134,8 @@ def is_modifier_pressed(modifier, modifiers=None, environment=None):
     return bool(modifiers & modifier)
 
 
-def ensure_runtime_directory(directory_path):
-    """为界面菜单等按需创建一个运行时目录。"""
-
-    return ensure_directory(directory_path)
-
-
 __all__ = [
     "AMS_CONFIG",
-    "DataManager",
     "EXTRA_LARGE_FONT_SIZE",
     "LARGE_FONT_SIZE",
     "MAYA_ALT_MODIFIER",
@@ -167,11 +150,13 @@ __all__ = [
     "SMALL_FONT_SIZE",
     "SOFTWARE_STATE",
     "SOFTWARE_VERSION",
-    "ensure_runtime_directory",
+    "ensure_directory",
     "get_runtime_paths",
     "initialize_language_config",
     "is_modifier_pressed",
     "load_config",
+    "load_json",
     "load_language",
     "save_config",
+    "save_json",
 ]

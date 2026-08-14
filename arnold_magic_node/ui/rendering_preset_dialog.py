@@ -4,14 +4,12 @@ import os
 
 import maya.cmds as cmds
 
-from ..tools.feedback import FeedbackPrompt
-from ..tools.rendering import RenderingCaptureTool
-from ..tools.runtime import DataManager, get_runtime_paths, load_language
+from arnold_magic_node.tools.feedback import FeedbackPrompt
+from arnold_magic_node.tools.rendering import RenderingCaptureTool
+from arnold_magic_node.tools.runtime import get_runtime_paths, load_language, save_json
 
 
 _runtime_paths = get_runtime_paths()
-render_preset_path = _runtime_paths.render_preset_path
-language_loading = load_language
 
 
 new_rendering_preset_name = {}
@@ -22,15 +20,14 @@ class RenderingPresetDialog:
 
         self.import_val = None
 
-        self.lang = language_loading()['ArnoldMagicNode']['RenderPSB']
+        self.lang = load_language()['ArnoldMagicNode']['rendering_preset_dialog']
 
         self.import_name_win(menu_name)
 
-        self.feedback = FeedbackPrompt() # 错误提示模块
+        self.feedback = FeedbackPrompt()
         self.capture_tool = capture_tool or RenderingCaptureTool(
             feedback=self.feedback
         )
-        self.dataM = DataManager() # 数据管理模块
 
 
 
@@ -174,24 +171,8 @@ class RenderingPresetDialog:
         )
 
     # 获取driver_and_filter的名字
-    def get_driver_and_filter_nodes(self,node_name):
-
-        """
-        获取指定节点的 driver 和 filter 节点名称列表。
-
-        Args:
-            node_name (str): 要查询的节点名称。
-
-        Returns:
-            tuple: 包含两个列表的元组，第一个列表包含所有的 driver 节点名称，第二个列表包含所有的 filter 节点名称。
-
-        Raises:
-            None
-
-        Example:
-            node_name = 'aiAOV_albedo'
-            driver_nodes, filter_nodes = get_driver_and_filter_nodes(node_name)
-        """
+    def get_driver_and_filter_nodes(self, node_name):
+        """返回指定节点的 driver 与 filter 节点名。"""
 
         return self.capture_tool.driver_and_filter_nodes(node_name)
 
@@ -200,13 +181,13 @@ class RenderingPresetDialog:
         """
         创建一个窗口用于输入预设名称，并将其添加到指定的菜单中。
         """
-        WIN_NAME = "import_name_win"
+        win_name = "import_name_win"
         # 检查窗口是否存在，如果存在则删除
-        if cmds.window(WIN_NAME, exists=True):
-            cmds.deleteUI(WIN_NAME)
+        if cmds.window(win_name, exists=True):
+            cmds.deleteUI(win_name)
 
         # 创建窗口
-        cmds.window(WIN_NAME, title =self.lang['import_name_win']['01'], sizeable=False, mbr=True, tlb=False, w=300, h=40) # 输入你的预设名字
+        cmds.window(win_name, title =self.lang['import_name_win']['01'], sizeable=False, mbr=True, tlb=False, w=300, h=40) # 输入你的预设名字
 
         # 创建布局
         layout = cmds.rowLayout(numberOfColumns=50)
@@ -226,7 +207,7 @@ class RenderingPresetDialog:
         cmds.setParent(layout)
 
         # 显示窗口
-        cmds.showWindow(WIN_NAME)
+        cmds.showWindow(win_name)
 
         # _______________________________________________________________________>>> 确认输入的操作函数
         def determine():
@@ -240,21 +221,18 @@ class RenderingPresetDialog:
             # 获取渲染设置数据
             default_rendering_properties = self.get_default_rendering_properties()
             rendering_properties = self.get_rendering_properties()
-            AOV_properties = self.get_AOV_properties()
+            aov_properties = self.get_AOV_properties()
 
-            # 定义写入数据的路径
-            write_data_path = render_preset_path
+            write_data_path = _runtime_paths.render_preset_path
 
-            # 02, 组织渲染器属性数据
-            Render_settings = {
+            render_settings = {
                 'default_rendering_properties': default_rendering_properties,
                 'rendering_properties': rendering_properties,
-                'AOV_properties': AOV_properties
+                'AOV_properties': aov_properties
             }
 
-            # 03, 将渲染器属性保存到 JSON 文件中
             if not os.path.exists(os.path.join(write_data_path, self.import_val + ".json")):
-                self.dataM.save_json(os.path.join(write_data_path, self.import_val + ".json"), Render_settings)
+                save_json(os.path.join(write_data_path, self.import_val + ".json"), render_settings)
 
 
 
@@ -288,7 +266,7 @@ class RenderingPresetDialog:
             except:
                 pass
             # 关闭窗口
-            cmds.deleteUI(WIN_NAME)
+            cmds.deleteUI(win_name)
             return
 
         # _______________________________________________________________________>>> 取消操作函数
@@ -296,7 +274,7 @@ class RenderingPresetDialog:
             """
             取消按钮的回调函数，关闭窗口。
             """
-            cmds.deleteUI(WIN_NAME)
+            cmds.deleteUI(win_name)
             return
 
 def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name):
@@ -310,9 +288,8 @@ def delete_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_p
         if sl_name == i:
             cmds.deleteUI(new_rendering_preset_name[i], menuItem=True)
 
-    # 2, 删除本地文件
     os.remove(os.path.normpath(os.path.join(
-                render_preset_path,  sl_name+ '.json'
+                _runtime_paths.render_preset_path,  sl_name+ '.json'
             )))
 
 def modify_rendering_preset_menuItem(rendering_preset_path, sl_name, rendering_preset_name, menu_name):

@@ -1,20 +1,20 @@
 """Maya 选择与场景节点查询工具。"""
 
-from ..maya.scene import MayaSceneAdapter
+from arnold_magic_node.maya.scene import MayaSceneAdapter
 from .feedback import FeedbackPrompt
 from .runtime import load_language
 
 
 def process_selected_nodes(selected_nodes=None, adapter=None, feedback=None):
-    """按节点类型归类当前选择，保持旧 ``process_sl_data`` 的行为。"""
+    """按节点类型归类当前选择。"""
 
     adapter = adapter or MayaSceneAdapter()
     feedback = feedback or FeedbackPrompt(adapter)
     if selected_nodes is None:
         selected_nodes = adapter.list_nodes(sl=True)
     if not selected_nodes:
-        language = load_language()["ArnoldMagicNodeLibs"]["process_sl_data"]
-        feedback.CPW(language["01"])
+        language = load_language()["ArnoldMagicNodeLibs"]["process_selected_nodes"]
+        feedback.warn(language["01"])
         return None
 
     result = {}
@@ -33,7 +33,7 @@ def get_scene_nodes_by_type(adapter=None, feedback=None):
         materials=True, textures=True, assemblies=True,
     )
     if not all_nodes:
-        feedback.CPW("没有找到节点")
+        feedback.warn("没有找到节点")
         return None
 
     result = {}
@@ -42,7 +42,7 @@ def get_scene_nodes_by_type(adapter=None, feedback=None):
             node_type = adapter.node_type(node_name)
         except Exception as error:
             node_type = "unknown"
-            print("获取节点类型失败: {}, 错误: {}".format(node_name, error))
+            feedback.warn("获取节点类型失败: {}, 错误: {}".format(node_name, error))
         result.setdefault(node_type, []).append(node_name)
     return result
 

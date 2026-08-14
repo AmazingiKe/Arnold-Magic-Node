@@ -1,6 +1,6 @@
 """AOV 灯光组管理功能编排。"""
 
-from ..maya.aovs import MayaAovAdapter
+from arnold_magic_node.maya.aovs import MayaAovAdapter
 from .feedback import FeedbackPrompt
 
 
@@ -20,7 +20,7 @@ class AovLightGroupTool(object):
                     old_group = self.adapter.get_attr(light_name + ".aiAov")
                     if group_name != old_group:
                         if not isinstance(group_name, str):
-                            self.feedback.CPW(
+                            self.feedback.warn(
                                 "灯光组名称必须为字符串，当前为：{}".format(
                                     type(group_name)
                                 )
@@ -32,7 +32,7 @@ class AovLightGroupTool(object):
                             value_type="string",
                         )
                 except Exception as error:
-                    self.feedback.CPW(
+                    self.feedback.warn(
                         "更新灯光 '{}' 的灯光组 '{}' 失败: {}".format(
                             light_name, group_name, error
                         )
@@ -81,7 +81,7 @@ class AovLightGroupTool(object):
                     self.create_configured_aov(aov_name)
                     created.append(aov_name)
                 except Exception as error:
-                    self.feedback.CPW(
+                    self.feedback.warn(
                         "创建AOV '{}' 失败：{}".format(aov_name, error)
                     )
         return created
@@ -98,7 +98,7 @@ class AovLightGroupTool(object):
                     self.adapter.delete(node_name)
                     deleted.append(aov_name)
             except Exception as error:
-                self.feedback.CPW(
+                self.feedback.warn(
                     "清理AOV失败: {} - {}".format(node_name, error)
                 )
         return deleted

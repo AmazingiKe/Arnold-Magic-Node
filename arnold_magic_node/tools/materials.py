@@ -3,10 +3,10 @@
 import json
 import os
 
-from ..core.path_detection import collect_file_info, process_file_names, scan_directory
-from ..core.similarity import calculate_similarity, select_matches
-from ..core.paths import PROJECT_ROOT
-from ..maya.magic_connection import MayaMagicConnectionAdapter
+from arnold_magic_node.core.path_detection import collect_file_info, process_file_names, scan_directory
+from arnold_magic_node.core.similarity import calculate_similarity, select_matches
+from arnold_magic_node.core.paths import PROJECT_ROOT
+from arnold_magic_node.maya.magic_connection import MayaMagicConnectionAdapter
 from .feedback import FeedbackPrompt
 from .magic_connection import connect_texture_nodes
 from .runtime import load_config
@@ -121,10 +121,8 @@ class MaterialConversionTool(object):
                             force=True,
                         )
                     except Exception as error:
-                        self.feedback.CP("连接失败: {}".format(error))
+                        self.feedback.print_message("连接失败: {}".format(error))
                 self.adapter.delete(material_name)
-
-    process = run
 
 
 class IntelligentMaterialRepairTool(object):
@@ -218,7 +216,7 @@ class IntelligentMaterialRepairTool(object):
                 node_name, node_path = next(iter(material_textures.items()))
                 matches = self.detect_and_calculate_similarity(node_path)
                 if not matches or len(matches) > 9:
-                    self.feedback.CPW(
+                    self.feedback.warn(
                         "[{}] 的贴图 [{}] 匹配结果异常，数量：{}，已跳过修复".format(
                             material_name, node_name, len(matches)
                         )
@@ -246,8 +244,6 @@ class IntelligentMaterialRepairTool(object):
                     self.adapter,
                 )
 
-    process = run
-
 
 def convert_all_old_materials_to_arnold():
     tool = MaterialConversionTool(select_all=True)
@@ -269,24 +265,11 @@ def repair_selected_materials():
     return tool.run()
 
 
-# 兼容旧入口。
-ConvertOldMaterialsToArnold = MaterialConversionTool
-IntelligentMaterialRepair = IntelligentMaterialRepairTool
-all_convert_old_materials_to_arnold_button = convert_all_old_materials_to_arnold
-select_convert_old_materials_to_arnold_button = convert_selected_old_materials_to_arnold
-all_intelligent_material_repair_button = repair_all_materials
-select_intelligent_material_repair_button = repair_selected_materials
-
-
 __all__ = [
-    "ConvertOldMaterialsToArnold",
-    "IntelligentMaterialRepair",
     "IntelligentMaterialRepairTool",
     "MaterialConversionTool",
-    "all_convert_old_materials_to_arnold_button",
     "convert_all_old_materials_to_arnold",
     "convert_selected_old_materials_to_arnold",
     "repair_all_materials",
     "repair_selected_materials",
-    "select_convert_old_materials_to_arnold_button",
 ]

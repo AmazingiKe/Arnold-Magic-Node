@@ -2,45 +2,34 @@
 
 from datetime import datetime
 
-from ..maya.nodes import MayaNodeAdapter
+from arnold_magic_node.maya.nodes import MayaNodeAdapter
 from .runtime import load_language
 
 
 class FeedbackPrompt(object):
-    """保留旧反馈接口，并将语言读取收敛到运行时工具。"""
+    """统一封装面向用户的打印与警告，并集中读取语言资源。"""
 
     def __init__(self, adapter=None):
         self.adapter = adapter
         self.language = load_language()["ArnoldMagicNodeLibs"]["FeedbackPrompt"]
         current_time = datetime.now()
-        self.primary_contact = "\nmail:1925250542@qq.com\nWeChat:13549971630"
-        self.DefContent = "{} {} | ".format(
+        self.default_content = "{} {} | ".format(
             self.language["01"], current_time.strftime("%Y-%m-%d %H:%M:%S")
         )
 
-    def CP(self, content):
-        print(self.DefContent + str(content))
+    def print_message(self, content):
+        print(self.default_content + str(content))
 
-    def CPW(self, content=None, EC=None):
+    def warn(self, content=None, error_context=None):
         if self.adapter is None:
             self.adapter = MayaNodeAdapter()
 
-        if EC is None:
-            self.adapter.warning(str(self.DefContent) + str(content))
+        if error_context is None:
+            self.adapter.warning(str(self.default_content) + str(content))
         else:
-            print(str(self.DefContent) + self.language["02"] + str(content))
+            print(str(self.default_content) + self.language["02"] + str(content))
             print("↓" * 65)
-            self.adapter.warning(str(EC))
-
-    def CPE(self, content=None, EC=None):
-        error_message = "{}{}: {}".format(
-            self.DefContent, self.language["03"], self.primary_contact
-        )
-        if EC:
-            error_message += "\n" + str(EC)
-        if content:
-            error_message += "\n" + str(content)
-        raise ValueError(error_message)
+            self.adapter.warning(str(error_context))
 
 
 __all__ = ["FeedbackPrompt"]

@@ -4,7 +4,7 @@ Only this adapter knows how to ask Maya for the per-user application
 directory. It intentionally does not create directories while being imported.
 """
 
-from ..core.paths import user_data_root
+from arnold_magic_node.core.paths import user_data_root
 
 
 def _load_cmds():

@@ -4,7 +4,7 @@ import copy
 import re
 from dataclasses import dataclass, field
 
-from ..core.ai_protocol import parse_json_output, validate_json_schema_subset
+from arnold_magic_node.core.ai_protocol import parse_json_output, validate_json_schema_subset
 from .ai_client import (
     DEFAULT_API_KEY_ENV,
     AiClientConfig,

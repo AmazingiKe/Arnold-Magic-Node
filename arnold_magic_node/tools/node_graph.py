@@ -1,8 +1,8 @@
 """快速连接与 Arnold 节点混合工具。"""
 
-from ..maya.nodes import MayaNodeAdapter
+from arnold_magic_node.maya.nodes import MayaNodeAdapter
 from .feedback import FeedbackPrompt
-from .runtime import load_config
+from .runtime import MAYA_ALT_MODIFIER, load_config
 from .selection import process_selected_nodes
 
 
@@ -39,14 +39,6 @@ class QuickConnectTool(object):
                         "{}.{}".format(source_node, output_attribute),
                         "{}.{}".format(destination_node, input_attribute),
                     )
-                    print(
-                        "[QuickConnect] {}.{} → {}.{}".format(
-                            source_node,
-                            output_attribute,
-                            destination_node,
-                            input_attribute,
-                        )
-                    )
                     connected = True
                     break
                 except Exception:
@@ -68,14 +60,6 @@ class QuickConnectTool(object):
                             "{}.{}".format(source_node, output_attribute),
                             "{}.{}".format(destination_node, input_attribute),
                         )
-                        print(
-                            "[QuickConnect] {}.{} → {}.{}".format(
-                                source_node,
-                                output_attribute,
-                                destination_node,
-                                input_attribute,
-                            )
-                        )
                         connected = True
                         break
                     except Exception:
@@ -86,8 +70,6 @@ class QuickConnectTool(object):
                         source_node, destination_node
                     )
                 )
-
-    process = run
 
 
 class NodeMixTool(object):
@@ -123,10 +105,6 @@ class NodeMixTool(object):
     def __init__(self, adapter=None):
         self.adapter = adapter or MayaNodeAdapter()
         self.feedback = FeedbackPrompt(self.adapter)
-        self.handlers = {
-            "intelligent_mix": self.intelligent_mix_process,
-            "mask_mix": self.mask_mix_process,
-        }
         self.type_to_category = {}
         for category, node_types in {
             "utility": self.UTILITY_SHADER_TYPES,
@@ -147,11 +125,11 @@ class NodeMixTool(object):
             elif category == "mix":
                 self.handle_mix(node_type, node_names)
             else:
-                self.feedback.CPW("未知的节点类型：{}".format(node_type))
+                self.feedback.warn("未知的节点类型：{}".format(node_type))
 
     def handle_utility_shader(self, nodes):
         modifiers = self.adapter.modifiers()
-        if modifiers == 8:
+        if modifiers == MAYA_ALT_MODIFIER:
             self.handle_grayscale_shader_mix(nodes)
         else:
             self.handle_color_shader_mix(nodes)
@@ -211,16 +189,12 @@ class NodeMixTool(object):
                 force=True,
             )
 
-    @staticmethod
-    def mask_mix_process(selected_nodes):
-        print("mask_mix_process")
-
-    def run(self, mix_mode):
+    def run(self):
         selected_nodes = process_selected_nodes(
             adapter=self.adapter, feedback=self.feedback
         )
         if not selected_nodes:
-            return self.feedback.CPW("至少需要两个节点来建立连接！")
+            return self.feedback.warn("至少需要两个节点来建立连接！")
         nodes = []
         for node_names in selected_nodes.values():
             if isinstance(node_names, (list, tuple, set)):
@@ -228,14 +202,8 @@ class NodeMixTool(object):
             else:
                 nodes.append(node_names)
         if len(nodes) < 2:
-            return self.feedback.CPW("至少需要两个节点来建立连接！")
-        handler = self.handlers.get(mix_mode)
-        if handler:
-            return handler(selected_nodes)
-        return self.feedback.CPW("未知的混合模式：{}".format(mix_mode))
-
-    def process(self, mix_mod=None):
-        return self.run(mix_mod)
+            return self.feedback.warn("至少需要两个节点来建立连接！")
+        return self.intelligent_mix_process(selected_nodes)
 
 
 def quick_connect_nodes(adapter=None):
@@ -243,26 +211,12 @@ def quick_connect_nodes(adapter=None):
 
 
 def intelligent_mix(adapter=None):
-    return NodeMixTool(adapter=adapter).run("intelligent_mix")
-
-
-def mask_node_mix(adapter=None):
-    return NodeMixTool(adapter=adapter).run("mask_mix")
-
-
-# 旧入口兼容名称。
-QuickConnectNode = QuickConnectTool
-BlendNodeManager = NodeMixTool
-quick_connect_node_button = quick_connect_nodes
+    return NodeMixTool(adapter=adapter).run()
 
 
 __all__ = [
-    "BlendNodeManager",
     "NodeMixTool",
-    "QuickConnectNode",
     "QuickConnectTool",
     "intelligent_mix",
-    "mask_node_mix",
-    "quick_connect_node_button",
     "quick_connect_nodes",
 ]

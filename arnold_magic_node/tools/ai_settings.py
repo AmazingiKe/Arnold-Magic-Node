@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from ..core.paths import DEFAULT_AI_SETTINGS_PATH
-from ..core.storage import load_json, save_json
+from arnold_magic_node.core.paths import DEFAULT_AI_SETTINGS_PATH
+from arnold_magic_node.core.storage import load_json, save_json
 from .runtime import get_runtime_paths
 
 

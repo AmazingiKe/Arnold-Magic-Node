@@ -20,7 +20,7 @@ from urllib.request import (
     build_opener,
 )
 
-from ..core.ai_protocol import (
+from arnold_magic_node.core.ai_protocol import (
     API_STYLE_RESPONSES,
     SUPPORTED_API_STYLES,
     AiError,
