@@ -4,7 +4,7 @@ import copy
 import threading
 import uuid
 
-from arnold_magic_node.tools.ai_client import AiError
+from arnold_magic_node.core.ai_protocol import AiError
 from arnold_magic_node.tools.ai_routing import AiRoutingConfig, MAX_MODELS, test_ai_model
 from arnold_magic_node.tools.ai_settings import load_ai_settings, save_ai_settings
 from ._qt_compat import QtCore, QtWidgets
@@ -31,7 +31,6 @@ class AiSettingsWidget(QtWidgets.QWidget):
         self,
         paths,
         language,
-        environ=None,
         model_tester=None,
         background_runner=None,
         parent=None,
@@ -39,7 +38,6 @@ class AiSettingsWidget(QtWidgets.QWidget):
         super(AiSettingsWidget, self).__init__(parent)
         self.paths = paths
         self.language = language
-        self.environ = environ
         self.settings = load_ai_settings(paths=paths)
         self._models = copy.deepcopy(self.settings["models"])
         self._fast_model_id = self.settings["fast_model_id"]
@@ -409,7 +407,7 @@ class AiSettingsWidget(QtWidgets.QWidget):
         return {
             "id": "model_{}".format(uuid.uuid4().hex),
             "model": name,
-            "base_url": "https://api.openai.com/v1",
+            "base_url": "",
             "api_style": "responses",
             "api_key": "",
             "timeout_seconds": 60,
@@ -458,7 +456,7 @@ class AiSettingsWidget(QtWidgets.QWidget):
         return True
 
     def _test_model(self, profile):
-        return test_ai_model(profile, environ=self.environ)
+        return test_ai_model(profile)
 
     def _run_in_background(self, task, on_success, on_error):
         dispatcher = self._async_dispatcher
@@ -473,8 +471,9 @@ class AiSettingsWidget(QtWidgets.QWidget):
         def worker():
             try:
                 result = task()
-            except Exception:  # noqa: BLE001 - Qt 边界只回传无敏感失败状态
-                dispatch(on_error, None)
+            except Exception as error:  # noqa: BLE001 - Qt 边界只回传脱敏后的失败信息
+                message = " ".join(str(error).split())[:512] or "未知错误"
+                dispatch(on_error, message)
             else:
                 dispatch(on_success, result)
 
@@ -500,18 +499,16 @@ class AiSettingsWidget(QtWidgets.QWidget):
         def task():
             return self._model_tester(snapshot)
 
-        self._background_runner(
-            task,
-            lambda result: self._finish_model_test(
-                job_id, generation, selected_id, bool(result)
-            ),
-            lambda error: self._finish_model_test(
-                job_id, generation, selected_id, False
-            ),
-        )
+        def on_success(result):
+            self._finish_model_test(job_id, generation, selected_id, bool(result))
+
+        def on_error(message):
+            self._finish_model_test(job_id, generation, selected_id, False, message)
+
+        self._background_runner(task, on_success, on_error)
         return True
 
-    def _finish_model_test(self, job_id, generation, selected_id, succeeded):
+    def _finish_model_test(self, job_id, generation, selected_id, succeeded, message=None):
         if job_id != self._active_model_test_id:
             return
         self._active_model_test_id = None
@@ -520,11 +517,13 @@ class AiSettingsWidget(QtWidgets.QWidget):
             generation == self._model_test_generation
             and selected_id == self._current_model_id()
         ):
-            self.model_test_status_label.setText(
-                self.language["test_success"]
-                if succeeded
-                else self.language["test_failed"]
-            )
+            if succeeded:
+                self.model_test_status_label.setText(self.language["test_success"])
+            else:
+                label = self.language["test_failed"]
+                if message:
+                    label += "：" + message
+                self.model_test_status_label.setText(label)
         self._update_controls()
 
     def _invalidate_model_test(self):

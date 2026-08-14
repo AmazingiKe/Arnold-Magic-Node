@@ -1,108 +1,123 @@
 """有序独立模型配置与 fast/complex 固定流式路由。"""
 
 import copy
+import ipaddress
+import json
+import math
 import re
 from dataclasses import dataclass, field
+from urllib.parse import urlsplit
 
-from arnold_magic_node.core.ai_protocol import parse_json_output, validate_json_schema_subset
-from .ai_client import (
-    DEFAULT_API_KEY_ENV,
-    AiClientConfig,
+import openai
+
+from arnold_magic_node.core.ai_protocol import (
+    API_STYLE_CHAT_COMPLETIONS,
+    API_STYLE_RESPONSES,
+    SUPPORTED_API_STYLES,
     AiConfigurationError,
-    OpenAICompatibleClient,
-    UrllibTransport,
-    normalize_api_key,
-    normalize_base_url,
+    AiRequestError,
+    parse_json_output,
+    validate_json_schema_subset,
 )
 
 
 AI_MODE_FAST = "fast"
 AI_MODE_COMPLEX = "complex"
-SUPPORTED_AI_MODES = (AI_MODE_FAST, AI_MODE_COMPLEX)
 MAX_MODELS = 64
 MAX_MODEL_NAME_LENGTH = 256
 MAX_MODEL_ID_LENGTH = 128
 MODEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+MAX_API_KEY_LENGTH = 8192
+MAX_BODY_LIMIT = 10 * 1024 * 1024
+CHAT_TOKEN_PARAMETERS = ("max_tokens", "max_completion_tokens")
 
 
-def _legacy_profile(model_id, model, legacy):
-    return {
-        "id": model_id,
-        "model": model,
-        "base_url": legacy.base_url,
-        "api_style": legacy.api_style,
-        "api_key": "",
-        "timeout_seconds": legacy.timeout_seconds,
-        "max_output_tokens": legacy.max_output_tokens,
-        "max_request_bytes": legacy.max_request_bytes,
-        "max_response_bytes": legacy.max_response_bytes,
-        "chat_token_parameter": legacy.chat_token_parameter,
-    }
+def normalize_api_key(value):
+    """返回去除首尾空白后的安全 API Key，空值返回 ``None``。"""
+
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise AiConfigurationError("API Key 必须是字符串")
+    key = value.strip()
+    if not key:
+        return None
+    if len(key) > MAX_API_KEY_LENGTH or any(
+        ord(character) < 33 or ord(character) > 126 for character in key
+    ):
+        raise AiConfigurationError("API Key 格式无效")
+    return key
 
 
-def _migrate_v1(values):
-    legacy = AiClientConfig.from_mapping(values)
-    model_id = "model_001"
-    return {
-        "schema_version": 3,
-        "models": [_legacy_profile(model_id, legacy.model, legacy)],
-        "fast_model_id": model_id,
-        "complex_model_id": model_id,
-    }
+def _is_loopback_host(hostname):
+    if not hostname:
+        return False
+    if hostname.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        return False
 
 
-def _migrate_v2(values):
-    defaults = AiClientConfig()
-    queues = values.get("model_queues")
-    if not isinstance(queues, dict):
-        raise AiConfigurationError("旧版 model_queues 必须是 JSON 对象")
+def normalize_base_url(base_url):
+    """校验并标准化 AI 服务根 URL。"""
 
-    ordered_names = []
-    mode_first_names = {}
-    for mode in SUPPORTED_AI_MODES:
-        queue = queues.get(mode)
-        models = queue.get("models") if isinstance(queue, dict) else None
-        if not isinstance(models, list) or not models:
-            raise AiConfigurationError("旧版快速和复杂模型队列不能为空")
-        if any(not isinstance(model, str) for model in models):
-            raise AiConfigurationError("旧版模型名称必须是字符串")
-        mode_first_names[mode] = models[0]
-        for model in models:
-            if model not in ordered_names:
-                ordered_names.append(model)
+    if not isinstance(base_url, str) or not base_url:
+        raise AiConfigurationError("base_url 不能为空")
+    if base_url != base_url.strip() or "\\" in base_url:
+        raise AiConfigurationError("base_url 格式无效")
+    if any(
+        character.isspace() or ord(character) < 32 or ord(character) == 127
+        for character in base_url
+    ):
+        raise AiConfigurationError("base_url 包含空白或控制字符")
 
-    legacy = AiClientConfig(
-        schema_version=1,
-        api_style=values.get("api_style", defaults.api_style),
-        base_url=values.get("base_url", defaults.base_url),
-        model=ordered_names[0],
-        api_key_env=values.get("api_key_env", DEFAULT_API_KEY_ENV),
-        timeout_seconds=values.get("timeout_seconds", defaults.timeout_seconds),
-        max_output_tokens=values.get("max_output_tokens", defaults.max_output_tokens),
-        max_request_bytes=values.get("max_request_bytes", defaults.max_request_bytes),
-        max_response_bytes=values.get(
-            "max_response_bytes", defaults.max_response_bytes
-        ),
-        chat_token_parameter=values.get(
-            "chat_token_parameter", defaults.chat_token_parameter
-        ),
-    )
-    profiles = []
-    ids_by_name = {}
-    for index, model in enumerate(ordered_names, 1):
-        model_id = "model_{:03d}".format(index)
-        ids_by_name[model] = model_id
-        profiles.append(_legacy_profile(model_id, model, legacy))
-    return {
-        "schema_version": 3,
-        "models": profiles,
-        "fast_model_id": ids_by_name[mode_first_names[AI_MODE_FAST]],
-        "complex_model_id": ids_by_name[mode_first_names[AI_MODE_COMPLEX]],
-    }
+    try:
+        parts = urlsplit(base_url)
+        port = parts.port
+    except ValueError as error:
+        raise AiConfigurationError("base_url 格式无效") from error
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise AiConfigurationError("base_url 必须是有效的 HTTP(S) URL")
+    if parts.username is not None or parts.password is not None:
+        raise AiConfigurationError("base_url 不得包含用户名或密码")
+    if parts.query or parts.fragment:
+        raise AiConfigurationError("base_url 不得包含 query 或 fragment")
+    if port is not None and port < 1:
+        raise AiConfigurationError("base_url 端口无效")
+    if parts.scheme == "http" and not _is_loopback_host(parts.hostname):
+        raise AiConfigurationError("远程 AI 接口必须使用 HTTPS")
+    return base_url.rstrip("/"), parts
+
+
+def _validate_number(value, name, minimum, maximum):
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or (isinstance(value, float) and not math.isfinite(value))
+        or value < minimum
+        or value > maximum
+    ):
+        raise AiConfigurationError(
+            "{} 必须在 {} 到 {} 之间".format(name, minimum, maximum)
+        )
+
+
+def _validate_integer(value, name, minimum, maximum):
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < minimum
+        or value > maximum
+    ):
+        raise AiConfigurationError(
+            "{} 必须是 {} 到 {} 之间的整数".format(name, minimum, maximum)
+        )
 
 
 def migrate_ai_settings(values):
-    """把 v1/v2 设置迁移为 v3 映射；迁移本身不写回磁盘。"""
+    """校验当前 AI 设置 schema；旧版 schema 不再自动迁移。"""
 
     if not isinstance(values, dict):
         raise AiConfigurationError("AI 设置根节点必须是 JSON 对象")
@@ -111,10 +126,6 @@ def migrate_ai_settings(values):
         raise AiConfigurationError("不支持的 AI 设置 schema_version")
     if version == 3:
         return copy.deepcopy(values)
-    if version == 2:
-        return _migrate_v2(values)
-    if version == 1:
-        return _migrate_v1(values)
     raise AiConfigurationError("不支持的 AI 设置 schema_version")
 
 
@@ -162,33 +173,42 @@ class AiModelConfig:
 
         model_id = cls._normalize_id(values["id"])
         model = cls._normalize_model_name(values["model"])
-        normalized_url, url_parts = normalize_base_url(values["base_url"])
+        api_style = values["api_style"]
+        if api_style not in SUPPORTED_API_STYLES:
+            raise AiConfigurationError("不支持的 API 风格：{}".format(api_style))
+        base_url = values["base_url"]
+        if base_url:
+            normalized_url, url_parts = normalize_base_url(base_url)
+        else:
+            normalized_url, url_parts = "", None
         api_key = normalize_api_key(values["api_key"]) or ""
-        if api_key and url_parts.scheme != "https":
+        if api_key and url_parts is not None and url_parts.scheme != "https":
             raise AiConfigurationError("带 API Key 的模型接口必须使用 HTTPS")
-        client_config = AiClientConfig(
-            schema_version=1,
-            api_style=values["api_style"],
-            base_url=normalized_url,
+        chat_token_parameter = values["chat_token_parameter"]
+        if chat_token_parameter not in CHAT_TOKEN_PARAMETERS:
+            raise AiConfigurationError("Chat token 参数不受支持")
+        _validate_number(values["timeout_seconds"], "timeout_seconds", 1, 300)
+        _validate_integer(
+            values["max_output_tokens"], "max_output_tokens", 1, 1000000
+        )
+        _validate_integer(
+            values["max_request_bytes"], "max_request_bytes", 1, MAX_BODY_LIMIT
+        )
+        _validate_integer(
+            values["max_response_bytes"], "max_response_bytes", 1, MAX_BODY_LIMIT
+        )
+
+        return cls(
+            id=model_id,
             model=model,
-            api_key_env=DEFAULT_API_KEY_ENV,
+            base_url=normalized_url,
+            api_style=api_style,
+            api_key=api_key,
             timeout_seconds=values["timeout_seconds"],
             max_output_tokens=values["max_output_tokens"],
             max_request_bytes=values["max_request_bytes"],
             max_response_bytes=values["max_response_bytes"],
-            chat_token_parameter=values["chat_token_parameter"],
-        ).validate()
-        return cls(
-            id=model_id,
-            model=client_config.model,
-            base_url=normalized_url,
-            api_style=client_config.api_style,
-            api_key=api_key,
-            timeout_seconds=client_config.timeout_seconds,
-            max_output_tokens=client_config.max_output_tokens,
-            max_request_bytes=client_config.max_request_bytes,
-            max_response_bytes=client_config.max_response_bytes,
-            chat_token_parameter=client_config.chat_token_parameter,
+            chat_token_parameter=chat_token_parameter,
         )
 
     @staticmethod
@@ -208,7 +228,7 @@ class AiModelConfig:
             raise AiConfigurationError("AI 模型名称必须是字符串")
         normalized = model.strip()
         if not normalized:
-            raise AiConfigurationError("AI 模型名称不能为空")
+            return ""
         if len(normalized) > MAX_MODEL_NAME_LENGTH:
             raise AiConfigurationError("AI 模型名称过长")
         if any(
@@ -217,26 +237,6 @@ class AiModelConfig:
         ):
             raise AiConfigurationError("AI 模型名称格式无效")
         return normalized
-
-    def client_config(self, timeout_seconds=None, max_output_tokens=None):
-        return AiClientConfig(
-            schema_version=1,
-            api_style=self.api_style,
-            base_url=self.base_url,
-            model=self.model,
-            api_key_env=DEFAULT_API_KEY_ENV,
-            timeout_seconds=(
-                self.timeout_seconds if timeout_seconds is None else timeout_seconds
-            ),
-            max_output_tokens=(
-                self.max_output_tokens
-                if max_output_tokens is None
-                else max_output_tokens
-            ),
-            max_request_bytes=self.max_request_bytes,
-            max_response_bytes=self.max_response_bytes,
-            chat_token_parameter=self.chat_token_parameter,
-        ).validate()
 
     def to_mapping(self):
         return {
@@ -324,35 +324,66 @@ class AiRoutingConfig:
         }
 
 
+def _create_sdk_client(profile, timeout_seconds=None):
+    """按模型配置创建 OpenAI SDK 客户端；本地 HTTP 接口使用占位 Key。"""
+
+    base_url, url_parts = normalize_base_url(profile.base_url)
+    timeout = profile.timeout_seconds if timeout_seconds is None else timeout_seconds
+    if not profile.model:
+        raise AiConfigurationError("AI 模型名称不能为空")
+    api_key = profile.api_key
+    if url_parts.scheme == "http":
+        api_key = api_key or "sk-local"
+    elif not api_key:
+        raise AiConfigurationError("当前模型未配置 API Key")
+    return openai.OpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        timeout=timeout,
+        max_retries=0,
+    )
+
+
+def _map_sdk_error(error):
+    """把 OpenAI SDK 异常映射为插件的 AiRequestError。"""
+
+    if isinstance(error, openai.AuthenticationError):
+        message = "认证失败（API Key 无效或无权限）"
+    elif isinstance(error, openai.RateLimitError):
+        message = "请求频率或额度受限"
+    elif isinstance(error, openai.APIConnectionError):
+        message = "无法连接 AI 接口"
+    elif isinstance(error, openai.APITimeoutError):
+        message = "AI 请求超时"
+    elif isinstance(error, openai.BadRequestError):
+        message = "请求参数被拒绝：{}".format(error)
+    else:
+        message = "AI 请求失败：{}".format(error)
+    return AiRequestError(message)
+
+
 class AiService(object):
     """绑定 fast 或 complex 的唯一模型，并向 tools 暴露流式输入接口。"""
 
-    def __init__(
-        self,
-        config,
-        client_factory=None,
-        mode=AI_MODE_FAST,
-        transport=None,
-        environ=None,
-    ):
+    def __init__(self, config, client_factory=None, mode=AI_MODE_FAST):
         if not isinstance(config, AiRoutingConfig):
             config = AiRoutingConfig.from_mapping(config)
         self.config = config
         self.mode = AI_MODE_FAST if mode is None else mode
         self.profile = config.model_for_mode(self.mode)
-        self.environ = environ
-        self.transport = (
-            transport or UrllibTransport() if client_factory is None else transport
-        )
-        self.client_factory = client_factory or self._create_client
+        self.client_factory = client_factory or _create_sdk_client
 
-    def _create_client(self, profile):
-        return OpenAICompatibleClient(
-            config=profile.client_config(),
-            api_key=profile.api_key,
-            transport=self.transport,
-            environ=self.environ,
-        )
+    def _client(self):
+        return self.client_factory(self.profile)
+
+    @staticmethod
+    def _serialize_input(input_data):
+        if isinstance(input_data, str):
+            return input_data
+        try:
+            return json.dumps(input_data, ensure_ascii=False, allow_nan=False)
+        except (TypeError, ValueError, RecursionError) as error:
+            raise AiConfigurationError("AI 输入无法序列化为 JSON") from error
 
     def stream(
         self,
@@ -361,14 +392,66 @@ class AiService(object):
         response_schema=None,
         schema_name="structured_output",
     ):
-        client = self.client_factory(self.profile)
-        for delta in client.stream_text(
-            instructions,
-            input_data,
-            response_schema=response_schema,
-            schema_name=schema_name,
-        ):
-            yield delta
+        """以 SSE 增量形式返回模型可见文本。"""
+
+        profile = self.profile
+        client = self._client()
+        try:
+            if profile.api_style == API_STYLE_RESPONSES:
+                params = {
+                    "model": profile.model,
+                    "input": self._serialize_input(input_data),
+                    "store": False,
+                    "stream": True,
+                }
+                if instructions:
+                    params["instructions"] = instructions
+                if profile.max_output_tokens:
+                    params["max_output_tokens"] = profile.max_output_tokens
+                if response_schema is not None:
+                    params["text"] = {
+                        "format": {
+                            "type": "json_schema",
+                            "name": schema_name,
+                            "strict": True,
+                            "schema": response_schema,
+                        }
+                    }
+                with client.responses.create(**params) as stream:
+                    for event in stream:
+                        if event.type == "response.output_text.delta":
+                            yield event.delta
+            else:
+                messages = []
+                if instructions:
+                    messages.append({"role": "system", "content": instructions})
+                messages.append(
+                    {"role": "user", "content": self._serialize_input(input_data)}
+                )
+                params = {
+                    "model": profile.model,
+                    "messages": messages,
+                    "stream": True,
+                }
+                if profile.max_output_tokens:
+                    params[profile.chat_token_parameter] = profile.max_output_tokens
+                if response_schema is not None:
+                    params["response_format"] = {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": schema_name,
+                            "strict": True,
+                            "schema": response_schema,
+                        },
+                    }
+                with client.chat.completions.create(**params) as stream:
+                    for chunk in stream:
+                        if chunk.choices and chunk.choices[0].delta:
+                            content = chunk.choices[0].delta.content
+                            if content:
+                                yield content
+        except openai.OpenAIError as error:
+            raise _map_sdk_error(error) from error
 
     def ask(
         self,
@@ -409,8 +492,6 @@ def create_ai_service(
     user_root=None,
     paths=None,
     mode=AI_MODE_FAST,
-    transport=None,
-    environ=None,
     client_factory=None,
 ):
     """创建固定 fast/complex 模型的服务；调用端不选择具体模型。"""
@@ -423,27 +504,33 @@ def create_ai_service(
         AiRoutingConfig.from_mapping(settings),
         client_factory=client_factory,
         mode=mode,
-        transport=transport,
-        environ=environ,
     )
 
 
-def test_ai_model(profile, transport=None, environ=None):
+def test_ai_model(profile, client_factory=None):
     """只探测一个完整模型配置；发送 ``"1"`` 且绝不切换模型。"""
 
     if not isinstance(profile, AiModelConfig):
         profile = AiModelConfig.from_mapping(profile)
-    client = OpenAICompatibleClient(
-        config=profile.client_config(
-            timeout_seconds=min(profile.timeout_seconds, 20),
-            max_output_tokens=min(profile.max_output_tokens, 32),
-        ),
-        api_key=profile.api_key,
-        transport=transport,
-        environ=environ,
+    client = (client_factory or _create_sdk_client)(
+        profile,
+        timeout_seconds=min(profile.timeout_seconds, 20),
     )
-    for _ in client.stream_text(None, "1"):
-        pass
+    try:
+        if profile.api_style == API_STYLE_RESPONSES:
+            client.responses.create(
+                model=profile.model,
+                input="1",
+                max_output_tokens=32,
+            )
+        else:
+            client.chat.completions.create(
+                model=profile.model,
+                messages=[{"role": "user", "content": "1"}],
+                **{profile.chat_token_parameter: 32},
+            )
+    except openai.OpenAIError as error:
+        raise _map_sdk_error(error) from error
     return True
 
 
@@ -454,8 +541,8 @@ __all__ = [
     "AiRoutingConfig",
     "AiService",
     "MAX_MODELS",
-    "SUPPORTED_AI_MODES",
     "create_ai_service",
     "migrate_ai_settings",
+    "normalize_base_url",
     "test_ai_model",
 ]
