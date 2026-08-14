@@ -36,6 +36,7 @@ from arnold_magic_node.tools.texture import (
     uv_preset_mode_map,
 )
 from .aov_light_group_dialog import show_aov_light_group_dialog
+from .i18n import register_retranslate_callback
 from arnold_magic_node._qt_compat import (
     QCoreApplication,
     QtCore,
