@@ -1,6 +1,4 @@
 {
-  "language_type" : "简体中文",
-
   "ArnoldMagicNode": {
 
     "AMDUI_WIN": {
@@ -24,103 +22,6 @@
         "auto_color_space_button": "自动色彩空间",
         "auto_udim_button": "自动UDIM",
         "ai_aov_switch": "AOV开关"
-      }
-    },
-
-    "AMNSP_WIN" : {
-      "initialize_window_config": {
-        "WINDOWS_NAME" : "Arnold Magic Node 插件设置"
-      },
-        "create_menu" : {
-          "settings_menu" : "设置",
-          "reset_data_action" : "重置设置数据",
-          "about_menu" : "关于",
-          "contact_feedback_action" : "联系/反馈",
-          "help_document_action" : "帮助文档",
-          "plugin_update_download_action" : "插件更新下载",
-          "plugin_home" : "插件主页"
-        },
-      "create_magic_connection_tab" : {
-        "magic_connection_settings_label" : "魔法连接设置",
-        "auto_color_space_connection" : "连接时智能修改色彩空间",
-        "magic_change_material_name_options" : "连接时修改材质名称",
-        "custom_connected_textures_label" : "自定义连接的贴图",
-        "custom_weight_names_label" : "自定义匹配权重名称",
-        "magic_connection_tab" : "魔法连接",
-        "magic_change_udim_options" : "连接时智能开启UDIM"
-      },
-      "create_color_space_tab": {
-        "custom_color_space_label": "自定义色彩空间",
-        "auto_set_color_space_label": "自动设置色彩空间",
-        "color_space_label": "颜色空间"
-      },
-      "create_node_connection_tab": {
-        "auto_connect_node_settings_label": "自动连接处理节点设置",
-        "processing_node_settings_list": "处理节点设置",
-        "node_connection_tab": "节点连接"
-      },
-      "create_path_matching_tab": {
-        "connection_related_settings_label": "连接时相关设置",
-        "path_matching_checkbox": "连接时智能修改色彩空间",
-        "path_matching_change_udim_checkbox" :"连接时智能开启UDIM",
-        "path_matching_change_material_name_options": "连接时修改材质名称",
-        "path_disable_feedback_options": "关闭反馈",
-        "exclude_files_with_text_label": "筛选过程中排除含有文字的文件",
-        "remove_substrings_during_similarity_label": "在进行相似度检测时移除字符串中的特定内容",
-        "match_related_settings_label": "匹配时相关设置",
-        "auto_max_val_checkbox": "自动选择最佳匹配",
-        "auto_max_val_checkbox_tip" : "如果选中，程序将自动使用最高的相似度值作为匹配阈值，无需手动设置。",
-        "match_element_weights_label": "匹配元素权重",
-        "name_weight_label": "名字权重",
-        "resolution_weight_label": "分辨率权重",
-        "format_weight_label": "格式权重",
-        "creation_time_weight_label": "创建时间权重",
-        "similarity_calculation_label" : "相似度的计算",
-        "similarity_max_slider_label": "自定义相似度阈值:",
-        "similarity_max_slider_tip" : "请输入相似度阈值（0.0 - 1.0）。程序将匹配相似度高于该阈值的结果。",
-        "similarity_range_slider_label": "相似度容差范围",
-        "similarity_range_slider_tip" : "设置匹配阈值的容差范围（0.0 - 1.0）。程序将匹配相似度在阈值上下浮动该范围内的结果。",
-        "day_range_slider_label": "计算创建天数范围容差值:",
-        "node_path_matching_tab": "节点路径匹配"
-      },
-      "create_configure_ui_layout_tab": {
-        "language_settings_label": "语言设置等",
-        "language_label": "语言:",
-        "ui_layout_tab": "界面与布局设置"
-      },
-      "create_ai_settings_tab": {
-        "tab": "AI 设置",
-        "models_section": "模型列表（按显示顺序）",
-        "model_name_header": "模型名称",
-        "model_input_placeholder": "输入新模型名称",
-        "add_model_button": "添加模型",
-        "remove_model_button": "删除模型",
-        "move_up_button": "上移",
-        "move_down_button": "下移",
-        "test_model_button": "测试当前模型",
-        "model_test_hint": "测试只会向当前模型发送“1”；该操作会真实访问接口，可能产生极少量费用，不会调用其他模型。",
-        "test_pending": "测试中…",
-        "test_success": "可用",
-        "test_failed": "测试失败",
-        "selection_section": "场景模型选择",
-        "fast_model_label": "快速模式模型：",
-        "complex_model_label": "复杂模式模型：",
-        "editor_section": "当前模型配置",
-        "model_name_label": "模型名称：",
-        "api_style_label": "OpenAI API 协议：",
-        "responses_option": "OpenAI Responses API",
-        "chat_completions_option": "OpenAI Chat Completions",
-        "base_url_label": "接口地址：",
-        "api_key_label": "API Key：",
-        "api_key_hint": "安全提示：API Key 会以明文保存到用户 AI_Settings.json。请保护并勿分享该文件；界面状态和日志不会显示密钥内容。",
-        "timeout_seconds_label": "超时时间（秒）：",
-        "max_output_tokens_label": "最大输出 Token：",
-        "max_request_bytes_label": "最大请求字节数：",
-        "max_response_bytes_label": "最大响应字节数：",
-        "chat_token_parameter_label": "Chat Token 参数：",
-        "save_button": "保存 AI 设置",
-        "saved_message": "AI 设置已保存；API Key 已明文写入用户 AI_Settings.json。本操作没有发送网络请求。",
-        "error_prefix": "无法保存 AI 设置："
       }
     },
 

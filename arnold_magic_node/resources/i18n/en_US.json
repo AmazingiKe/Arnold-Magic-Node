@@ -1,6 +1,4 @@
 {
-  "language_type": "English",
-
   "ArnoldMagicNode": {
 
     "AMDUI_WIN": {
@@ -24,103 +22,6 @@
         "auto_color_space_button": "Auto Color Space",
         "auto_udim_button": "Auto UDIM",
         "ai_aov_switch": "AOV Toggle"
-      }
-    },
-
-    "AMNSP_WIN": {
-      "initialize_window_config": {
-        "WINDOWS_NAME": "Arnold Magic Node Plugin Settings"
-      },
-      "create_menu": {
-        "settings_menu": "Settings",
-        "reset_data_action": "Reset Settings Data",
-        "about_menu": "About",
-        "contact_feedback_action": "Contact / Feedback",
-        "help_document_action": "Help Documentation",
-        "plugin_update_download_action": "Plugin Update & Download",
-        "plugin_home": "Plugin Homepage"
-      },
-      "create_magic_connection_tab": {
-        "magic_connection_settings_label": "Magic Connection Settings",
-        "auto_color_space_connection": "Auto-Adjust Color Space on Connect",
-        "magic_change_material_name_options": "Rename Material on Connect",
-        "custom_connected_textures_label": "Custom Textures to Connect",
-        "custom_weight_names_label": "Custom Match Weight Names",
-        "magic_connection_tab": "Magic Connection",
-        "magic_change_udim_options": "Auto-Enable UDIM on Connect"
-      },
-      "create_color_space_tab": {
-        "custom_color_space_label": "Custom Color Spaces",
-        "auto_set_color_space_label": "Auto-Set Color Space",
-        "color_space_label": "Color Space"
-      },
-      "create_node_connection_tab": {
-        "auto_connect_node_settings_label": "Auto-Connect Node Settings",
-        "processing_node_settings_list": "Node Processing Settings",
-        "node_connection_tab": "Node Connection"
-      },
-      "create_path_matching_tab": {
-        "connection_related_settings_label": "Connection-Related Settings",
-        "path_matching_checkbox": "Auto-Adjust Color Space on Connect",
-        "path_matching_change_udim_checkbox": "Auto-Enable UDIM on Connect",
-        "path_matching_change_material_name_options": "Rename Material on Connect",
-        "path_disable_feedback_options": "Disable Feedback",
-        "exclude_files_with_text_label": "Exclude Files with Text During Filtering",
-        "remove_substrings_during_similarity_label": "Remove Specific Substrings During Similarity Check",
-        "match_related_settings_label": "Match-Related Settings",
-        "auto_max_val_checkbox": "Auto-Select Best Match",
-        "auto_max_val_checkbox_tip": "If selected, the highest similarity score is used as the threshold automatically.",
-        "match_element_weights_label": "Match Element Weights",
-        "name_weight_label": "Name Weight",
-        "resolution_weight_label": "Resolution Weight",
-        "format_weight_label": "Format Weight",
-        "creation_time_weight_label": "Creation Time Weight",
-        "similarity_calculation_label": "Similarity Calculation",
-        "similarity_max_slider_label": "Custom Similarity Threshold:",
-        "similarity_max_slider_tip": "Enter a threshold (0.0–1.0). Matches above this value are accepted.",
-        "similarity_range_slider_label": "Similarity Tolerance Range",
-        "similarity_range_slider_tip": "Set tolerance (0.0–1.0) around the threshold.",
-        "day_range_slider_label": "Creation Date Tolerance (Days):",
-        "node_path_matching_tab": "Node Path Matching"
-      },
-      "create_configure_ui_layout_tab": {
-        "language_settings_label": "Language & More",
-        "language_label": "Language:",
-        "ui_layout_tab": "UI & Layout Settings"
-      },
-      "create_ai_settings_tab": {
-        "tab": "AI Settings",
-        "models_section": "Models (display order)",
-        "model_name_header": "Model name",
-        "model_input_placeholder": "Enter a new model name",
-        "add_model_button": "Add model",
-        "remove_model_button": "Remove model",
-        "move_up_button": "Move up",
-        "move_down_button": "Move down",
-        "test_model_button": "Test current model",
-        "model_test_hint": "Testing sends “1” only to the current model. It makes a real API request, may incur a very small charge, and never calls another model.",
-        "test_pending": "Testing…",
-        "test_success": "Available",
-        "test_failed": "Test failed",
-        "selection_section": "Scenario model selection",
-        "fast_model_label": "Fast mode model:",
-        "complex_model_label": "Complex mode model:",
-        "editor_section": "Current model configuration",
-        "model_name_label": "Model name:",
-        "api_style_label": "OpenAI API protocol:",
-        "responses_option": "OpenAI Responses API",
-        "chat_completions_option": "OpenAI Chat Completions",
-        "base_url_label": "Base URL:",
-        "api_key_label": "API Key:",
-        "api_key_hint": "Security warning: the API Key is stored in plaintext in the user's AI_Settings.json. Protect and never share this file; UI status and logs do not display the key.",
-        "timeout_seconds_label": "Timeout (seconds):",
-        "max_output_tokens_label": "Maximum output tokens:",
-        "max_request_bytes_label": "Maximum request bytes:",
-        "max_response_bytes_label": "Maximum response bytes:",
-        "chat_token_parameter_label": "Chat token parameter:",
-        "save_button": "Save AI Settings",
-        "saved_message": "AI settings saved. The API Key is stored in plaintext in the user's AI_Settings.json. Saving did not send a network request.",
-        "error_prefix": "Unable to save AI settings: "
       }
     },
 
