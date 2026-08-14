@@ -197,77 +197,63 @@ def auto_set_file_node_udim(adapter=None):
     return apply_file_udim(selected["file"], adapter, feedback)
 
 
-class DirectConnectionTool(object):
-    """两次触发式的材质输出节点直连工具。"""
-
-    def __init__(self, adapter=None):
-        global _direct_output_node
-
-        self.adapter = adapter or MayaTextureAdapter()
-        self.feedback = FeedbackPrompt(self.adapter)
-        self.language = load_language()["ArnoldMagicNode"]["direct_connection_tool"]
-        self.selected = process_selected_nodes(
-            adapter=self.adapter, feedback=self.feedback
-        )
-        if self.selected is None:
-            return
-
-        shading_engines = self.selected.get("shadingEngine") or []
-        if shading_engines:
-            _direct_output_node = shading_engines[0]
-            self.feedback.print_message(
-                "{}<{}>".format(self.language["__init__"]["01"], _direct_output_node)
-            )
-            return
-
-        if _direct_output_node is None:
-            self.feedback.print_message(self.language["__init__"]["02"])
-            return
-
-        self.connect()
-
-    def connect(self):
-        output_ports = ("outColor", "outAlpha", "outValue")
-        language = self.language["connection_node"]
-        for node_names in self.selected.values():
-            for node_name in node_names:
-                for output_port in output_ports:
-                    existing = self.adapter.list_connections(
-                        _direct_output_node,
-                        source=True,
-                        destination=False,
-                        plugs=True,
-                    )
-                    existing_node_name = None
-                    if existing:
-                        existing_node_name = existing[0].split(".")[0]
-                    if existing_node_name == node_name:
-                        continue
-
-                    try:
-                        self.adapter.connect_attr(
-                            node_name + "." + output_port,
-                            _direct_output_node + ".surfaceShader",
-                            force=True,
-                        )
-                        return
-                    except Exception:
-                        self.feedback.warn(
-                            "{}<{}:{}>{}<{}:shadingEngine>{}".format(
-                                language["01"],
-                                node_name,
-                                output_port,
-                                language["02"],
-                                _direct_output_node,
-                                language["03"],
-                            )
-                        )
-
-
 def connect_directly(adapter=None):
-    """执行一次直接连接操作。"""
+    """两次触发式直连：第一次记录输出节点，第二次连接材质。"""
 
-    return DirectConnectionTool(adapter=adapter)
+    global _direct_output_node
+
+    adapter = adapter or MayaTextureAdapter()
+    feedback = FeedbackPrompt(adapter)
+    language = load_language()["ArnoldMagicNode"]["direct_connection_tool"]
+    selected = process_selected_nodes(adapter=adapter, feedback=feedback)
+    if selected is None:
+        return
+
+    shading_engines = selected.get("shadingEngine") or []
+    if shading_engines:
+        _direct_output_node = shading_engines[0]
+        feedback.print_message(
+            "{}<{}>".format(language["__init__"]["01"], _direct_output_node)
+        )
+        return
+
+    if _direct_output_node is None:
+        feedback.print_message(language["__init__"]["02"])
+        return
+
+    output_ports = ("outColor", "outAlpha", "outValue")
+    connection_language = language["connection_node"]
+    for node_names in selected.values():
+        for node_name in node_names:
+            for output_port in output_ports:
+                existing = adapter.list_connections(
+                    _direct_output_node,
+                    source=True,
+                    destination=False,
+                    plugs=True,
+                )
+                existing_node_name = existing[0].split(".")[0] if existing else None
+                if existing_node_name == node_name:
+                    continue
+
+                try:
+                    adapter.connect_attr(
+                        node_name + "." + output_port,
+                        _direct_output_node + ".surfaceShader",
+                        force=True,
+                    )
+                    return
+                except Exception:
+                    feedback.warn(
+                        "{}<{}:{}>{}<{}:shadingEngine>{}".format(
+                            connection_language["01"],
+                            node_name,
+                            output_port,
+                            connection_language["02"],
+                            _direct_output_node,
+                            connection_language["03"],
+                        )
+                    )
 
 
 def unify_uv_nodes(adapter=None):
@@ -282,7 +268,6 @@ def unify_uv_nodes(adapter=None):
 
 
 __all__ = [
-    "DirectConnectionTool",
     "apply_file_udim",
     "apply_texture_color_spaces",
     "auto_set_file_node_udim",

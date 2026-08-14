@@ -111,7 +111,7 @@ class RenderingPresetTool(object):
         self.config = load_config(self.paths)["render_preset_params"]
         self.language = load_language(self.paths)["ArnoldMagicNode"]["rendering_preset_menu"]
 
-    def apply(self):
+    def run(self):
         """依照配置选择性写入默认渲染、Arnold 和 AOV 参数。"""
 
         if self.config["default_rendering_properties_write_options"]:
@@ -299,14 +299,6 @@ class RenderingPresetTool(object):
                 pass
 
 
-def apply_rendering_preset(preset_name, adapter=None):
-    """执行指定的渲染预设。"""
-
-    tool = RenderingPresetTool(preset_name, adapter=adapter)
-    tool.apply()
-    return tool
-
-
 def toggle_aovs(adapter=None, feedback=None):
     """切换当前 Arnold AOV 的 enabled 状态。"""
 
@@ -327,6 +319,5 @@ def toggle_aovs(adapter=None, feedback=None):
 __all__ = [
     "RenderingCaptureTool",
     "RenderingPresetTool",
-    "apply_rendering_preset",
     "toggle_aovs",
 ]

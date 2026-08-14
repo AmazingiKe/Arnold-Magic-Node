@@ -206,17 +206,7 @@ class NodeMixTool(object):
         return self.intelligent_mix_process(selected_nodes)
 
 
-def quick_connect_nodes(adapter=None):
-    return QuickConnectTool(adapter=adapter).run()
-
-
-def intelligent_mix(adapter=None):
-    return NodeMixTool(adapter=adapter).run()
-
-
 __all__ = [
     "NodeMixTool",
     "QuickConnectTool",
-    "intelligent_mix",
-    "quick_connect_nodes",
 ]

@@ -15,7 +15,7 @@ from arnold_magic_node.core.paths import (
     user_settings_dir,
 )
 from arnold_magic_node.core.storage import ensure_directory, load_json, save_json
-from arnold_magic_node.maya.environment import MayaEnvironmentAdapter, get_user_data_root
+from arnold_magic_node.maya.environment import MayaEnvironmentAdapter
 
 
 SOFTWARE_STATE = "Release"
@@ -66,7 +66,7 @@ def get_runtime_paths(user_root=None):
     """解析当前 Maya 用户目录下的插件运行时路径。"""
 
     if user_root is None:
-        user_root = get_user_data_root()
+        user_root = MayaEnvironmentAdapter().user_data_root()
 
     return RuntimePaths(
         user_data_root=os.path.normpath(str(user_root)),

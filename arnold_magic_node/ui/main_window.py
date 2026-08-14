@@ -5,19 +5,17 @@ import os
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
-from arnold_magic_node.tools.magic_connection import run_magic_connection
+from arnold_magic_node.tools.magic_connection import MagicConnectionTool
 from arnold_magic_node.tools.materials import (
-    convert_all_old_materials_to_arnold,
-    convert_selected_old_materials_to_arnold,
-    repair_all_materials,
-    repair_selected_materials,
+    IntelligentMaterialRepairTool,
+    MaterialConversionTool,
 )
 from arnold_magic_node.tools.node_graph import (
-    intelligent_mix,
-    quick_connect_nodes,
+    NodeMixTool,
+    QuickConnectTool,
 )
-from arnold_magic_node.tools.path_detection import run_path_detection_connection
-from arnold_magic_node.tools.rendering import apply_rendering_preset, toggle_aovs
+from arnold_magic_node.tools.path_detection import PathDetectionConnectionTool
+from arnold_magic_node.tools.rendering import RenderingPresetTool, toggle_aovs
 from arnold_magic_node.tools.runtime import (
     AMS_CONFIG,
     SOFTWARE_STATE,
@@ -167,22 +165,22 @@ class MainWindow(object):
 
         cmds.menuItem(
             label="修复选择的FBX材质",
-            c=lambda *args: convert_selected_old_materials_to_arnold(),
+            c=lambda *args: MaterialConversionTool(select_all=False).run(),
         )
 
         cmds.menuItem(
             label="修复所有FBX材质",
-            c=lambda *args: convert_all_old_materials_to_arnold(),
+            c=lambda *args: MaterialConversionTool(select_all=True).run(),
         )
 
         cmds.menuItem(
             label="智能修复选择材质贴图",
-            c=lambda *args: repair_selected_materials(),
+            c=lambda *args: IntelligentMaterialRepairTool(select_all=False).run(),
         )
 
         cmds.menuItem(
             label="智能修复全部材质贴图",
-            c=lambda *args: repair_all_materials(),
+            c=lambda *args: IntelligentMaterialRepairTool(select_all=True).run(),
         )
 
         cmds.menuItem(divider=True, label="其他工具")
@@ -203,24 +201,24 @@ class MainWindow(object):
 
         self.magic_connection = cmds.button(
             label=self.language["create_widgets"]["magic_connection"],
-            c=lambda *args: run_magic_connection(),
+            c=lambda *args: MagicConnectionTool().run(),
         )
 
         self.path_detection_connection = cmds.button(
             label=self.language["create_widgets"]["path_detection_connection"],
-            c=lambda *args: run_path_detection_connection(),
+            c=lambda *args: PathDetectionConnectionTool().run(),
         )
 
         cmds.text(label=" " * 2)
 
         self.intelligent_mix = cmds.button(
             label=self.language["create_widgets"]["intelligent_mix"],
-            c=lambda *args: intelligent_mix(),
+            c=lambda *args: NodeMixTool().run(),
         )
 
         self.quick_connect = cmds.button(
             label="快速连接",
-            c=lambda *args: quick_connect_nodes(),
+            c=lambda *args: QuickConnectTool().run(),
         )
 
         self.direct_connection = cmds.button(
@@ -280,9 +278,9 @@ class MainWindow(object):
         self.rendering_preset_name = {}
         self.rendering_preset = cmds.optionMenu(
             mvi=8,
-            cc=lambda *args: apply_rendering_preset(
+            cc=lambda *args: RenderingPresetTool(
                 cmds.optionMenu(self.rendering_preset, query=True, value=True)
-            ),
+            ).run(),
             h=27,
         )
 

@@ -175,30 +175,18 @@ class MagicConnectionTool:
     def _load_config(config_path=None):
         from arnold_magic_node.core.paths import user_settings_dir
         from arnold_magic_node.core.storage import load_json
-        from arnold_magic_node.maya.environment import get_user_data_root
+        from arnold_magic_node.maya.environment import MayaEnvironmentAdapter
 
         if config_path is None:
             config_path = os.path.join(
-                str(user_settings_dir(get_user_data_root())),
+                str(user_settings_dir(MayaEnvironmentAdapter().user_data_root())),
                 "Arnold_Magic_Settings.json",
             )
         return load_json(config_path)
-
-
-def run_magic_connection(config=None, adapter=None, feedback=None, config_path=None):
-    """执行一次 Magic Connection，供 Qt 和调试脚本直接调用。"""
-
-    return MagicConnectionTool(
-        config=config,
-        adapter=adapter,
-        feedback=feedback,
-        config_path=config_path,
-    ).run()
 
 
 __all__ = [
     "MagicConnectionResult",
     "MagicConnectionTool",
     "connect_texture_nodes",
-    "run_magic_connection",
 ]

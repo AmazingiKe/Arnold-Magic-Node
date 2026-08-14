@@ -211,13 +211,6 @@ class PathDetectionConnectionTool(object):
             apply_file_udim(node_list, self.adapter, self.feedback)
 
 
-def run_path_detection_connection(**kwargs):
-    """运行路径检测连接功能。"""
-
-    return PathDetectionConnectionTool(**kwargs).run()
-
-
 __all__ = [
     "PathDetectionConnectionTool",
-    "run_path_detection_connection",
 ]

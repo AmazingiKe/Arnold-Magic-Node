@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 import os
 
+from arnold_magic_node.maya.scene import MayaSceneAdapter
 from arnold_magic_node.tools.aovs import AovLightGroupTool
 from arnold_magic_node.tools.feedback import FeedbackPrompt
 from arnold_magic_node.tools.runtime import (
@@ -12,7 +13,6 @@ from arnold_magic_node.tools.runtime import (
     load_json,
     save_json,
 )
-from arnold_magic_node.tools.scene import SceneQueryTool
 from ._qt_compat import QtCore, QtGui, QtWidgets
 from ._workspace import delete_window_if_exists, get_maya_main_window
 
@@ -226,7 +226,7 @@ class AovLightGroupDialog(QtWidgets.QDialog):
 
         self.feedback = FeedbackPrompt()
         self.aov_tool = aov_tool or AovLightGroupTool(feedback=self.feedback)
-        self.getnodedata = SceneQueryTool()
+        self.scene_adapter = MayaSceneAdapter()
 
         self.window_name = f"AOV灯光组管理器  {SOFTWARE_STATE} : {SOFTWARE_VERSION}"
 
@@ -397,8 +397,8 @@ class AovLightGroupDialog(QtWidgets.QDialog):
         """按AOV灯光组结构刷新树控件"""
 
         # 获取场景中的阿诺德灯光
-        lights_and_type = self.getnodedata.get_scene_arnold_lights_and_type()
-        light_groups = self.getnodedata.get_light_group(lights_and_type)
+        lights_and_type = self.scene_adapter.arnold_lights_and_types()
+        light_groups = self.scene_adapter.group_lights(lights_and_type)
 
         # 清空当前 QTreeWidget 内容
         self.light_group_tree_widget.clear()

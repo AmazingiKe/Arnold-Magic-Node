@@ -29,10 +29,4 @@ class MayaEnvironmentAdapter(object):
         return self.cmds.getModifiers()
 
 
-def get_user_data_root(adapter=None):
-    """Return the shared, cross-version Arnold Magic Node user data root."""
-
-    return (adapter or MayaEnvironmentAdapter()).user_data_root()
-
-
-__all__ = ["MayaEnvironmentAdapter", "get_user_data_root"]
+__all__ = ["MayaEnvironmentAdapter"]

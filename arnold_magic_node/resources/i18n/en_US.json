@@ -5,7 +5,6 @@
 
     "AMDUI_WIN": {
       "create_widgets": {
-        "batch_texture_importer_menu": "Batch Texture Importer",
         "render_preset_settings_menu": "Render Preset Settings",
         "add_render_preset_menu": "Add Render Preset",
         "edit_render_preset_menu": "Edit Render Preset",

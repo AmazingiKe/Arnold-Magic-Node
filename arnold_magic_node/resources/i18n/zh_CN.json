@@ -5,7 +5,6 @@
 
     "AMDUI_WIN": {
       "create_widgets" : {
-        "batch_texture_importer_menu": "贴图批量导入器",
         "render_preset_settings_menu": "渲染预设设置",
         "add_render_preset_menu": "添加渲染预设",
         "edit_render_preset_menu": "修改渲染预设",

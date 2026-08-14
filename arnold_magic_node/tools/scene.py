@@ -1,41 +1,10 @@
-"""场景查询与节点名称优化工具。"""
+"""场景节点名称优化工具。"""
 
 from arnold_magic_node.core.naming import replacement_name
 from arnold_magic_node.maya.scene import MayaSceneAdapter
 from .feedback import FeedbackPrompt
 from .runtime import load_config
 from .selection import get_scene_nodes_by_type
-
-
-class SceneQueryTool(object):
-    """为 AOV、材质修复等功能提供场景查询。"""
-
-    LIGHT_TYPES = (
-            "aiAreaLight", "aiSkyDomeLight", "aiPhotometricLight", "aiMeshLight",
-            "aiLightPortal", "directionalLight", "spotLight", "areaLight", "pointLight",
-    )
-
-    def __init__(self, adapter=None):
-        self.adapter = adapter or MayaSceneAdapter()
-
-    def get_scene_arnold_lights_and_type(self):
-        return self.adapter.arnold_lights_and_types(self.LIGHT_TYPES)
-
-    def get_light_group(self, lights):
-        return self.adapter.group_lights(lights)
-
-    def get_file_texture_paths(self, material_node):
-        return self.adapter.file_texture_paths(material_node)
-
-
-class SceneNodeRenameTool(object):
-    """场景节点重命名单节点入口。"""
-
-    def __init__(self, adapter=None):
-        self.adapter = adapter or MayaSceneAdapter()
-
-    def node_rename(self, old_name, new_name):
-        return self.adapter.rename(old_name, new_name)
 
 
 class SceneNameOptimizationTool(object):
@@ -79,13 +48,6 @@ class SceneNameOptimizationTool(object):
                             )
 
 
-def optimize_scene_names():
-    return SceneNameOptimizationTool().run()
-
-
 __all__ = [
     "SceneNameOptimizationTool",
-    "SceneNodeRenameTool",
-    "SceneQueryTool",
-    "optimize_scene_names",
 ]

@@ -15,6 +15,11 @@ DEFAULT_SCENE_QUERY = {
     "assemblies": True,
 }
 
+DEFAULT_ARNOLD_LIGHT_TYPES = (
+    "aiAreaLight", "aiSkyDomeLight", "aiPhotometricLight", "aiMeshLight",
+    "aiLightPortal", "directionalLight", "spotLight", "areaLight", "pointLight",
+)
+
 
 class MayaSceneAdapter(MayaNodeAdapter):
     def selected_nodes_by_type(self):
@@ -29,7 +34,8 @@ class MayaSceneAdapter(MayaNodeAdapter):
             result[self.node_type(node_name)].append(node_name)
         return dict(result)
 
-    def arnold_lights_and_types(self, light_types):
+    def arnold_lights_and_types(self, light_types=None):
+        light_types = light_types or DEFAULT_ARNOLD_LIGHT_TYPES
         result = {}
         for light_type in light_types:
             for shape in self.list_nodes(type=light_type):
@@ -76,4 +82,4 @@ class MayaSceneAdapter(MayaNodeAdapter):
         return result
 
 
-__all__ = ["DEFAULT_SCENE_QUERY", "MayaSceneAdapter"]
+__all__ = ["DEFAULT_ARNOLD_LIGHT_TYPES", "DEFAULT_SCENE_QUERY", "MayaSceneAdapter"]

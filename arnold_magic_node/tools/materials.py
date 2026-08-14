@@ -245,31 +245,7 @@ class IntelligentMaterialRepairTool(object):
                 )
 
 
-def convert_all_old_materials_to_arnold():
-    tool = MaterialConversionTool(select_all=True)
-    return tool.run()
-
-
-def convert_selected_old_materials_to_arnold():
-    tool = MaterialConversionTool(select_all=False)
-    return tool.run()
-
-
-def repair_all_materials():
-    tool = IntelligentMaterialRepairTool(select_all=True)
-    return tool.run()
-
-
-def repair_selected_materials():
-    tool = IntelligentMaterialRepairTool(select_all=False)
-    return tool.run()
-
-
 __all__ = [
     "IntelligentMaterialRepairTool",
     "MaterialConversionTool",
-    "convert_all_old_materials_to_arnold",
-    "convert_selected_old_materials_to_arnold",
-    "repair_all_materials",
-    "repair_selected_materials",
 ]
