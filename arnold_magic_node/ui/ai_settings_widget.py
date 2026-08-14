@@ -30,14 +30,13 @@ class AiSettingsWidget(QtWidgets.QWidget):
     def __init__(
         self,
         paths,
-        language,
         model_tester=None,
         background_runner=None,
         parent=None,
     ):
         super(AiSettingsWidget, self).__init__(parent)
         self.paths = paths
-        self.language = language
+        self._test_status_state = None
         self.settings = load_ai_settings(paths=paths)
         self._models = copy.deepcopy(self.settings["models"])
         self._fast_model_id = self.settings["fast_model_id"]
@@ -61,26 +60,22 @@ class AiSettingsWidget(QtWidgets.QWidget):
         self.models_tree = QtWidgets.QTreeWidget()
         self.models_tree.setObjectName("aiModelsTree")
         self.models_tree.setColumnCount(1)
-        self.models_tree.setHeaderLabels([self.language["model_name_header"]])
+        self.models_tree.setHeaderLabels([self.tr("Model name")])
 
         self.new_model_name_input = QtWidgets.QLineEdit()
         self.new_model_name_input.setObjectName("aiNewModelNameInput")
         self.new_model_name_input.setPlaceholderText(
-            self.language["model_input_placeholder"]
+            self.tr("Enter a new model name")
         )
-        self.add_model_button = QtWidgets.QPushButton(self.language["add_model_button"])
+        self.add_model_button = QtWidgets.QPushButton(self.tr("Add model"))
         self.add_model_button.setObjectName("aiAddModelButton")
-        self.remove_model_button = QtWidgets.QPushButton(
-            self.language["remove_model_button"]
-        )
+        self.remove_model_button = QtWidgets.QPushButton(self.tr("Remove model"))
         self.remove_model_button.setObjectName("aiRemoveModelButton")
-        self.move_up_button = QtWidgets.QPushButton(self.language["move_up_button"])
+        self.move_up_button = QtWidgets.QPushButton(self.tr("Move up"))
         self.move_up_button.setObjectName("aiMoveModelUpButton")
-        self.move_down_button = QtWidgets.QPushButton(self.language["move_down_button"])
+        self.move_down_button = QtWidgets.QPushButton(self.tr("Move down"))
         self.move_down_button.setObjectName("aiMoveModelDownButton")
-        self.test_model_button = QtWidgets.QPushButton(
-            self.language["test_model_button"]
-        )
+        self.test_model_button = QtWidgets.QPushButton(self.tr("Test current model"))
         self.test_model_button.setObjectName("aiTestSelectedModelButton")
         self.model_test_status_label = QtWidgets.QLabel("")
         self.model_test_status_label.setObjectName("aiModelTestStatusLabel")
@@ -97,10 +92,10 @@ class AiSettingsWidget(QtWidgets.QWidget):
         self.model_api_style_combo = QtWidgets.QComboBox()
         self.model_api_style_combo.setObjectName("aiModelApiStyleCombo")
         self.model_api_style_combo.addItem(
-            self.language["responses_option"], "responses"
+            self.tr("OpenAI Responses API"), "responses"
         )
         self.model_api_style_combo.addItem(
-            self.language["chat_completions_option"], "chat_completions"
+            self.tr("OpenAI Chat Completions"), "chat_completions"
         )
         self.model_api_key_input = QtWidgets.QLineEdit()
         self.model_api_key_input.setObjectName("aiModelApiKeyInput")
@@ -130,7 +125,7 @@ class AiSettingsWidget(QtWidgets.QWidget):
             "max_completion_tokens", "max_completion_tokens"
         )
 
-        self.save_button = QtWidgets.QPushButton(self.language["save_button"])
+        self.save_button = QtWidgets.QPushButton(self.tr("Save AI Settings"))
         self.save_button.setObjectName("aiSaveButton")
         self.save_status_label = QtWidgets.QLabel("")
         self.save_status_label.setObjectName("aiSaveStatusLabel")
@@ -138,8 +133,8 @@ class AiSettingsWidget(QtWidgets.QWidget):
     def _create_layout(self):
         root_layout = QtWidgets.QVBoxLayout(self)
 
-        models_group = QtWidgets.QGroupBox(self.language["models_section"])
-        models_layout = QtWidgets.QVBoxLayout(models_group)
+        self.models_group = QtWidgets.QGroupBox(self.tr("Models (display order)"))
+        models_layout = QtWidgets.QVBoxLayout(self.models_group)
         models_layout.addWidget(self.models_tree)
 
         add_layout = QtWidgets.QHBoxLayout()
@@ -159,57 +154,46 @@ class AiSettingsWidget(QtWidgets.QWidget):
         test_layout.addWidget(self.model_test_status_label)
         test_layout.addStretch(1)
         models_layout.addLayout(test_layout)
-        test_hint = QtWidgets.QLabel(self.language["model_test_hint"])
-        test_hint.setWordWrap(True)
-        models_layout.addWidget(test_hint)
+        self.test_hint = QtWidgets.QLabel(self.tr("Testing sends “1” only to the current model. It makes a real API request, may incur a very small charge, and never calls another model."))
+        self.test_hint.setWordWrap(True)
+        models_layout.addWidget(self.test_hint)
 
-        selection_group = QtWidgets.QGroupBox(self.language["selection_section"])
-        selection_layout = QtWidgets.QFormLayout(selection_group)
-        selection_layout.addRow(
-            self.language["fast_model_label"], self.fast_model_combo
-        )
-        selection_layout.addRow(
-            self.language["complex_model_label"], self.complex_model_combo
-        )
+        self.selection_group = QtWidgets.QGroupBox(self.tr("Scenario model selection"))
+        selection_layout = QtWidgets.QFormLayout(self.selection_group)
+        self.fast_model_label = QtWidgets.QLabel(self.tr("Fast mode model:"))
+        self.complex_model_label = QtWidgets.QLabel(self.tr("Complex mode model:"))
+        selection_layout.addRow(self.fast_model_label, self.fast_model_combo)
+        selection_layout.addRow(self.complex_model_label, self.complex_model_combo)
 
-        editor_group = QtWidgets.QGroupBox(self.language["editor_section"])
-        self.editor_group = editor_group
-        editor_layout = QtWidgets.QFormLayout(editor_group)
-        editor_layout.addRow(self.language["model_name_label"], self.model_name_input)
-        editor_layout.addRow(
-            self.language["api_style_label"], self.model_api_style_combo
-        )
-        editor_layout.addRow(self.language["base_url_label"], self.model_base_url_input)
-        editor_layout.addRow(self.language["api_key_label"], self.model_api_key_input)
-        api_key_hint = QtWidgets.QLabel(self.language["api_key_hint"])
-        api_key_hint.setWordWrap(True)
-        editor_layout.addRow(api_key_hint)
-        editor_layout.addRow(
-            self.language["timeout_seconds_label"],
-            self.model_timeout_seconds_spin,
-        )
-        editor_layout.addRow(
-            self.language["max_output_tokens_label"],
-            self.model_max_output_tokens_spin,
-        )
-        editor_layout.addRow(
-            self.language["max_request_bytes_label"],
-            self.model_max_request_bytes_spin,
-        )
-        editor_layout.addRow(
-            self.language["max_response_bytes_label"],
-            self.model_max_response_bytes_spin,
-        )
-        editor_layout.addRow(
-            self.language["chat_token_parameter_label"],
-            self.model_chat_token_parameter_combo,
-        )
+        self.editor_group = QtWidgets.QGroupBox(self.tr("Current model configuration"))
+        editor_layout = QtWidgets.QFormLayout(self.editor_group)
+        self.model_name_label = QtWidgets.QLabel(self.tr("Model name:"))
+        self.api_style_label = QtWidgets.QLabel(self.tr("OpenAI API protocol:"))
+        self.base_url_label = QtWidgets.QLabel(self.tr("Base URL:"))
+        self.api_key_label = QtWidgets.QLabel(self.tr("API Key:"))
+        self.api_key_hint = QtWidgets.QLabel(self.tr("Security warning: the API Key is stored in plaintext in the user's AI_Settings.json. Protect and never share this file; UI status and logs do not display the key."))
+        self.api_key_hint.setWordWrap(True)
+        self.timeout_seconds_label = QtWidgets.QLabel(self.tr("Timeout (seconds):"))
+        self.max_output_tokens_label = QtWidgets.QLabel(self.tr("Maximum output tokens:"))
+        self.max_request_bytes_label = QtWidgets.QLabel(self.tr("Maximum request bytes:"))
+        self.max_response_bytes_label = QtWidgets.QLabel(self.tr("Maximum response bytes:"))
+        self.chat_token_parameter_label = QtWidgets.QLabel(self.tr("Chat token parameter:"))
+        editor_layout.addRow(self.model_name_label, self.model_name_input)
+        editor_layout.addRow(self.api_style_label, self.model_api_style_combo)
+        editor_layout.addRow(self.base_url_label, self.model_base_url_input)
+        editor_layout.addRow(self.api_key_label, self.model_api_key_input)
+        editor_layout.addRow(self.api_key_hint)
+        editor_layout.addRow(self.timeout_seconds_label, self.model_timeout_seconds_spin)
+        editor_layout.addRow(self.max_output_tokens_label, self.model_max_output_tokens_spin)
+        editor_layout.addRow(self.max_request_bytes_label, self.model_max_request_bytes_spin)
+        editor_layout.addRow(self.max_response_bytes_label, self.model_max_response_bytes_spin)
+        editor_layout.addRow(self.chat_token_parameter_label, self.model_chat_token_parameter_combo)
 
         body_layout = QtWidgets.QHBoxLayout()
-        body_layout.addWidget(models_group, 1)
+        body_layout.addWidget(self.models_group, 1)
         right_layout = QtWidgets.QVBoxLayout()
-        right_layout.addWidget(selection_group)
-        right_layout.addWidget(editor_group)
+        right_layout.addWidget(self.selection_group)
+        right_layout.addWidget(self.editor_group)
         right_layout.addStretch(1)
         body_layout.addLayout(right_layout, 2)
         root_layout.addLayout(body_layout)
@@ -472,7 +456,7 @@ class AiSettingsWidget(QtWidgets.QWidget):
             try:
                 result = task()
             except Exception as error:  # noqa: BLE001 - Qt 边界只回传脱敏后的失败信息
-                message = " ".join(str(error).split())[:512] or "未知错误"
+                message = " ".join(str(error).split())[:512]
                 dispatch(on_error, message)
             else:
                 dispatch(on_success, result)
@@ -493,7 +477,8 @@ class AiSettingsWidget(QtWidgets.QWidget):
         job_id = self._next_model_test_id
         self._active_model_test_id = job_id
         self._model_test_in_progress = True
-        self.model_test_status_label.setText(self.language["test_pending"])
+        self._test_status_state = ("pending",)
+        self._refresh_test_status()
         self._update_controls()
 
         def task():
@@ -517,17 +502,13 @@ class AiSettingsWidget(QtWidgets.QWidget):
             generation == self._model_test_generation
             and selected_id == self._current_model_id()
         ):
-            if succeeded:
-                self.model_test_status_label.setText(self.language["test_success"])
-            else:
-                label = self.language["test_failed"]
-                if message:
-                    label += "：" + message
-                self.model_test_status_label.setText(label)
+            self._test_status_state = ("success",) if succeeded else ("failed", message)
+            self._refresh_test_status()
         self._update_controls()
 
     def _invalidate_model_test(self):
         self._model_test_generation += 1
+        self._test_status_state = None
         self.model_test_status_label.clear()
         self._update_controls()
 
@@ -548,6 +529,64 @@ class AiSettingsWidget(QtWidgets.QWidget):
         self.test_model_button.setEnabled(idle and has_selection)
         self.save_button.setEnabled(idle)
         self.editor_group.setEnabled(has_selection)
+
+    def retranslate_ui(self):
+        """重设全部用户可见文案，由设置窗口在语言切换时调用。"""
+
+        self.models_tree.setHeaderLabels([self.tr("Model name")])
+        self.new_model_name_input.setPlaceholderText(self.tr("Enter a new model name"))
+        self.add_model_button.setText(self.tr("Add model"))
+        self.remove_model_button.setText(self.tr("Remove model"))
+        self.move_up_button.setText(self.tr("Move up"))
+        self.move_down_button.setText(self.tr("Move down"))
+        self.test_model_button.setText(self.tr("Test current model"))
+        self.save_button.setText(self.tr("Save AI Settings"))
+        self.models_group.setTitle(self.tr("Models (display order)"))
+        self.selection_group.setTitle(self.tr("Scenario model selection"))
+        self.editor_group.setTitle(self.tr("Current model configuration"))
+        self.test_hint.setText(self.tr("Testing sends “1” only to the current model. It makes a real API request, may incur a very small charge, and never calls another model."))
+        self.api_key_hint.setText(self.tr("Security warning: the API Key is stored in plaintext in the user's AI_Settings.json. Protect and never share this file; UI status and logs do not display the key."))
+        self.fast_model_label.setText(self.tr("Fast mode model:"))
+        self.complex_model_label.setText(self.tr("Complex mode model:"))
+        self.model_name_label.setText(self.tr("Model name:"))
+        self.api_style_label.setText(self.tr("OpenAI API protocol:"))
+        self.base_url_label.setText(self.tr("Base URL:"))
+        self.api_key_label.setText(self.tr("API Key:"))
+        self.timeout_seconds_label.setText(self.tr("Timeout (seconds):"))
+        self.max_output_tokens_label.setText(self.tr("Maximum output tokens:"))
+        self.max_request_bytes_label.setText(self.tr("Maximum request bytes:"))
+        self.max_response_bytes_label.setText(self.tr("Maximum response bytes:"))
+        self.chat_token_parameter_label.setText(self.tr("Chat token parameter:"))
+
+        # 重建 API 风格下拉项并保留当前选择
+        current_style = self.model_api_style_combo.currentData()
+        self.model_api_style_combo.blockSignals(True)
+        self.model_api_style_combo.clear()
+        self.model_api_style_combo.addItem(self.tr("OpenAI Responses API"), "responses")
+        self.model_api_style_combo.addItem(self.tr("OpenAI Chat Completions"), "chat_completions")
+        self.model_api_style_combo.setCurrentIndex(
+            self.model_api_style_combo.findData(current_style))
+        self.model_api_style_combo.blockSignals(False)
+
+        self._refresh_test_status()
+
+    def _refresh_test_status(self):
+        """按当前测试状态状态重渲染测试结果标签。"""
+
+        state = self._test_status_state
+        if state is None:
+            self.model_test_status_label.clear()
+        elif state[0] == "pending":
+            self.model_test_status_label.setText(self.tr("Testing…"))
+        elif state[0] == "success":
+            self.model_test_status_label.setText(self.tr("Available"))
+        else:
+            label = self.tr("Test failed")
+            if state[1]:
+                label += "：" + state[1]
+            else:
+                label += "：" + self.tr("Unknown error")
+            self.model_test_status_label.setText(label)
 
     def _collect_settings(self):
         return {
@@ -570,14 +609,19 @@ class AiSettingsWidget(QtWidgets.QWidget):
             normalized = AiRoutingConfig.from_mapping(updated_settings).to_mapping()
             save_ai_settings(normalized, paths=self.paths)
         except (AiError, OSError, TypeError, ValueError) as error:
-            self._set_save_status(self.language["error_prefix"] + str(error), False)
+            self._set_save_status(
+                self.tr("Unable to save AI settings: {0}").format(error), False
+            )
             return False
         self.settings = copy.deepcopy(normalized)
         self._models = copy.deepcopy(normalized["models"])
         self._fast_model_id = normalized["fast_model_id"]
         self._complex_model_id = normalized["complex_model_id"]
         self._rebuild_model_views(selected_id)
-        self._set_save_status(self.language["saved_message"], True)
+        self._set_save_status(
+            self.tr("AI settings saved. The API Key is stored in plaintext in the user's AI_Settings.json. Saving did not send a network request."),
+            True,
+        )
         return True
 
 

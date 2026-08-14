@@ -24,7 +24,10 @@ def main():
     ensure_user_settings()
 
     from .ui import _workspace
+    from .ui.i18n import install_language_translator
     from .ui.main_window import MainWindow
+
+    install_language_translator()
 
     _workspace.delete_window_if_exists("SettingsDialog")
     _workspace.delete_window_if_exists("AovLightGroupDialog")
