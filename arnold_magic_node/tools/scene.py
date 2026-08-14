@@ -2,6 +2,7 @@
 
 from arnold_magic_node.core.naming import replacement_name
 from arnold_magic_node.maya.scene import MayaSceneAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
 from .runtime import load_config
 from .selection import get_scene_nodes_by_type
@@ -38,13 +39,16 @@ class SceneNameOptimizationTool(object):
                         try:
                             self.adapter.rename(part_name, new_name)
                             self.feedback.print_message(
-                                "已重命名: {} -> {}".format(part_name, new_name)
+                                QCoreApplication.translate(
+                                    "SceneNameOptimizationTool", "Renamed: {0} -> {1}"
+                                ).format(part_name, new_name)
                             )
                         except Exception as error:
                             self.feedback.warn(
-                                "重命名失败: {} -> {}, 错误: {}".format(
-                                    part_name, new_name, error
-                                )
+                                QCoreApplication.translate(
+                                    "SceneNameOptimizationTool",
+                                    "Rename failed: {0} -> {1}, error: {2}",
+                                ).format(part_name, new_name, error)
                             )
 
 

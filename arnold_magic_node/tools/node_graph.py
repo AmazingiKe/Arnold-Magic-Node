@@ -1,6 +1,7 @@
 """快速连接与 Arnold 节点混合工具。"""
 
 from arnold_magic_node.maya.nodes import MayaNodeAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
 from .runtime import MAYA_ALT_MODIFIER, load_config
 from .selection import process_selected_nodes
@@ -21,7 +22,12 @@ class QuickConnectTool(object):
     def run(self):
         nodes = self.get_selected_nodes()
         if len(nodes) < 2:
-            self.adapter.warning("至少需要两个节点来建立连接！")
+            self.adapter.warning(
+                QCoreApplication.translate(
+                    "QuickConnectTool",
+                    "At least two nodes are required to establish a connection!",
+                )
+            )
             return
 
         for source_node, destination_node in zip(nodes, nodes[1:]):
@@ -66,9 +72,10 @@ class QuickConnectTool(object):
                         continue
             if not connected:
                 self.adapter.warning(
-                    "{} → {} 未找到可连接属性，已跳过。".format(
-                        source_node, destination_node
-                    )
+                    QCoreApplication.translate(
+                        "QuickConnectTool",
+                        "{0} → {1} no connectable attribute found; skipped.",
+                    ).format(source_node, destination_node)
                 )
 
 
@@ -125,7 +132,11 @@ class NodeMixTool(object):
             elif category == "mix":
                 self.handle_mix(node_type, node_names)
             else:
-                self.feedback.warn("未知的节点类型：{}".format(node_type))
+                self.feedback.warn(
+                    QCoreApplication.translate(
+                        "NodeMixTool", "Unknown node type: {0}"
+                    ).format(node_type)
+                )
 
     def handle_utility_shader(self, nodes):
         modifiers = self.adapter.modifiers()
@@ -194,7 +205,12 @@ class NodeMixTool(object):
             adapter=self.adapter, feedback=self.feedback
         )
         if not selected_nodes:
-            return self.feedback.warn("至少需要两个节点来建立连接！")
+            return self.feedback.warn(
+                QCoreApplication.translate(
+                    "NodeMixTool",
+                    "At least two nodes are required to establish a connection!",
+                )
+            )
         nodes = []
         for node_names in selected_nodes.values():
             if isinstance(node_names, (list, tuple, set)):
@@ -202,7 +218,12 @@ class NodeMixTool(object):
             else:
                 nodes.append(node_names)
         if len(nodes) < 2:
-            return self.feedback.warn("至少需要两个节点来建立连接！")
+            return self.feedback.warn(
+                QCoreApplication.translate(
+                    "NodeMixTool",
+                    "At least two nodes are required to establish a connection!",
+                )
+            )
         return self.intelligent_mix_process(selected_nodes)
 
 

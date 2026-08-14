@@ -6,7 +6,8 @@ import maya.cmds as cmds
 
 from arnold_magic_node.tools.feedback import FeedbackPrompt
 from arnold_magic_node.tools.rendering import RenderingCaptureTool
-from arnold_magic_node.tools.runtime import get_runtime_paths, load_language, save_json
+from arnold_magic_node.tools.runtime import get_runtime_paths, save_json
+from arnold_magic_node._qt_compat import QCoreApplication
 
 
 _runtime_paths = get_runtime_paths()
@@ -19,8 +20,6 @@ class RenderingPresetDialog:
     def __init__(self, menu_name, capture_tool=None):
 
         self.import_val = None
-
-        self.lang = load_language()['ArnoldMagicNode']['rendering_preset_dialog']
 
         self.import_name_win(menu_name)
 
@@ -187,7 +186,15 @@ class RenderingPresetDialog:
             cmds.deleteUI(win_name)
 
         # 创建窗口
-        cmds.window(win_name, title =self.lang['import_name_win']['01'], sizeable=False, mbr=True, tlb=False, w=300, h=40) # 输入你的预设名字
+        cmds.window(
+            win_name,
+            title=QCoreApplication.translate("RenderPresetDialog", "Enter your preset name"),
+            sizeable=False,
+            mbr=True,
+            tlb=False,
+            w=300,
+            h=40,
+        )
 
         # 创建布局
         layout = cmds.rowLayout(numberOfColumns=50)
@@ -198,9 +205,15 @@ class RenderingPresetDialog:
 
         # 创建按钮布局
         cmds.text(label=" " * 3)
-        cmds.button(label=self.lang['import_name_win']['02'], c=lambda *args: determine()) # 确定
+        cmds.button(
+            label=QCoreApplication.translate("RenderPresetDialog", "OK"),
+            c=lambda *args: determine(),
+        )
         cmds.text(label=" | ")
-        cmds.button(label=self.lang['import_name_win']['03'], c=lambda *args: cancellation()) # 取消
+        cmds.button(
+            label=QCoreApplication.translate("RenderPresetDialog", "Cancel"),
+            c=lambda *args: cancellation(),
+        )
         cmds.text(label=" " * 3)
 
         # 设置父级布局

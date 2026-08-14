@@ -1,6 +1,7 @@
 """AOV 灯光组管理功能编排。"""
 
 from arnold_magic_node.maya.aovs import MayaAovAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
 
 
@@ -21,9 +22,10 @@ class AovLightGroupTool(object):
                     if group_name != old_group:
                         if not isinstance(group_name, str):
                             self.feedback.warn(
-                                "灯光组名称必须为字符串，当前为：{}".format(
-                                    type(group_name)
-                                )
+                                QCoreApplication.translate(
+                                    "AovLightGroupTool",
+                                    "Light group name must be a string, got: {0}",
+                                ).format(type(group_name))
                             )
                             continue
                         self.adapter.set_attr(
@@ -33,9 +35,10 @@ class AovLightGroupTool(object):
                         )
                 except Exception as error:
                     self.feedback.warn(
-                        "更新灯光 '{}' 的灯光组 '{}' 失败: {}".format(
-                            light_name, group_name, error
-                        )
+                        QCoreApplication.translate(
+                            "AovLightGroupTool",
+                            "Failed to update light group '{0}' of light '{1}': {2}",
+                        ).format(light_name, group_name, error)
                     )
 
     def select_lights(self, light_names):
@@ -63,7 +66,11 @@ class AovLightGroupTool(object):
         created = self.adapter.create_aov(aov_name)
         node_name = "aiAOV_" + aov_name
         if not self.adapter.object_exists(node_name):
-            raise RuntimeError("AOV节点 {} 创建失败".format(node_name))
+            raise RuntimeError(
+                QCoreApplication.translate(
+                    "AovLightGroupTool", "Failed to create AOV node {0}"
+                ).format(node_name)
+            )
         self.adapter.set_attr(node_name + ".type", 6)
         self.adapter.set_attr(node_name + ".enabled", True)
         return created
@@ -82,7 +89,9 @@ class AovLightGroupTool(object):
                     created.append(aov_name)
                 except Exception as error:
                     self.feedback.warn(
-                        "创建AOV '{}' 失败：{}".format(aov_name, error)
+                        QCoreApplication.translate(
+                            "AovLightGroupTool", "Failed to create AOV '{0}': {1}"
+                        ).format(aov_name, error)
                     )
         return created
 
@@ -99,7 +108,9 @@ class AovLightGroupTool(object):
                     deleted.append(aov_name)
             except Exception as error:
                 self.feedback.warn(
-                    "清理AOV失败: {} - {}".format(node_name, error)
+                    QCoreApplication.translate(
+                        "AovLightGroupTool", "Failed to clear AOV: {0} - {1}"
+                    ).format(node_name, error)
                 )
         return deleted
 

@@ -3,18 +3,18 @@
 from datetime import datetime
 
 from arnold_magic_node.maya.nodes import MayaNodeAdapter
-from .runtime import load_language
+from arnold_magic_node._qt_compat import QCoreApplication
 
 
 class FeedbackPrompt(object):
-    """统一封装面向用户的打印与警告，并集中读取语言资源。"""
+    """统一封装面向用户的打印与警告，文案按当前语言即时翻译。"""
 
     def __init__(self, adapter=None):
         self.adapter = adapter
-        self.language = load_language()["ArnoldMagicNodeLibs"]["FeedbackPrompt"]
         current_time = datetime.now()
         self.default_content = "{} {} | ".format(
-            self.language["01"], current_time.strftime("%Y-%m-%d %H:%M:%S")
+            QCoreApplication.translate("FeedbackPrompt", "@Arnold Tool Plugin Alert"),
+            current_time.strftime("%Y-%m-%d %H:%M:%S"),
         )
 
     def print_message(self, content):
@@ -27,7 +27,11 @@ class FeedbackPrompt(object):
         if error_context is None:
             self.adapter.warning(str(self.default_content) + str(content))
         else:
-            print(str(self.default_content) + self.language["02"] + str(content))
+            print(
+                str(self.default_content)
+                + QCoreApplication.translate("FeedbackPrompt", "Warning – see error below")
+                + str(content)
+            )
             print("↓" * 65)
             self.adapter.warning(str(error_context))
 

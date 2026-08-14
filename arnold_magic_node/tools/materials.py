@@ -7,6 +7,7 @@ from arnold_magic_node.core.path_detection import collect_file_info, process_fil
 from arnold_magic_node.core.similarity import calculate_similarity, select_matches
 from arnold_magic_node.core.paths import PROJECT_ROOT
 from arnold_magic_node.maya.magic_connection import MayaMagicConnectionAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
 from .magic_connection import connect_texture_nodes
 from .runtime import load_config
@@ -121,7 +122,11 @@ class MaterialConversionTool(object):
                             force=True,
                         )
                     except Exception as error:
-                        self.feedback.print_message("连接失败: {}".format(error))
+                        self.feedback.print_message(
+                            QCoreApplication.translate(
+                                "MaterialConversionTool", "Connection failed: {0}"
+                            ).format(error)
+                        )
                 self.adapter.delete(material_name)
 
 

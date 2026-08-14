@@ -2,7 +2,7 @@
 
 import maya.OpenMayaUI as omui
 
-from ._qt_compat import QtWidgets, wrapInstance
+from arnold_magic_node._qt_compat import QtWidgets, wrapInstance
 
 
 def get_maya_main_window():

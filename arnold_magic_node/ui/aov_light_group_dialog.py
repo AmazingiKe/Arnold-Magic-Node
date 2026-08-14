@@ -13,7 +13,7 @@ from arnold_magic_node.tools.runtime import (
     load_json,
     save_json,
 )
-from ._qt_compat import QtCore, QtGui, QtWidgets
+from arnold_magic_node._qt_compat import QtCore, QtGui, QtWidgets
 from ._workspace import delete_window_if_exists, get_maya_main_window
 
 
@@ -53,11 +53,11 @@ class AOVLightGroupTreeWidget(QtWidgets.QTreeWidget):
 
     def contextMenuEvent(self, event):
         menu = QtWidgets.QMenu(self)
-        add_action = menu.addAction("添加父级")
+        add_action = menu.addAction(self.tr("Add Parent"))
         add_action.triggered.connect(self.add_parent)
 
         selected = self.selectedItems()
-        delete_action = menu.addAction("删除父级")
+        delete_action = menu.addAction(self.tr("Delete Parent"))
         if len(selected) == 1 and selected[0].parent() is None:
             delete_action.triggered.connect(lambda: self.delete_parent(selected[0]))
             delete_action.setEnabled(True)
@@ -228,7 +228,10 @@ class AovLightGroupDialog(QtWidgets.QDialog):
         self.aov_tool = aov_tool or AovLightGroupTool(feedback=self.feedback)
         self.scene_adapter = MayaSceneAdapter()
 
-        self.window_name = f"AOV灯光组管理器  {SOFTWARE_STATE} : {SOFTWARE_VERSION}"
+        self.window_name = (
+            self.tr("AOV Light Group Manager")
+            + "  " + SOFTWARE_STATE + " : " + SOFTWARE_VERSION
+        )
 
 
         # 判断窗口是否存在，如果存在则删除
@@ -290,7 +293,7 @@ class AovLightGroupDialog(QtWidgets.QDialog):
 
         # 使用QtreeWidget控件创建一个类似Maya的节点树
         self.light_group_tree_widget = AOVLightGroupTreeWidget(self)
-        self.light_group_tree_widget.setHeaderLabels(['AOV灯光组'])
+        self.light_group_tree_widget.setHeaderLabels([self.tr("AOV Light Group")])
 
         # 设置灯光树的大小
         self.light_group_tree_widget.setFixedWidth(600)
@@ -340,14 +343,14 @@ class AovLightGroupDialog(QtWidgets.QDialog):
 
 
         # 功能按钮
-        self.every_cerate_aov_group_button = QtWidgets.QPushButton("创建所有AOV灯光组")
+        self.every_cerate_aov_group_button = QtWidgets.QPushButton(self.tr("Create All AOV Light Groups"))
         self.every_cerate_aov_group_button.clicked.connect(lambda *args:(self._create_parent_for_child_items()))
-        self.clear_all_lighet_group_button = QtWidgets.QPushButton("清除所有灯光组")
+        self.clear_all_lighet_group_button = QtWidgets.QPushButton(self.tr("Clear All Light Groups"))
         self.clear_all_lighet_group_button.clicked.connect(lambda *args: self._clear_all_light_groups())
-        self.clear_aov_button = QtWidgets.QPushButton("清除AOV中的灯光组")
+        self.clear_aov_button = QtWidgets.QPushButton(self.tr("Clear AOV Light Groups"))
 
         self.clear_aov_button.clicked.connect(lambda *args: self._clear_custom_aovs())
-        self.create_aov_button = QtWidgets.QPushButton("创建AOV灯光组")
+        self.create_aov_button = QtWidgets.QPushButton(self.tr("Create AOV Light Groups"))
         self.create_aov_button.clicked.connect(lambda *args: self._create_aov_light_group())
 
     def _create_menu(self):
@@ -589,7 +592,9 @@ class AovLightGroupDialog(QtWidgets.QDialog):
         for aov_name in self.aov_tool.create_light_group_aovs(
             selected_groups, aov_channels
         ):
-            self.feedback.print_message("成功创建AOV：{}".format(aov_name))
+            self.feedback.print_message(
+                self.tr("AOV created successfully: {0}").format(aov_name)
+            )
 
     # 检查AOV是否存在
     def _aov_exists(self, aov_name):
@@ -778,8 +783,13 @@ class AovLightGroupDialog(QtWidgets.QDialog):
 
         deleted_aovs = self.aov_tool.clear_custom_aovs(selected_channels)
 
-        result_msg = f"已清理自定义AOV通道 [{len(deleted_aovs)}个]:\n" + "\n".join(deleted_aovs)
-        self.feedback.warn(result_msg if deleted_aovs else "未找到需要清理的自定义AOV通道")
+        if deleted_aovs:
+            result_msg = self.tr(
+                "Cleared custom AOV channels [{0}]:\n{1}"
+            ).format(len(deleted_aovs), "\n".join(deleted_aovs))
+        else:
+            result_msg = self.tr("No custom AOV channels found to clear")
+        self.feedback.warn(result_msg)
 
 
     # 异步保存 AOV 选择列表的缓存数据到指定文件路径中

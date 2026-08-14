@@ -13,6 +13,7 @@ from arnold_magic_node.maya.magic_connection import (
     MayaMagicConnectionAdapter,
     MayaMagicConnectionExecutor,
 )
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
 
 
@@ -72,7 +73,13 @@ class MagicConnectionTool:
 
         file_nodes = selection.get("file") or []
         if not file_nodes:
-            self._report("没有选择纹理节点，请选择纹理节点", warning=True)
+            self._report(
+                QCoreApplication.translate(
+                    "MagicConnectionTool",
+                    "No texture node selected; please select a texture node",
+                ),
+                warning=True,
+            )
             return self._result({}, None, None, False)
 
         material_name = self._find_material(selection)
@@ -118,12 +125,17 @@ class MagicConnectionTool:
                         material_name, new_name
                     )
                     self._report(
-                        "已将 {} 材质名称修改成 {}".format(
-                            material_name, renamed_material_name
-                        )
+                        QCoreApplication.translate(
+                            "MagicConnectionTool",
+                            "Renamed material {0} to {1}",
+                        ).format(material_name, renamed_material_name)
                     )
 
-            self._report("已完成 {} 材质连接".format(renamed_material_name))
+            self._report(
+                QCoreApplication.translate(
+                    "MagicConnectionTool", "Completed connection of {0}"
+                ).format(renamed_material_name)
+            )
 
         return self._result(
             {texture.node_name: texture.channel for texture in plan.textures},

@@ -6,11 +6,9 @@ from arnold_magic_node.core.magic_connection import (
     normalize_texture_name,
 )
 from arnold_magic_node.maya.textures import MayaTextureAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
-from .runtime import (
-    load_config,
-    load_language,
-)
+from .runtime import load_config
 from .selection import process_selected_nodes
 
 
@@ -22,6 +20,22 @@ UV_CONNECTION_ATTRIBUTES = (
     "noiseUV", "vertexUvOne", "vertexUvTwo", "vertexUvThree",
     "vertexCameraOne",
 )
+
+def uv_preset_mode_map():
+    """返回「显示名 -> 模式索引」映射，与主窗口菜单使用同一组译文。
+
+    context 与 source 必须直接写在 translate() 内，lupdate 才能提取；
+    列表顺序与 file 节点的 uvTilingMode 枚举值一一对应。
+    """
+
+    translated_names = [
+        QCoreApplication.translate("UvPresetMenu", "Disabled"),
+        QCoreApplication.translate("UvPresetMenu", "Type 0 (ZBrush)"),
+        QCoreApplication.translate("UvPresetMenu", "Type 1 (Mudbox)"),
+        QCoreApplication.translate("UvPresetMenu", "UDIM (Mari)"),
+        QCoreApplication.translate("UvPresetMenu", "Show Tiling"),
+    ]
+    return {name: index for index, name in enumerate(translated_names)}
 
 
 def apply_texture_color_spaces(
@@ -47,7 +61,9 @@ def apply_texture_color_spaces(
         adapter.set_color_space(node_name, color_space)
         if feedback is not None:
             feedback.print_message(
-                "{} 设置为色彩空间 <{}>".format(node_name, color_space)
+                QCoreApplication.translate(
+                    "TextureTools", "{0} set to color space <{1}>"
+                ).format(node_name, color_space)
             )
     return matching_channels
 
@@ -62,7 +78,14 @@ def apply_file_udim(node_list, adapter, feedback=None):
         adapter.set_udim(node_name, enabled)
         result[node_name] = enabled
         if feedback is not None:
-            feedback.print_message("{} {} UDIM".format(node_name, "启用" if enabled else "关闭"))
+            feedback.print_message(
+                QCoreApplication.translate("TextureTools", "{0} {1} UDIM").format(
+                    node_name,
+                    QCoreApplication.translate("TextureTools", "Enabled")
+                    if enabled
+                    else QCoreApplication.translate("TextureTools", "Disabled"),
+                )
+            )
     return result
 
 
@@ -102,24 +125,18 @@ def set_uv_preset(uv_preset, adapter=None):
 
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
-    language = load_language()["ArnoldMagicNode"]
-    widget_language = language["AMDUI_WIN"]["create_widgets"]
-    tool_language = language["uv_preset_menu"]
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
     if selected is None:
         return
     if "file" not in selected:
-        feedback.warn(tool_language["04"])
+        feedback.warn(
+            QCoreApplication.translate(
+                "UvPresetMenu", "Please select a texture node"
+            )
+        )
         return
 
-    mode_values = {
-        widget_language["uv_preset"][0]: 0,
-        widget_language["uv_preset"][1]: 1,
-        widget_language["uv_preset"][2]: 2,
-        widget_language["uv_preset"][3]: 3,
-        widget_language["uv_preset"][4]: 4,
-    }
-    mode = mode_values.get(uv_preset)
+    mode = uv_preset_mode_map().get(uv_preset)
     if mode is None:
         return
 
@@ -128,11 +145,18 @@ def set_uv_preset(uv_preset, adapter=None):
             adapter.set_attr(node_name + ".uvTilingMode", mode)
             feedback.print_message(
                 "{}<{}>{}{}".format(
-                    tool_language["01"], node_name, tool_language["02"], mode
+                    QCoreApplication.translate("UvPresetMenu", "Set UV tiling mode for"),
+                    node_name,
+                    QCoreApplication.translate("UvPresetMenu", "node to:"),
+                    mode,
                 )
             )
     except Exception as error:
-        feedback.warn("{} :{}".format(tool_language["03"], error))
+        feedback.warn(
+            "{} :{}".format(
+                QCoreApplication.translate("UvPresetMenu", "Error setting:"), error
+            )
+        )
 
 
 def set_color_space_preset(color_space_preset, adapter=None):
@@ -141,11 +165,14 @@ def set_color_space_preset(color_space_preset, adapter=None):
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
-    language = load_language()["ArnoldMagicNode"]["color_space_preset_menu"]
     if selected is None:
         return
     if "file" not in selected:
-        feedback.warn(language["01"])
+        feedback.warn(
+            QCoreApplication.translate(
+                "ColorSpacePresetMenu", "Please select a texture node!"
+            )
+        )
         return
 
     for node_name in selected["file"]:
@@ -154,7 +181,10 @@ def set_color_space_preset(color_space_preset, adapter=None):
         )
         feedback.print_message(
             "{}<{}>{}<{}>".format(
-                language["02"], node_name, language["02"], color_space_preset
+                QCoreApplication.translate("ColorSpacePresetMenu", "Set"),
+                node_name,
+                QCoreApplication.translate("ColorSpacePresetMenu", "to"),
+                color_space_preset,
             )
         )
 
@@ -164,13 +194,16 @@ def auto_set_texture_color_space(adapter=None):
 
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
-    language = load_language()["ArnoldMagicNode"]["auto_set_texture_color_space"]
     config = load_config()
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
     if selected is None:
         return
     if "file" not in selected:
-        feedback.print_message(language["01"])
+        feedback.print_message(
+            QCoreApplication.translate(
+                "AutoSetTextureColorSpace", "Please select a texture node!"
+            )
+        )
         return
 
     return apply_texture_color_spaces(
@@ -188,11 +221,14 @@ def auto_set_file_node_udim(adapter=None):
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
-    language = load_language()["ArnoldMagicNode"]["auto_set_file_node_udim"]
     if selected is None:
         return
     if "file" not in selected:
-        feedback.print_message(language["01"])
+        feedback.print_message(
+            QCoreApplication.translate(
+                "AutoSetFileNodeUdim", "Please select a texture node"
+            )
+        )
         return
     return apply_file_udim(selected["file"], adapter, feedback)
 
@@ -204,7 +240,6 @@ def connect_directly(adapter=None):
 
     adapter = adapter or MayaTextureAdapter()
     feedback = FeedbackPrompt(adapter)
-    language = load_language()["ArnoldMagicNode"]["direct_connection_tool"]
     selected = process_selected_nodes(adapter=adapter, feedback=feedback)
     if selected is None:
         return
@@ -213,16 +248,24 @@ def connect_directly(adapter=None):
     if shading_engines:
         _direct_output_node = shading_engines[0]
         feedback.print_message(
-            "{}<{}>".format(language["__init__"]["01"], _direct_output_node)
+            "{}<{}>".format(
+                QCoreApplication.translate(
+                    "DirectConnectionTool", "Node configured successfully"
+                ),
+                _direct_output_node,
+            )
         )
         return
 
     if _direct_output_node is None:
-        feedback.print_message(language["__init__"]["02"])
+        feedback.print_message(
+            QCoreApplication.translate(
+                "DirectConnectionTool", "Please select an output node first"
+            )
+        )
         return
 
     output_ports = ("outColor", "outAlpha", "outValue")
-    connection_language = language["connection_node"]
     for node_names in selected.values():
         for node_name in node_names:
             for output_port in output_ports:
@@ -246,12 +289,16 @@ def connect_directly(adapter=None):
                 except Exception:
                     feedback.warn(
                         "{}<{}:{}>{}<{}:shadingEngine>{}".format(
-                            connection_language["01"],
+                            QCoreApplication.translate("DirectConnectionTool", "Your"),
                             node_name,
                             output_port,
-                            connection_language["02"],
+                            QCoreApplication.translate(
+                                "DirectConnectionTool", "node cannot connect to"
+                            ),
                             _direct_output_node,
-                            connection_language["03"],
+                            QCoreApplication.translate(
+                                "DirectConnectionTool", "on the node"
+                            ),
                         )
                     )
 
@@ -277,4 +324,5 @@ __all__ = [
     "set_uv_preset",
     "unify_uv_nodes_for_files",
     "unify_uv_nodes",
+    "uv_preset_mode_map",
 ]

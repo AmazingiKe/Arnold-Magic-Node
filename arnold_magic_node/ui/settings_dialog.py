@@ -28,7 +28,7 @@ from .i18n import (
     install_language_translator,
     language_display_name,
 )
-from ._qt_compat import QAction, QtCore, QtGui, QtWidgets
+from arnold_magic_node._qt_compat import QAction, QtCore, QtGui, QtWidgets
 from ._workspace import delete_window_if_exists
 
 

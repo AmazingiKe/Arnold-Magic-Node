@@ -1,8 +1,8 @@
 """Maya 选择与场景节点查询工具。"""
 
 from arnold_magic_node.maya.scene import MayaSceneAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
-from .runtime import load_language
 
 
 def process_selected_nodes(selected_nodes=None, adapter=None, feedback=None):
@@ -13,8 +13,11 @@ def process_selected_nodes(selected_nodes=None, adapter=None, feedback=None):
     if selected_nodes is None:
         selected_nodes = adapter.list_nodes(sl=True)
     if not selected_nodes:
-        language = load_language()["ArnoldMagicNodeLibs"]["process_selected_nodes"]
-        feedback.warn(language["01"])
+        feedback.warn(
+            QCoreApplication.translate(
+                "ProcessSelectedNodes", "Please select the corresponding node first!"
+            )
+        )
         return None
 
     result = {}
@@ -33,7 +36,9 @@ def get_scene_nodes_by_type(adapter=None, feedback=None):
         materials=True, textures=True, assemblies=True,
     )
     if not all_nodes:
-        feedback.warn("没有找到节点")
+        feedback.warn(
+            QCoreApplication.translate("ProcessSelectedNodes", "No nodes found")
+        )
         return None
 
     result = {}
@@ -42,7 +47,11 @@ def get_scene_nodes_by_type(adapter=None, feedback=None):
             node_type = adapter.node_type(node_name)
         except Exception as error:
             node_type = "unknown"
-            feedback.warn("获取节点类型失败: {}, 错误: {}".format(node_name, error))
+            feedback.warn(
+                QCoreApplication.translate(
+                    "ProcessSelectedNodes", "Failed to get node type: {0}, error: {1}"
+                ).format(node_name, error)
+            )
         result.setdefault(node_type, []).append(node_name)
     return result
 

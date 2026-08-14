@@ -6,6 +6,7 @@ from arnold_magic_node.core.magic_connection import clean_material_name
 from arnold_magic_node.core.path_detection import collect_file_info, process_file_names, scan_directory
 from arnold_magic_node.core.similarity import calculate_similarity, select_matches
 from arnold_magic_node.maya.magic_connection import MayaMagicConnectionAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
 from .magic_connection import connect_texture_nodes
 from .runtime import (
@@ -13,7 +14,6 @@ from .runtime import (
     MAYA_SHIFT_MODIFIER,
     is_modifier_pressed,
     load_config,
-    load_language,
 )
 from .selection import process_selected_nodes
 from .texture import (
@@ -32,7 +32,6 @@ class PathDetectionConnectionTool(object):
         adapter=None,
         feedback=None,
         selected_nodes=None,
-        language=None,
     ):
         self.adapter = adapter or MayaMagicConnectionAdapter()
         self.feedback = feedback or FeedbackPrompt(self.adapter)
@@ -43,13 +42,16 @@ class PathDetectionConnectionTool(object):
             process_selected_nodes(adapter=self.adapter, feedback=self.feedback)
             if selected_nodes is None else selected_nodes
         )
-        self.language = language or load_language()["ArnoldMagicNode"]["path_detection_connection"]
 
     def run(self):
         if self.selected_nodes is None:
             return
         if "file" not in self.selected_nodes:
-            return self.feedback.warn(self.language["main"]["01"])
+            return self.feedback.warn(
+                QCoreApplication.translate(
+                    "PathDetectionConnection", "Please select a texture node!"
+                )
+            )
 
         modifiers = self.adapter.modifiers()
         matches = self.detect_and_calculate_similarity()
@@ -119,7 +121,11 @@ class PathDetectionConnectionTool(object):
                     self.path_detection_data["exclude_formats"],
                 )
             except OSError as error:
-                self.feedback.print_message("无法读取目录 {}: {}".format(directory, error))
+                self.feedback.print_message(
+                    QCoreApplication.translate(
+                        "PathDetectionConnection", "Cannot read directory {0}: {1}"
+                    ).format(directory, error)
+                )
                 directory_files = {}
             directory_info = collect_file_info(
                 directory_files, self.adapter.image_dimensions
@@ -156,25 +162,40 @@ class PathDetectionConnectionTool(object):
         return completed
 
     def feedback_prompt(self, similarity_dict, matching_list, original_name):
-        language = self.language["feedback_prompt"]
-        self.feedback.print_message(language["01"])
+        self.feedback.print_message(
+            QCoreApplication.translate(
+                "PathDetectionConnection", "===== Similarity Scores ====="
+            )
+        )
         for texture_name, similarity in similarity_dict.items():
             self.feedback.print_message(
                 "{} {},{}{},{}{}".format(
-                    language["02"],
+                    QCoreApplication.translate("PathDetectionConnection", "Source:"),
                     original_name,
-                    language["03"],
+                    QCoreApplication.translate("PathDetectionConnection", "Target:"),
                     texture_name,
-                    language["04"],
+                    QCoreApplication.translate("PathDetectionConnection", "Score:"),
                     "{:.5f}".format(similarity),
                 )
             )
-        self.feedback.print_message(language["05"])
-        self.feedback.print_message("{}{}".format(language["06"], original_name))
+        self.feedback.print_message(
+            QCoreApplication.translate(
+                "PathDetectionConnection", "===== Completed Matches ====="
+            )
+        )
+        self.feedback.print_message(
+            "{}{}".format(
+                QCoreApplication.translate("PathDetectionConnection", "Matched Object |"),
+                original_name,
+            )
+        )
         for target, similarity in matching_list:
             self.feedback.print_message(
                 "{} {},{}{}".format(
-                    language["07"], target, language["08"], "{:.5f}".format(similarity)
+                    QCoreApplication.translate("PathDetectionConnection", "Completed Match |"),
+                    target,
+                    QCoreApplication.translate("PathDetectionConnection", "Score:"),
+                    "{:.5f}".format(similarity),
                 )
             )
 

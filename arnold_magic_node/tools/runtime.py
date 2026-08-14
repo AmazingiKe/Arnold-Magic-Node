@@ -40,6 +40,8 @@ PLUGIN_HELP_DOCUMENT_URL = (
 
 AMS_CONFIG = "Arnold_Magic_Settings.json"
 
+TRANSLATION_FILE_PREFIX = "arnold_magic_node_"
+
 SMALL_FONT_SIZE = 10
 NORMAL_FONT_SIZE = 14
 MEDIUM_FONT_SIZE = 16
@@ -92,28 +94,16 @@ def save_config(config, paths=None):
     return save_json(os.path.join(paths.settings_path, AMS_CONFIG), config)
 
 
-def load_language(paths=None):
-    """按用户语言配置读取内置语言资源。"""
-
-    paths = paths or get_runtime_paths()
-    language_config = load_json(
-        os.path.join(paths.settings_path, "language_config.json")
-    )["language_config"]
-    return load_json(os.path.join(paths.languages_path, language_config + ".json"))
-
-
 def initialize_language_config(environment=None, paths=None):
     """按 Maya 当前界面语言创建缺失的语言选择文件。"""
 
     environment = environment or MayaEnvironmentAdapter()
     paths = paths or get_runtime_paths(environment.user_data_root())
-    available_languages = [
-        filename
+    available_languages = {"en_US"} | {
+        filename[len(TRANSLATION_FILE_PREFIX):-len(".qm")]
         for filename in os.listdir(paths.languages_path)
-        if filename.lower().endswith(".json")
-    ]
-    available_languages = {
-        os.path.splitext(filename)[0] for filename in available_languages
+        if filename.startswith(TRANSLATION_FILE_PREFIX)
+        and filename.endswith(".qm")
     }
     maya_language = environment.ui_language()
     selected_language = (
@@ -150,13 +140,13 @@ __all__ = [
     "SMALL_FONT_SIZE",
     "SOFTWARE_STATE",
     "SOFTWARE_VERSION",
+    "TRANSLATION_FILE_PREFIX",
     "ensure_directory",
     "get_runtime_paths",
     "initialize_language_config",
     "is_modifier_pressed",
     "load_config",
     "load_json",
-    "load_language",
     "save_config",
     "save_json",
 ]

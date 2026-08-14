@@ -23,7 +23,6 @@ from arnold_magic_node.tools.runtime import (
     ensure_directory,
     get_runtime_paths,
     load_json,
-    load_language,
     save_json,
 )
 from arnold_magic_node.tools.scene import SceneNameOptimizationTool
@@ -34,9 +33,16 @@ from arnold_magic_node.tools.texture import (
     set_color_space_preset,
     set_uv_preset,
     unify_uv_nodes,
+    uv_preset_mode_map,
 )
 from .aov_light_group_dialog import show_aov_light_group_dialog
-from ._qt_compat import QtGui, QtWidgets, wrapInstance
+from arnold_magic_node._qt_compat import (
+    QCoreApplication,
+    QtCore,
+    QtGui,
+    QtWidgets,
+    wrapInstance,
+)
 from .rendering_preset_dialog import (
     delete_rendering_preset_menuItem,
     modify_rendering_preset_menuItem,
@@ -48,8 +54,9 @@ from .settings_dialog import SettingsDialog
 _runtime_paths = get_runtime_paths()
 
 
-class MainWindow(object):
+class MainWindow(QtCore.QObject):
     def __init__(self):
+        super(MainWindow, self).__init__()
         win_title = f"Arnold Magic Node  {SOFTWARE_STATE} : {SOFTWARE_VERSION}"
 
         if cmds.window(win_title, exists=True):
@@ -70,30 +77,72 @@ class MainWindow(object):
         self.create_widgets()
         cmds.showWindow(self.window)
 
+        # Maya cmds 界面收不到 Qt LanguageChange，由翻译模块回调驱动重译
+        register_retranslate_callback(self.retranslate_ui)
+
+    def retranslate_ui(self):
+        """语言切换后重设全部 Maya 原生界面文案。"""
+
+        if not cmds.workspaceControl(self.window, exists=True):
+            return
+
+        cmds.menuItem(self.aov_manager_divider, edit=True, label=self.tr("AOV Manager"))
+        cmds.menuItem(self.aov_light_group_manager_item, edit=True, label=self.tr("AOV Light Group Manager"))
+        cmds.menuItem(self.render_preset_settings_divider, edit=True, label=self.tr("Render Preset Settings"))
+        cmds.menuItem(self.add_render_preset_item, edit=True, label=self.tr("Add Render Preset"))
+        cmds.menuItem(self.edit_render_preset_item, edit=True, label=self.tr("Edit Render Preset"))
+        cmds.menuItem(self.delete_render_preset_item, edit=True, label=self.tr("Delete Render Preset"))
+        cmds.menuItem(self.open_render_preset_folder_item, edit=True, label=self.tr("Open Render Preset Folder"))
+        cmds.menuItem(self.render_preset_output_divider, edit=True, label=self.tr("Render Preset Output Settings"))
+        cmds.menuItem(self.default_rendering_properties_options, edit=True, label=self.tr("Export Default Parameters"))
+        cmds.menuItem(self.rendering_properties_options, edit=True, label=self.tr("Export Arnold Parameters"))
+        cmds.menuItem(self.aov_properties_properties_options, edit=True, label=self.tr("Export AOV Parameters"))
+        cmds.menuItem(self.material_repair_divider, edit=True, label=self.tr("Material Repair Tools"))
+        cmds.menuItem(self.repair_selected_fbx_item, edit=True, label=self.tr("Repair Selected FBX Materials"))
+        cmds.menuItem(self.repair_all_fbx_item, edit=True, label=self.tr("Repair All FBX Materials"))
+        cmds.menuItem(self.intelligent_selected_item, edit=True, label=self.tr("Intelligently Repair Selected Material Textures"))
+        cmds.menuItem(self.intelligent_all_item, edit=True, label=self.tr("Intelligently Repair All Material Textures"))
+        cmds.menuItem(self.other_tools_divider, edit=True, label=self.tr("Other Tools"))
+        cmds.menuItem(self.optimize_scene_names_item, edit=True, label=self.tr("Optimize Scene Names"))
+        cmds.menuItem(self.settings_item, edit=True, label=self.tr("Settings"))
+
+        cmds.button(self.magic_connection, edit=True, label=self.tr("Magic Connection"))
+        cmds.button(self.path_detection_connection, edit=True, label=self.tr("Path Detection Connection"))
+        cmds.button(self.intelligent_mix, edit=True, label=self.tr("Intelligent Blend"))
+        cmds.button(self.quick_connect, edit=True, label=self.tr("Quick Connect"))
+        cmds.button(self.direct_connection, edit=True, label=self.tr("Direct Connection"))
+        cmds.button(self.unify_uv_node, edit=True, label=self.tr("Unify UV"))
+        cmds.button(self.auto_color_space_button, edit=True, label=self.tr("Auto Color Space"))
+        cmds.button(self.auto_udim_button, edit=True, label=self.tr("Auto UDIM"))
+        cmds.button(self.ai_aov_switch, edit=True, label=self.tr("AOV Toggle"))
+
+        for item, name in zip(self.uv_preset_items, uv_preset_mode_map()):
+            cmds.menuItem(item, edit=True, label=name)
+
     def create_widgets(self):
         cmds.rowLayout(numberOfColumns=30)
         cmds.popupMenu(button=3)
 
-        cmds.menuItem(label="AOV管理器", divider=True)
+        self.aov_manager_divider = cmds.menuItem(label=self.tr("AOV Manager"), divider=True)
 
-        cmds.menuItem(
-            label="AOV灯光组管理器",
+        self.aov_light_group_manager_item = cmds.menuItem(
+            label=self.tr("AOV Light Group Manager"),
             c=lambda *args: show_aov_light_group_dialog(),
             i=os.path.join(_runtime_paths.icon_path, "LightManagerShelf_200.png"),
         )
 
-        cmds.menuItem(
-            label=self.language["create_widgets"]["render_preset_settings_menu"],
+        self.render_preset_settings_divider = cmds.menuItem(
+            label=self.tr("Render Preset Settings"),
             divider=True,
         )
 
-        cmds.menuItem(
-            label=self.language["create_widgets"]["add_render_preset_menu"],
+        self.add_render_preset_item = cmds.menuItem(
+            label=self.tr("Add Render Preset"),
             c=lambda *args: RenderingPresetDialog(self.rendering_preset),
         )
 
-        cmds.menuItem(
-            label=self.language["create_widgets"]["edit_render_preset_menu"],
+        self.edit_render_preset_item = cmds.menuItem(
+            label=self.tr("Edit Render Preset"),
             c=lambda *args: modify_rendering_preset_menuItem(
                 cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
                 cmds.optionMenu(self.rendering_preset, query=True, value=True),
@@ -102,8 +151,8 @@ class MainWindow(object):
             ),
         )
 
-        cmds.menuItem(
-            label=self.language["create_widgets"]["delete_render_preset_menu"],
+        self.delete_render_preset_item = cmds.menuItem(
+            label=self.tr("Delete Render Preset"),
             c=lambda *args: delete_rendering_preset_menuItem(
                 cmds.optionMenu(self.rendering_preset, query=True, fullPathName=True),
                 cmds.optionMenu(self.rendering_preset, query=True, value=True),
@@ -111,125 +160,125 @@ class MainWindow(object):
             ),
         )
 
-        cmds.menuItem(
-            label=self.language["create_widgets"]["open_render_preset_folder_menu"],
+        self.open_render_preset_folder_item = cmds.menuItem(
+            label=self.tr("Open Render Preset Folder"),
             c=lambda *args: os.startfile(_runtime_paths.render_preset_path),
         )
 
-        cmds.menuItem(divider=True, label="渲染预设输出设置")
+        self.render_preset_output_divider = cmds.menuItem(divider=True, label=self.tr("Render Preset Output Settings"))
 
-        default_rendering_properties_options = cmds.menuItem(
-            label=self.language["create_widgets"]["default_rendering_properties_options"],
+        self.default_rendering_properties_options = cmds.menuItem(
+            label=self.tr("Export Default Parameters"),
             cb=True,
             c=lambda *args: self.modify_nested_config(
                 key_path=["render_preset_params", "default_rendering_properties_write_options"],
-                cont=cmds.menuItem(default_rendering_properties_options, query=True, checkBox=True),
+                cont=cmds.menuItem(self.default_rendering_properties_options, query=True, checkBox=True),
             ),
         )
 
-        rendering_properties_options = cmds.menuItem(
-            label=self.language["create_widgets"]["rendering_properties_options"],
+        self.rendering_properties_options = cmds.menuItem(
+            label=self.tr("Export Arnold Parameters"),
             cb=True,
             c=lambda *args: self.modify_nested_config(
                 key_path=["render_preset_params", "rendering_properties_write_options"],
-                cont=cmds.menuItem(rendering_properties_options, query=True, checkBox=True),
+                cont=cmds.menuItem(self.rendering_properties_options, query=True, checkBox=True),
             ),
         )
 
-        aov_properties_properties_options = cmds.menuItem(
-            label=self.language["create_widgets"]["aov_properties_properties_options"],
+        self.aov_properties_properties_options = cmds.menuItem(
+            label=self.tr("Export AOV Parameters"),
             cb=True,
             c=lambda *args: self.modify_nested_config(
                 key_path=["render_preset_params", "AOV_properties_properties_write_options"],
-                cont=cmds.menuItem(aov_properties_properties_options, query=True, checkBox=True),
+                cont=cmds.menuItem(self.aov_properties_properties_options, query=True, checkBox=True),
             ),
         )
 
         cmds.menuItem(
-            default_rendering_properties_options,
+            self.default_rendering_properties_options,
             edit=True,
             checkBox=self.config["render_preset_params"]["default_rendering_properties_write_options"],
         )
         cmds.menuItem(
-            rendering_properties_options,
+            self.rendering_properties_options,
             edit=True,
             checkBox=self.config["render_preset_params"]["rendering_properties_write_options"],
         )
         cmds.menuItem(
-            aov_properties_properties_options,
+            self.aov_properties_properties_options,
             edit=True,
             checkBox=self.config["render_preset_params"]["AOV_properties_properties_write_options"],
         )
 
-        cmds.menuItem(divider=True, label="材质修复工具")
+        self.material_repair_divider = cmds.menuItem(divider=True, label=self.tr("Material Repair Tools"))
 
-        cmds.menuItem(
-            label="修复选择的FBX材质",
+        self.repair_selected_fbx_item = cmds.menuItem(
+            label=self.tr("Repair Selected FBX Materials"),
             c=lambda *args: MaterialConversionTool(select_all=False).run(),
         )
 
-        cmds.menuItem(
-            label="修复所有FBX材质",
+        self.repair_all_fbx_item = cmds.menuItem(
+            label=self.tr("Repair All FBX Materials"),
             c=lambda *args: MaterialConversionTool(select_all=True).run(),
         )
 
-        cmds.menuItem(
-            label="智能修复选择材质贴图",
+        self.intelligent_selected_item = cmds.menuItem(
+            label=self.tr("Intelligently Repair Selected Material Textures"),
             c=lambda *args: IntelligentMaterialRepairTool(select_all=False).run(),
         )
 
-        cmds.menuItem(
-            label="智能修复全部材质贴图",
+        self.intelligent_all_item = cmds.menuItem(
+            label=self.tr("Intelligently Repair All Material Textures"),
             c=lambda *args: IntelligentMaterialRepairTool(select_all=True).run(),
         )
 
-        cmds.menuItem(divider=True, label="其他工具")
+        self.other_tools_divider = cmds.menuItem(divider=True, label=self.tr("Other Tools"))
 
-        cmds.menuItem(
-            label="优化场景名称",
+        self.optimize_scene_names_item = cmds.menuItem(
+            label=self.tr("Optimize Scene Names"),
             c=lambda *args: self.scene_name_optimization_instance(),
         )
 
         cmds.menuItem(divider=True)
 
-        cmds.menuItem(
-            label=self.language["create_widgets"]["settings_menu"],
+        self.settings_item = cmds.menuItem(
+            label=self.tr("Settings"),
             c=lambda *args: SettingsDialog(),
         )
 
         cmds.text(label=" " * 1)
 
         self.magic_connection = cmds.button(
-            label=self.language["create_widgets"]["magic_connection"],
+            label=self.tr("Magic Connection"),
             c=lambda *args: MagicConnectionTool().run(),
         )
 
         self.path_detection_connection = cmds.button(
-            label=self.language["create_widgets"]["path_detection_connection"],
+            label=self.tr("Path Detection Connection"),
             c=lambda *args: PathDetectionConnectionTool().run(),
         )
 
         cmds.text(label=" " * 2)
 
         self.intelligent_mix = cmds.button(
-            label=self.language["create_widgets"]["intelligent_mix"],
+            label=self.tr("Intelligent Blend"),
             c=lambda *args: NodeMixTool().run(),
         )
 
         self.quick_connect = cmds.button(
-            label="快速连接",
+            label=self.tr("Quick Connect"),
             c=lambda *args: QuickConnectTool().run(),
         )
 
         self.direct_connection = cmds.button(
-            label=self.language["create_widgets"]["direct_connection"],
+            label=self.tr("Direct Connection"),
             c=lambda *args: connect_directly(),
         )
 
         cmds.text(label=" " * 1)
 
         self.unify_uv_node = cmds.button(
-            label=self.language["create_widgets"]["unify_uv_node"],
+            label=self.tr("Unify UV"),
             c=lambda *args: unify_uv_nodes(),
         )
 
@@ -243,9 +292,9 @@ class MainWindow(object):
             h=27,
         )
 
-        uv_mode_list = self.language["create_widgets"]["uv_preset"]
-        for uv_mode_name in uv_mode_list:
-            cmds.menuItem(label=uv_mode_name)
+        self.uv_preset_items = [
+            cmds.menuItem(label=name) for name in uv_preset_mode_map()
+        ]
 
         self.color_space_preset = cmds.optionMenu(
             mvi=16,
@@ -258,20 +307,20 @@ class MainWindow(object):
         for color_space_name in self.config["color_space_params"]["config"]:
             cmds.menuItem(label=color_space_name)
 
-        cmds.button(
-            label=self.language["create_widgets"]["auto_color_space_button"],
+        self.auto_color_space_button = cmds.button(
+            label=self.tr("Auto Color Space"),
             c=lambda *args: auto_set_texture_color_space(),
         )
 
-        cmds.button(
-            label=self.language["create_widgets"]["auto_udim_button"],
+        self.auto_udim_button = cmds.button(
+            label=self.tr("Auto UDIM"),
             c=lambda *args: auto_set_file_node_udim(),
         )
 
         cmds.text(label=" " * 2)
 
         self.ai_aov_switch = cmds.button(
-            label=self.language["create_widgets"]["ai_aov_switch"],
+            label=self.tr("AOV Toggle"),
             c=lambda *args: toggle_aovs(),
         )
 
@@ -297,8 +346,6 @@ class MainWindow(object):
         cmds.text(label=" " * 2)
 
     def initial_global_config(self):
-        self.language = load_language()["ArnoldMagicNode"]["AMDUI_WIN"]
-
         self.config = load_json(
             os.path.normpath(os.path.join(_runtime_paths.settings_path, AMS_CONFIG))
         )

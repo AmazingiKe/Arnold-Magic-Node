@@ -4,8 +4,9 @@ import os
 import re
 
 from arnold_magic_node.maya.nodes import MayaNodeAdapter
+from arnold_magic_node._qt_compat import QCoreApplication
 from .feedback import FeedbackPrompt
-from .runtime import get_runtime_paths, load_config, load_json, load_language
+from .runtime import get_runtime_paths, load_config, load_json
 
 
 ATTRIBUTE_TYPES = ("bool", "int", "float", "string")
@@ -34,7 +35,11 @@ class RenderingCaptureTool(object):
 
     def driver_and_filter_nodes(self, aov_node):
         if not self.adapter.object_exists(aov_node):
-            self.feedback.print_message("节点 {} 不存在".format(aov_node))
+            self.feedback.print_message(
+                QCoreApplication.translate(
+                    "RenderingCaptureTool", "Node {0} does not exist"
+                ).format(aov_node)
+            )
             return None, None
         driver_name = None
         filter_name = None
@@ -55,13 +60,22 @@ class RenderingCaptureTool(object):
         filter_attributes,
     ):
         if not self.adapter.object_exists("defaultArnoldRenderOptions"):
-            self.feedback.warn("没检测到阿诺德渲染器节点，无法写入阿诺德内容")
+            self.feedback.warn(
+                QCoreApplication.translate(
+                    "RenderingCaptureTool",
+                    "No default Arnold renderer detected; cannot write Arnold content",
+                )
+            )
             return None
         aov_nodes = self.adapter.list_connections(
             "defaultArnoldRenderOptions.aovList", source=True
         )
         if not aov_nodes:
-            self.feedback.print_message("还没有设置AOV，将不会写入AOV")
+            self.feedback.print_message(
+                QCoreApplication.translate(
+                    "RenderingCaptureTool", "No AOVs set; AOVs will not be written"
+                )
+            )
             return None
 
         result = {}
@@ -109,7 +123,6 @@ class RenderingPresetTool(object):
             )
         )
         self.config = load_config(self.paths)["render_preset_params"]
-        self.language = load_language(self.paths)["ArnoldMagicNode"]["rendering_preset_menu"]
 
     def run(self):
         """依照配置选择性写入默认渲染、Arnold 和 AOV 参数。"""
@@ -119,18 +132,32 @@ class RenderingPresetTool(object):
                 self.set_default_rendering_properties()
                 self.feedback.print_message(
                     "<{}> {}".format(
-                        self.preset_name, self.language["__init__"]["01"]
+                        self.preset_name,
+                        QCoreApplication.translate(
+                            "RenderingPresetTool",
+                            "| Default render properties written successfully",
+                        ),
                     )
                 )
             except Exception as error:
                 self.feedback.print_message(
                     "<{}> {} {}".format(
-                        self.preset_name, self.language["__init__"]["02"], error
+                        self.preset_name,
+                        QCoreApplication.translate(
+                            "RenderingPresetTool",
+                            "| Error writing default render properties:",
+                        ),
+                        error,
                     )
                 )
 
         if not self.adapter.object_exists("defaultArnoldRenderOptions"):
-            self.feedback.warn(self.language["__init__"]["03"])
+            self.feedback.warn(
+                QCoreApplication.translate(
+                    "RenderingPresetTool",
+                    "No default Arnold renderer detected; please switch renderer first",
+                )
+            )
             return
 
         if self.config.get("rendering_properties_write_options"):
@@ -138,13 +165,21 @@ class RenderingPresetTool(object):
                 self.set_rendering_properties()
                 self.feedback.print_message(
                     "<{}> {}".format(
-                        self.preset_name, self.language["__init__"]["04"]
+                        self.preset_name,
+                        QCoreApplication.translate(
+                            "RenderingPresetTool",
+                            "| Arnold render properties written successfully",
+                        ),
                     )
                 )
             except Exception as error:
                 self.feedback.print_message(
                     "<{}> {} {}".format(
-                        self.preset_name, self.language["__init__"]["05"], error
+                        self.preset_name,
+                        QCoreApplication.translate(
+                            "RenderingPresetTool", "| Error setting render properties:"
+                        ),
+                        error,
                     )
                 )
 
@@ -154,7 +189,11 @@ class RenderingPresetTool(object):
             except Exception as error:
                 self.feedback.print_message(
                     "<{}> {} {}".format(
-                        self.preset_name, self.language["__init__"]["06"], error
+                        self.preset_name,
+                        QCoreApplication.translate(
+                            "RenderingPresetTool", "| Error deleting existing AOVs:"
+                        ),
+                        error,
                     )
                 )
 
@@ -164,19 +203,31 @@ class RenderingPresetTool(object):
                     self.set_aovs()
                     self.feedback.print_message(
                         "<{}> {}".format(
-                            self.preset_name, self.language["__init__"]["07"]
+                            self.preset_name,
+                            QCoreApplication.translate(
+                                "RenderingPresetTool",
+                                "| Arnold AOVs written successfully",
+                            ),
                         )
                     )
                 else:
                     self.feedback.print_message(
                         "<{}> {}".format(
-                            self.preset_name, self.language["__init__"]["08"]
+                            self.preset_name,
+                            QCoreApplication.translate(
+                                "RenderingPresetTool",
+                                "| No AOVs in config; skipping AOV export",
+                            ),
                         )
                     )
             except Exception as error:
                 self.feedback.print_message(
                     "<{}> {} {}".format(
-                        self.preset_name, self.language["__init__"]["09"], error
+                        self.preset_name,
+                        QCoreApplication.translate(
+                            "RenderingPresetTool", "| Error processing AOVs:"
+                        ),
+                        error,
                     )
                 )
 
@@ -305,12 +356,16 @@ def toggle_aovs(adapter=None, feedback=None):
     adapter = adapter or MayaNodeAdapter()
     feedback = feedback or FeedbackPrompt(adapter)
     if not adapter.object_exists("defaultArnoldRenderOptions.aovList"):
-        return feedback.warn("未创建AOV")
+        return feedback.warn(
+            QCoreApplication.translate("ToggleAovs", "No AOVs created")
+        )
     connections = adapter.list_connections(
         "defaultArnoldRenderOptions.aovList", source=True
     )
     if not connections:
-        return feedback.warn("未创建AOV")
+        return feedback.warn(
+            QCoreApplication.translate("ToggleAovs", "No AOVs created")
+        )
     for aov_node in connections:
         enabled = adapter.get_attr(aov_node + ".enabled")
         adapter.set_attr(aov_node + ".enabled", 0 if enabled == 1 else 1)
